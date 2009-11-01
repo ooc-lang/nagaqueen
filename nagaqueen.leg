@@ -1,0 +1,61 @@
+%{
+#include <stdio.h>
+%}
+
+Stmt    = WS - e:Expr EOL                  { printf("\n>> "); }
+        | ( !EOL . )* EOL                  { printf("error\n>> "); }
+
+Expr    = i:ID ASSIGN s:Sum
+        | s:Sum
+
+Sum     = l:Product
+                ( PLUS          { printf(" + "); }      r:Product
+                | MINUS         { printf(" - "); }      r:Product
+                )*
+
+Product = l:Access
+                ( TIMES         { printf(" * "); }      r:Value
+                | DIVIDE        { printf(" / "); }      r:Value
+                )*
+                
+Access = Value
+                ( { printf(" "); } FunctionCall
+                | { printf(" "); } VariableAccess
+                )*
+                
+FunctionCall = ID OPEN { printf("%s(", yytext) } -
+               (Expr (- COMMA { printf(", ") } - Expr)*)?
+               - CLOSE { printf(")") }
+
+VariableAccess = i:ID !ASSIGN           { printf("%s", yytext)   }
+
+Value   = i:NUMBER                      { printf("%s", yytext) }
+        | OPEN { printf("(") }  i:Expr CLOSE   { printf(")") }
+        | FunctionCall
+        | VariableAccess
+
+NUMBER  = < [0-9]+ >    -               #{ $$= atoi(yytext); }
+ID      = < [a-zA-Z_][0-9a-zA-Z_]*  >    -               #{ $$= yytext[0] - 'a'; }
+COMMA   = ','
+ASSIGN  = '='           -
+PLUS    = '+'           -
+MINUS   = '-'           -
+TIMES   = '*'           -
+DIVIDE  = '/'           -
+OPEN    = '('           -
+CLOSE   = ')'           -
+
+-       = [ \t]*
+EOL     = '\n' | '\r\n' | '\r' | ';'
+WS      = ([ \t] | EOL)*
+
+%%
+
+int main()
+{
+  printf(">> ");
+  fflush(stdout);
+  while (yyparse());
+
+  return 0;
+}
