@@ -1,4 +1,4 @@
-.PHONY: all
+.PHONY: all test
 
 all:
 	leg nagaqueen.leg > nagaqueen.c
