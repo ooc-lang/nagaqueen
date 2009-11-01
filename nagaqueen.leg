@@ -5,8 +5,22 @@
 Stmt    = WS - e:Expr EOL                  { printf("\n>> "); }
         | ( !EOL . )* EOL                  { printf("error\n>> "); }
 
-Expr    = i:ID ASSIGN s:Sum
-        | s:Sum
+Expr    = i:ID ASS s:Sum
+        | b:BinaryOperation
+
+BinaryOperation = Compare
+
+Compare = l:Shift
+                ( LESSTHAN      { printf(" < "); }     r:Shift
+                | MORETHAN      { printf(" > "); }     r:Shift
+                | LESSTHAN_EQ   { printf(" <= "); }    r:Shift
+                | MORETHAN_EQ   { printf(" >= "); }    r:Shift
+                )*
+
+Shift   = l:Sum
+                ( B_LSHIFT      { printf(" << "); }     r:Sum
+                | B_RSHIFT      { printf(" >> "); }     r:Sum
+                )*
 
 Sum     = l:Product
                 ( PLUS          { printf(" + "); }      r:Product
@@ -23,27 +37,64 @@ Access = Value
                 | { printf(" "); } VariableAccess
                 )*
                 
-FunctionCall = ID OPEN { printf("%s(", yytext) } -
+FunctionCall = ID OPEN_PAREN { printf("%s(", yytext) } -
                (Expr (- COMMA { printf(", ") } - Expr)*)?
-               - CLOSE { printf(")") }
+               - CLOS_PAREN { printf(")") }
 
-VariableAccess = i:ID !ASSIGN           { printf("%s", yytext)   }
+VariableAccess = i:ID !ASS           { printf("%s", yytext)   }
 
 Value   = i:NUMBER                      { printf("%s", yytext) }
-        | OPEN { printf("(") }  i:Expr CLOSE   { printf(")") }
+        | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")") }
         | FunctionCall
         | VariableAccess
 
-NUMBER  = < [0-9]+ >    -               #{ $$= atoi(yytext); }
-ID      = < [a-zA-Z_][0-9a-zA-Z_]*  >    -               #{ $$= yytext[0] - 'a'; }
-COMMA   = ','
-ASSIGN  = '='           -
-PLUS    = '+'           -
-MINUS   = '-'           -
-TIMES   = '*'           -
-DIVIDE  = '/'           -
-OPEN    = '('           -
-CLOSE   = ')'           -
+NUMBER      = < [0-9]+ >    -               #{ $$= atoi(yytext); }
+ID          = < [a-zA-Z_][0-9a-zA-Z_]*  >    -               #{ $$= yytext[0] - 'a'; }
+
+COMMA       = ','
+
+# Operators, in reverse order of precedence
+
+ASS          = '='   -
+ASS_ADD      = '+='  -
+ASS_SUB      = '-='  -
+ASS_MUL      = '*='  -
+ASS_DIV      = '/='  -
+ASS_B_RSHIFT = '>>='  -
+ASS_B_LSHIFT = '<<='  -
+ASS_B_XOR    = '^='  -
+ASS_B_OR     = '|='  -
+ASS_B_AND    = '&='  -
+
+L_OR         = '||'  -
+
+L_AND        = '&&'  -
+
+B_OR         = '|'   -
+
+B_XOR        = '^'   -
+
+B_AND        = '&'   -
+
+EQUALS       = '=='  -
+NOT_EQUALS   = '!='  -
+
+LESSTHAN     = '<'   -
+MORETHAN     = '>'   -
+LESSTHAN_EQ  = '<='  -
+MORETHAN_EQ  = '>='  -
+
+B_LSHIFT     = '<<'  -
+B_RSHIFT     = '>>'  -
+
+PLUS         = '+'   -
+MINUS        = '-'   -
+
+TIMES        = '*'   -
+DIVIDE       = '/'   -
+
+OPEN_PAREN   = '('   -
+CLOS_PAREN   = ')'   -
 
 -       = [ \t]*
 EOL     = '\n' | '\r\n' | '\r' | ';'
