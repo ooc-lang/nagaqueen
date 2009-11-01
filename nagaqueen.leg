@@ -5,16 +5,53 @@
 Stmt    = WS - e:Expr EOL                  { printf("\n>> "); }
         | ( !EOL . )* EOL                  { printf("error\n>> "); }
 
-Expr    = i:ID ASS s:Sum
-        | b:BinaryOperation
+Expr    = b:BinaryOperation
 
-BinaryOperation = Compare
+BinaryOperation = Assignment
 
-Compare = l:Shift
-                ( LESSTHAN      { printf(" < "); }     r:Shift
-                | MORETHAN      { printf(" > "); }     r:Shift
-                | LESSTHAN_EQ   { printf(" <= "); }    r:Shift
-                | MORETHAN_EQ   { printf(" >= "); }    r:Shift
+Assignment = l: LogicalOr
+                ( ASS           { printf(" = "); }      r: LogicalOr
+                | ASS_ADD       { printf(" += "); }     r: LogicalOr
+                | ASS_SUB       { printf(" -= "); }     r: LogicalOr
+                | ASS_MUL       { printf(" *= "); }     r: LogicalOr
+                | ASS_DIV       { printf(" /= "); }     r: LogicalOr
+                | ASS_B_LSHIFT  { printf(" >>= "); }    r: LogicalOr
+                | ASS_B_RSHIFT  { printf(" <<= "); }    r: LogicalOr
+                | ASS_B_XOR     { printf(" ^= "); }     r: LogicalOr
+                | ASS_B_OR      { printf(" |= "); }     r: LogicalOr
+                | ASS_B_AND     { printf(" &= "); }     r: LogicalOr
+                )*
+
+LogicalOr = l:LogicalAnd
+                ( L_OR          { printf(" || "); }     r: LogicalAnd
+                )*
+
+LogicalAnd = l:BinaryOr
+                ( L_AND         { printf(" && "); }     r: BinaryOr
+                )*
+
+BinaryOr = l:BinaryXor
+                ( B_OR          { printf(" | "); }      r: BinaryXor
+                )*
+
+BinaryXor = l:BinaryAnd
+                ( B_XOR         { printf(" ^ "); }      r: BinaryAnd
+                )*
+
+BinaryAnd = l:Equality
+                ( B_AND         { printf(" & "); }      r: Equality
+                )*
+
+Equality = l:Inequality
+                ( EQUALS        { printf(" == "); }     r:Inequality
+                | NOT_EQUALS    { printf(" != "); }     r:Inequality
+                )*
+
+Inequality = l:Shift
+                ( LESSTHAN      { printf(" < "); }      r:Shift
+                | MORETHAN      { printf(" > "); }      r:Shift
+                | LESSTHAN_EQ   { printf(" <= "); }     r:Shift
+                | MORETHAN_EQ   { printf(" >= "); }     r:Shift
                 )*
 
 Shift   = l:Sum
@@ -41,7 +78,7 @@ FunctionCall = ID OPEN_PAREN { printf("%s(", yytext) } -
                (Expr (- COMMA { printf(", ") } - Expr)*)?
                - CLOS_PAREN { printf(")") }
 
-VariableAccess = i:ID !ASS           { printf("%s", yytext)   }
+VariableAccess = i:ID          { printf("%s", yytext)   }
 
 Value   = i:NUMBER                      { printf("%s", yytext) }
         | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")") }
@@ -53,7 +90,7 @@ ID          = < [a-zA-Z_][0-9a-zA-Z_]*  >    -               #{ $$= yytext[0] - 
 
 COMMA       = ','
 
-# Operators, in reverse order of precedence
+# Operators
 
 ASS          = '='   -
 ASS_ADD      = '+='  -
@@ -70,11 +107,11 @@ L_OR         = '||'  -
 
 L_AND        = '&&'  -
 
-B_OR         = '|'   -
+B_OR         = !L_OR '|'   -
 
 B_XOR        = '^'   -
 
-B_AND        = '&'   -
+B_AND        = !L_AND '&'   -
 
 EQUALS       = '=='  -
 NOT_EQUALS   = '!='  -
