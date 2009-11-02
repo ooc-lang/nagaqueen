@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define _OBRACK "{"
+#define _CBRACK "}"
+
 #define YYSTYPE char*
 %}
 
@@ -12,10 +15,13 @@ Module  = WS Stmt WS
 Decl    = (FunctionDecl | VariableDecl)       { printf("\n"); }
 
 FunctionDecl =
-            IDENT { printf("%s: func [\n", yytext); }
-            - COLON - FUNC_KW - OPEN_BRACK WS 
-            ({ printf("    "); } Stmt)*
-            EOL* CLOS_BRACK  { printf("]\n", yytext); }
+            IDENT { printf("%s: func", yytext); }
+            - COLON
+            - FUNC_KW
+            (- R_ARROW - { printf(" -> "); } Type)?
+            - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+            ({ printf("    "); } WS Stmt WS)*
+            EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
 
 VariableDecl = 
             IDENT { printf("%s: ", yytext); } 
@@ -124,6 +130,8 @@ STRING_LIT   = '"' < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))* > '"'      
 
 COMMA        = ','
 COLON        = ':'
+
+R_ARROW      = '->'
 
 # Operators
 
