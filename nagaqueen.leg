@@ -1,25 +1,51 @@
 %{
 #include <stdio.h>
+#include <string.h>
+
+#define YYSTYPE char*
 %}
 
-Stmt    = WS - e:Expr EOL                  { printf("\n>> "); }
-        | ( !EOL . )* EOL                  { printf("error\n>> "); }
+Module  = WS Stmt WS
+        | WS Decl WS
+        | WS ( !EOL . )* EOL                  { printf("error\n"); }
 
-Expr    = b:BinaryOperation
+Decl    = (FunctionDecl | VariableDecl)       { printf("\n"); }
+
+FunctionDecl =
+            IDENT { printf("%s: func [\n", yytext); }
+            - COLON - FUNC_KW - OPEN_BRACK WS 
+            ({ printf("    "); } Stmt)*
+            EOL* CLOS_BRACK  { printf("]\n", yytext); }
+
+VariableDecl = 
+            IDENT { printf("%s: ", yytext); } 
+            - COLON - Type  -
+            
+Type    = < IDENT { printf("%s", yytext); } 
+            (STAR { printf("*"); } 
+            | "[" { printf("["); } - Expr? "]" { printf("]"); }
+            )*
+          > -       { $$=strdup(yytext); }
+
+Stmt    = WS e:Expr EOL                    { printf("\n"); }
+
+Expr    = b:BinaryOperation -
+
+#operators
 
 BinaryOperation = Assignment
 
 Assignment = l: LogicalOr
-                ( ASS           { printf(" = "); }      r: LogicalOr
-                | ASS_ADD       { printf(" += "); }     r: LogicalOr
-                | ASS_SUB       { printf(" -= "); }     r: LogicalOr
-                | ASS_MUL       { printf(" *= "); }     r: LogicalOr
-                | ASS_DIV       { printf(" /= "); }     r: LogicalOr
+                ( ASS           { printf(" = ");   }    r: LogicalOr
+                | ASS_ADD       { printf(" += ");  }    r: LogicalOr
+                | ASS_SUB       { printf(" -= ");  }    r: LogicalOr
+                | ASS_MUL       { printf(" *= ");  }    r: LogicalOr
+                | ASS_DIV       { printf(" /= ");  }    r: LogicalOr
                 | ASS_B_LSHIFT  { printf(" >>= "); }    r: LogicalOr
                 | ASS_B_RSHIFT  { printf(" <<= "); }    r: LogicalOr
-                | ASS_B_XOR     { printf(" ^= "); }     r: LogicalOr
-                | ASS_B_OR      { printf(" |= "); }     r: LogicalOr
-                | ASS_B_AND     { printf(" &= "); }     r: LogicalOr
+                | ASS_B_XOR     { printf(" ^= ");  }    r: LogicalOr
+                | ASS_B_OR      { printf(" |= ");  }    r: LogicalOr
+                | ASS_B_AND     { printf(" &= ");  }    r: LogicalOr
                 )*
 
 LogicalOr = l:LogicalAnd
@@ -48,8 +74,8 @@ Equality = l:Inequality
                 )*
 
 Inequality = l:Shift
-                ( LESSTHAN      { printf(" < "); }      r:Shift
-                | MORETHAN      { printf(" > "); }      r:Shift
+                ( LESSTHAN      { printf(" < ");  }     r:Shift
+                | MORETHAN      { printf(" > ");  }     r:Shift
                 | LESSTHAN_EQ   { printf(" <= "); }     r:Shift
                 | MORETHAN_EQ   { printf(" >= "); }     r:Shift
                 )*
@@ -65,30 +91,39 @@ Sum     = l:Product
                 )*
 
 Product = l:Access
-                ( TIMES         { printf(" * "); }      r:Value
-                | DIVIDE        { printf(" / "); }      r:Value
+                ( STAR         { printf(" * "); }       r:Value
+                | SLASH        { printf(" / "); }       r:Value
                 )*
                 
 Access = Value
-                ( { printf(" "); } FunctionCall
+                ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR { printf("]"); }
+                | { printf(" "); } FunctionCall
                 | { printf(" "); } VariableAccess
                 )*
                 
-FunctionCall = ID OPEN_PAREN { printf("%s(", yytext) } -
-               (Expr (- COMMA { printf(", ") } - Expr)*)?
-               - CLOS_PAREN { printf(")") }
+FunctionCall = IDENT OPEN_PAREN { printf("%s(", yytext); } -
+               (Expr (- COMMA { printf(", "); } - Expr)*)?
+               - CLOS_PAREN { printf(")"); }
 
-VariableAccess = i:ID          { printf("%s", yytext)   }
+VariableAccess = i:IDENT          { printf("%s", yytext)   }
 
-Value   = i:NUMBER                      { printf("%s", yytext) }
-        | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")") }
+Value   = i:NUMBER                                        { printf("%s", yytext); }
+        | s:STRING_LIT                                    { printf("\"%s\"", yytext); }
+        | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
         | FunctionCall
         | VariableAccess
 
-NUMBER      = < [0-9]+ >    -               #{ $$= atoi(yytext); }
-ID          = < [a-zA-Z_][0-9a-zA-Z_]*  >    -               #{ $$= yytext[0] - 'a'; }
+FUNC_KW      = "func"
+CLASS_KW     = "class"
+KW           = FUNC_KW | CLASS_KW
 
-COMMA       = ','
+NUMBER       = < [0-9]+ >                   -
+IDENT        = !KW < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
+
+STRING_LIT   = '"' < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))* > '"'       -
+
+COMMA        = ','
+COLON        = ':'
 
 # Operators
 
@@ -127,11 +162,17 @@ B_RSHIFT     = '>>'  -
 PLUS         = '+'   -
 MINUS        = '-'   -
 
-TIMES        = '*'   -
-DIVIDE       = '/'   -
+STAR         = '*'   -
+SLASH        = '/'   -
 
 OPEN_PAREN   = '('   -
 CLOS_PAREN   = ')'   -
+
+OPEN_SQUAR   = '['   -
+CLOS_SQUAR   = ']'   -
+
+OPEN_BRACK   = '{'   -
+CLOS_BRACK   = '}'   -
 
 -       = [ \t]*
 EOL     = '\n' | '\r\n' | '\r' | ';'
@@ -141,7 +182,6 @@ WS      = ([ \t] | EOL)*
 
 int main()
 {
-  printf(">> ");
   fflush(stdout);
   while (yyparse());
 
