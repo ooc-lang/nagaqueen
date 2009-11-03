@@ -1,5 +1,5 @@
-nagaqueen: a leg grammar for ooc
-================================
+nagaqueen: a greg grammar for ooc
+=================================
 
 why a grammar?
 --------------
@@ -15,19 +15,21 @@ nagaqueen is a work in progress, so if it doesn't
 parse everything, don't sweat it, there should be
 improvements every few hours.
 
-what is leg?
-------------
+what is greg?
+-------------
 
-Ian Piumarta's peg/leg (v0.14+) is a modern parser generator
-based on the PEG paper, it allows to define a grammar in a
-simple and straight-forward way
+greg is _why's fork of Ian Piumarta's peg/leg, then forked
+again by nddrylliog to fix a few bugs (since _why is gone)
 
-get it while it's hot: http://piumarta.com/software/peg/
+it's a modern parser generator based on the PEG paper,
+allowing to define a grammar in a simple and straight-forward way
+
+get it while it's hot: http://github.com/nddrylliog/greg/
 
 how to test it?
 ---------------
 
-  - install peg/leg
+  - install greg
   - run 'make test'
   - PROFIT!
 

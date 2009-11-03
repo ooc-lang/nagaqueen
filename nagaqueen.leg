@@ -6,6 +6,7 @@
 #define _CBRACK "}"
 
 #define YYSTYPE char*
+#define YY_STACK_SIZE 1024
 %}
 
 Module  = WS Stmt WS
@@ -190,8 +191,8 @@ WS      = ([ \t] | EOL)*
 
 int main()
 {
-  fflush(stdout);
-  while (yyparse());
+  GREG g;
+  while (yyparse(&g));
 
   return 0;
 }
