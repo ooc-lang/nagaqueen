@@ -19,14 +19,30 @@ FunctionDecl =
             IDENT { printf("%s: func", yytext); }
             - COLON
             - FUNC_KW
-            (- R_ARROW - { printf(" -> "); } Type)?
+            
+            # arguments are optional
+            (
+                - OPEN_PAREN { printf("(") }
+                (WS VariableDecl WS
+                    (COMMA { printf(", ") } WS VariableDecl )*
+                )?
+                - CLOS_PAREN { printf(")") }
+            )?
+            
+            # return type is optional     
+            (
+                - R_ARROW - { printf(" -> "); } Type
+            )?
+            
             - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
-            ({ printf("    "); } WS Stmt WS)*
+            ({ printf("    "); } WS (Stmt) WS)*
             EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
 
 VariableDecl = 
-            IDENT { printf("%s: ", yytext); } 
-            - COLON - Type  -
+            IDENT { printf("%s", yytext); }
+            (- COMMA - IDENT { printf(", %s", yytext) } -)*
+            - COLON { printf(": "); }
+            - Type
             
 Type    = < IDENT { printf("%s", yytext); } 
             (STAR { printf("*"); } 
@@ -34,7 +50,12 @@ Type    = < IDENT { printf("%s", yytext); }
             )*
           > -       { $$=strdup(yytext); }
 
-Stmt    = WS e:Expr EOL                    { printf("\n"); }
+Stmt    = ( WS r:Return
+          | WS e:Expr
+          )
+          EOL                   { printf("\n"); }
+          
+Return  = RETURN_KW { printf("return ") } - e:Expr
 
 Expr    = b:BinaryOperation -
 
@@ -117,9 +138,11 @@ VariableAccess = i:IDENT          { printf("%s", yytext)   }
 Value   = i:NUMBER                                        { printf("%s", yytext); }
         | s:STRING_LIT                                    { printf("\"%s\"", yytext); }
         | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
+        | VariableDecl
         | FunctionCall
         | VariableAccess
 
+RETURN_KW    = "return"
 FUNC_KW      = "func"
 CLASS_KW     = "class"
 KW           = FUNC_KW | CLASS_KW

@@ -1,4 +1,3 @@
-
 blah: func {
 
 }
@@ -18,5 +17,19 @@ blah3: func -> Int {
 blah4: func -> Float[128][128] {
     
     dog: Dog
+    dog = gc_malloc(Dog size)
+    dog init()
+    
+}
+
+addNothing: func () {}
+
+addNuffin: func (a: Int, b: Int) {}
+
+addDummy: func(a: Int, b: Int) -> Int {}
+
+add: func (a, b: Int) {
+    
+    return a + b
     
 }
