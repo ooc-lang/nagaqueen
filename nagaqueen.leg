@@ -15,23 +15,25 @@ Module  = WS Stmt WS
 
 Decl    = { printf("\n"); }
           ( ClassDecl
+          | CoverDecl
           | FunctionDecl
           | VariableDecl
           )
 
 FunctionDecl =
-            IDENT { printf("%s: func", yytext); }
+            IDENT { printf("%s:", yytext); }
             - COLON
             
             # modifiers
-            (-  ( ABSTRACT_KW { printf(" abstract") }
+            (-  ( ExternName
+                | ABSTRACT_KW { printf(" abstract") }
                 | STATIC_KW   { printf(" static") }
                 | INLINE_KW   { printf(" inline") }
                 | FINAL_KW    { printf(" final") }
                 )
             )*
             
-            - FUNC_KW
+            - FUNC_KW { printf(" func") }
             
             # arguments are optional
             (
@@ -47,16 +49,20 @@ FunctionDecl =
                 - R_ARROW - { printf(" -> "); } Type
             )?
             
-            - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
-            ({ printf("    "); } WS (Stmt) WS)*
-            EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
+            # body is optional (for abstract/extern-named functions)
+            (
+                - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+                ({ printf("    "); } WS (Stmt) WS)*
+                EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
+            )?
             
 ClassDecl   =
             IDENT { printf("%s:", yytext); }
             - COLON
             
             # modifiers
-            (-  ( ABSTRACT_KW { printf(" abstract") }
+            (-  ( ExternName
+                | ABSTRACT_KW { printf(" abstract") }
                 | FINAL_KW    { printf(" final") }
                 )
             )*
@@ -68,9 +74,39 @@ ClassDecl   =
             - EXTENDS_KW - IDENT { printf(" extends %s", yytext) }
             )?
             
+            # body is optional (for abstract classes)
+            (
+                - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+                
+                # classdecl contents
+                (WS
+                    { printf("\n") }
+                    ( VariableDecl
+                    | FunctionDecl
+                    )
+                WS)*
+                
+                EOL* CLOS_BRACK  { printf("\n%s", _CBRACK); }
+            )?
+            
+CoverDecl   =
+            IDENT { printf("%s:", yytext); }
+            - COLON
+            
+            # modifiers
+            (- ExternName)?
+            
+            - COVER_KW { printf(" cover") }
+            
+            # covering another type
+            (
+            - FROM_KW { printf(" from ") }
+            - Type
+            )?
+            
             - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
             
-            # classdecl contents
+            # coverdecl contents
             (WS
                 { printf("\n") }
                 ( VariableDecl
@@ -79,6 +115,13 @@ ClassDecl   =
             WS)*
             
             EOL* CLOS_BRACK  { printf("\n%s", _CBRACK); }
+            
+ExternName = EXTERN_KW { printf(" extern") }
+              (
+              - OPEN_PAREN
+              - IDENT { printf("(%s)", yytext); }
+              - CLOS_PAREN
+              )?
 
 VariableDecl = 
             IDENT { printf("%s", yytext); }
@@ -187,12 +230,18 @@ Value   = i:NUMBER                                        { printf("%s", yytext)
 RETURN_KW    = "return"
 FUNC_KW      = "func"
 CLASS_KW     = "class"
+COVER_KW     = "cover"
+FROM_KW      = "from"
 ABSTRACT_KW  = "abstract"
 FINAL_KW     = "final"
 STATIC_KW    = "static"
 INLINE_KW    = "inline"
 EXTENDS_KW   = "extends"
-KW           = FUNC_KW | CLASS_KW
+EXTERN_KW    = "extern"
+
+KW           = RETURN_KW | FUNC_KW | CLASS_KW | COVER_KW | FROM_KW
+             | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
+             | EXTENDS_KW | EXTERN_KW
 
 NUMBER       = < [0-9]+ >                   -
 IDENT        = !KW < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
