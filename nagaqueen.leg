@@ -13,7 +13,10 @@ Module  = WS Stmt WS
         | WS Decl WS
         | WS ( !EOL . )* EOL                  { printf("error\n"); }
 
-Decl    = (FunctionDecl | VariableDecl)       { printf("\n"); }
+Decl    = ( ClassDecl
+          | FunctionDecl
+          | VariableDecl
+          )                     { printf("\n"); }
 
 FunctionDecl =
             IDENT { printf("%s: func", yytext); }
@@ -36,6 +39,20 @@ FunctionDecl =
             
             - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
             ({ printf("    "); } WS (Stmt) WS)*
+            EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
+            
+ClassDecl   =
+            IDENT { printf("%s:", yytext); }
+            - COLON
+            (-  ( ABSTRACT_KW { printf(" abstract") }
+                | STATIC_KW   { printf(" static") }
+                | INLINE_KW   { printf(" inline") }
+                | FINAL_KW    { printf(" final") }
+                )
+            )*
+            - CLASS_KW { printf(" class") }
+            - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+            
             EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
 
 VariableDecl = 
@@ -145,6 +162,11 @@ Value   = i:NUMBER                                        { printf("%s", yytext)
 RETURN_KW    = "return"
 FUNC_KW      = "func"
 CLASS_KW     = "class"
+ABSTRACT_KW  = "abstract"
+FINAL_KW     = "final"
+STATIC_KW    = "static"
+INLINE_KW    = "inline"
+EXTENDS_KW   = "extends"
 KW           = FUNC_KW | CLASS_KW
 
 NUMBER       = < [0-9]+ >                   -
