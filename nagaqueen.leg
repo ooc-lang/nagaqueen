@@ -291,7 +291,7 @@ KW           = RETURN_KW | FUNC_KW | CLASS_KW | COVER_KW | FROM_KW
              | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
              | IF_KW | ELSE_KW
 
-NUMBER       = < [0-9]+ >                   -
+NUMBER       = < "-"? [0-9]+ >                   -
 IDENT        = !KW < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
 
 STRING_LIT   = '"' < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))* > '"'       -
