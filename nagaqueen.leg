@@ -10,17 +10,27 @@
 %}
 
 Module  = WS Stmt WS
-        | WS Decl WS
+        | WS Decl WS                          { printf("\n") }
         | WS ( !EOL . )* EOL                  { printf("error\n"); }
 
-Decl    = ( ClassDecl
+Decl    = { printf("\n"); }
+          ( ClassDecl
           | FunctionDecl
           | VariableDecl
-          )                     { printf("\n"); }
+          )
 
 FunctionDecl =
             IDENT { printf("%s: func", yytext); }
             - COLON
+            
+            # modifiers
+            (-  ( ABSTRACT_KW { printf(" abstract") }
+                | STATIC_KW   { printf(" static") }
+                | INLINE_KW   { printf(" inline") }
+                | FINAL_KW    { printf(" final") }
+                )
+            )*
+            
             - FUNC_KW
             
             # arguments are optional
@@ -44,16 +54,31 @@ FunctionDecl =
 ClassDecl   =
             IDENT { printf("%s:", yytext); }
             - COLON
+            
+            # modifiers
             (-  ( ABSTRACT_KW { printf(" abstract") }
-                | STATIC_KW   { printf(" static") }
-                | INLINE_KW   { printf(" inline") }
                 | FINAL_KW    { printf(" final") }
                 )
             )*
+            
             - CLASS_KW { printf(" class") }
+            
+            # subclassing
+            (
+            - EXTENDS_KW - IDENT { printf(" extends %s", yytext) }
+            )?
+            
             - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
             
-            EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
+            # classdecl contents
+            (WS
+                { printf("\n") }
+                ( VariableDecl
+                | FunctionDecl
+                )
+            WS)*
+            
+            EOL* CLOS_BRACK  { printf("\n%s", _CBRACK); }
 
 VariableDecl = 
             IDENT { printf("%s", yytext); }
