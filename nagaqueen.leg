@@ -109,18 +109,21 @@ CoverDecl   =
             - FROM_KW { printf(" from ") }
             - Type
             )?
-            
-            - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
-            
-            # coverdecl contents
-            (WS
-                { printf("\n") }
-                ( VariableDecl
-                | FunctionDecl
-                )
-            WS)*
-            
-            EOL* CLOS_BRACK  { printf("\n%s", _CBRACK); }
+
+            # body is optional for covers
+            (
+                - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+                
+                # coverdecl contents
+                (WS
+                    { printf("\n") }
+                    ( VariableDecl
+                    | FunctionDecl
+                    )
+                WS)*
+                
+                EOL* CLOS_BRACK  { printf("\n%s", _CBRACK); }
+            )?
             
 ExternName = EXTERN_KW { printf(" extern") }
               (
