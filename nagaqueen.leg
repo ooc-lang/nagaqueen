@@ -35,6 +35,12 @@ FunctionDecl =
             
             - FUNC_KW { printf(" func") }
             
+            # optional suffix
+            (
+            - TILDE
+            - IDENT { printf(" ~%s", yytext) }
+            )?
+            
             # arguments are optional
             (
                 - OPEN_PAREN { printf("(") }
@@ -302,9 +308,14 @@ CLOS_SQUAR   = ']'   -
 OPEN_BRACK   = '{'   -
 CLOS_BRACK   = '}'   -
 
+TILDE   = '~'   -
 -       = [ \t]*
 EOL     = '\n' | '\r\n' | '\r' | ';'
-WS      = ([ \t] | EOL)*
+WS      = ([ \t] | Comment | EOL)*
+
+Comment = (CommentLine | CommentMultiLine)
+CommentLine = "//" (!EOL .)* EOL
+CommentMultiLine = "/*" (!"*/" .)* "*/"
 
 %%
 

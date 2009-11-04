@@ -33,3 +33,7 @@ add: func (a, b: Int) -> Int {
     return a + b
     
 }
+
+main: func ~badjuju {
+    
+}
