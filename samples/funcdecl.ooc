@@ -28,7 +28,7 @@ addNuffin: func (a: Int, b: Int) {}
 
 addDummy: func(a: Int, b: Int) -> Int {}
 
-add: func (a, b: Int) {
+add: func (a, b: Int) -> Int {
     
     return a + b
     
