@@ -9,9 +9,25 @@
 #define YY_STACK_SIZE 1024
 %}
 
-Module  = WS Stmt WS
+Module  = WS Include WS                       { printf("\n") }
+        | WS Import WS                        { printf("\n") }
+        | WS Stmt WS
         | WS Decl WS                          { printf("\n") }
         | WS ( !EOL . )* EOL                  { printf("error\n"); }
+        
+Include = INCLUDE_KW { printf("include ") }
+          - IDENT  { printf("%s", yytext) }
+          (
+          - COMMA
+          - IDENT { printf(", %s", yytext) }
+          )*
+          
+Import  = IMPORT_KW { printf("import ") }
+          - IDENT  { printf("%s", yytext) }
+          (
+          - COMMA
+          - IDENT { printf(", %s", yytext) }
+          )*
 
 Decl    = { printf("\n"); }
           ( ClassDecl
@@ -138,16 +154,33 @@ VariableDecl =
             - COLON { printf(": "); }
             - Type
             
-Type    = < IDENT { printf("%s", yytext); } 
+Type    = < (
+                ( "unsigned"  { printf("unsigned ") }
+                | "signed"    { printf("signed ") }
+                | "long"      { printf("long ") }
+                )
+            - )*
+            IDENT { printf("%s", yytext); } 
             (STAR { printf("*"); } 
             | "[" { printf("["); } - Expr? "]" { printf("]"); }
             )*
           > -       { $$=strdup(yytext); }
 
 Stmt    = ( WS r:Return
+          | WS c:Conditional
           | WS e:Expr
           )
           EOL                   { printf("\n"); }
+          
+Conditional = (If | Else)
+
+If      = IF_KW     { printf("if ") }
+          - Expr
+          - OPEN_BRACK    { printf(" %s\n", _OBRACK) }
+          (WS Stmt WS)*
+          WS CLOS_BRACK   { printf("\n%s", _CBRACK) }
+          
+Else    = ELSE_KW
           
 Return  = RETURN_KW { printf("return ") } - e:Expr
 
@@ -248,9 +281,15 @@ INLINE_KW    = "inline"
 EXTENDS_KW   = "extends"
 EXTERN_KW    = "extern"
 
+IMPORT_KW    = "import"
+INCLUDE_KW   = "include"
+IF_KW        = "if"
+ELSE_KW      = "else"
+
 KW           = RETURN_KW | FUNC_KW | CLASS_KW | COVER_KW | FROM_KW
              | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
-             | EXTENDS_KW | EXTERN_KW
+             | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
+             | IF_KW | ELSE_KW
 
 NUMBER       = < [0-9]+ >                   -
 IDENT        = !KW < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
