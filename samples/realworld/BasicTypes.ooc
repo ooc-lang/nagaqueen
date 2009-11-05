@@ -30,7 +30,27 @@ indexOf: func(c: Char) -> SizeT {
     return -1
     
 }
-*/
 
 trim: func ~space -> This { return trim(' ') }
+*/
+
+substring: func ~tillEnd (start: SizeT) -> This {
+    len = this length() : SizeT
+    
+    if(start > len) {
+        printf("String.substring~tillEnd: out of bounds: length = %zd, start = %zd\n",
+            len, start);
+        return null
+    }
+    
+    diff = (len - start) : SizeT
+    sub := gc_malloc(diff + 1) as This	
+    sub[diff] = '\0'
+    memcpy(sub, this as Char* + start, diff)
+    return sub
+}
+
+
+
+
 

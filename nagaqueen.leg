@@ -305,13 +305,13 @@ Cast = l: Access
                 )*
                 
 Access = Value
-                ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR { printf("]"); }
-                | { printf(" "); } FunctionCall
-                | { printf(" "); } VariableAccess
+                ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR - { printf("]"); }
+                | { printf(" "); } FunctionCall -
+                | { printf(" "); } VariableAccess -
                 )*
                 
 FunctionCall = IDENT OPEN_PAREN { printf("%s(", yytext); } -
-               (Expr (- COMMA { printf(", "); } - Expr)*)?
+               (Expr (- COMMA { printf(", "); } WS Expr)*)?
                - CLOS_PAREN { printf(")"); }
 
 VariableAccess = i:IDENT          { printf("%s", yytext)   }
@@ -352,7 +352,7 @@ KW           = RETURN_KW | FUNC_KW | CLASS_KW | COVER_KW | FROM_KW
              | IF_KW | ELSE_KW | FOR_KW | WHILE_KW | IN_KW | AS_KW
 
 COMMA        = ','
-DOT          = '.'
+DOT          = !DOUBLE_DOT '.'
 COLON        = !ASS_DECL ':'
 
 R_ARROW      = '->'
@@ -423,8 +423,8 @@ INT_LIT      = < "-"? [0-9]+ >                   -
 IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not a name ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
 
-STRING_LIT   = ["] < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))* > ["]       -
-CHAR_LIT     = ['] < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))  > [']       -
+STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -
+CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > [']       -
 
 %%
 
