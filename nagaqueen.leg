@@ -203,7 +203,8 @@ VariableDecl =
             - COLON { printf(": "); }
             - Type
             
-Type    = < (
+Type    = < (CONST_KW -)?
+            (
                 ( "unsigned"             - { printf("unsigned ") }
                 | "signed"               - { printf("signed ") }
                 | "long" &(- "long")     - { printf("long ") }
@@ -270,19 +271,27 @@ Expr    = b:BinaryOperation -
 
 BinaryOperation = Assignment
 
-Assignment = l: LogicalOr
-                ( ASS           { printf(" = ");   }    r: LogicalOr
-                | ASS_ADD       { printf(" += ");  }    r: LogicalOr
-                | ASS_SUB       { printf(" -= ");  }    r: LogicalOr
-                | ASS_MUL       { printf(" *= ");  }    r: LogicalOr
-                | ASS_DIV       { printf(" /= ");  }    r: LogicalOr
-                | ASS_B_LSHIFT  { printf(" >>= "); }    r: LogicalOr
-                | ASS_B_RSHIFT  { printf(" <<= "); }    r: LogicalOr
-                | ASS_B_XOR     { printf(" ^= ");  }    r: LogicalOr
-                | ASS_B_OR      { printf(" |= ");  }    r: LogicalOr
-                | ASS_B_AND     { printf(" &= ");  }    r: LogicalOr
-                | ASS_DECL      { printf(" := ");  }    r: LogicalOr
+Assignment = l: Ternary
+                ( ASS                 { printf(" = ");   }    r: Ternary
+                | ASS_ADD             { printf(" += ");  }    r: Ternary
+                | ASS_SUB             { printf(" -= ");  }    r: Ternary
+                | ASS_MUL             { printf(" *= ");  }    r: Ternary
+                | ASS_DIV             { printf(" /= ");  }    r: Ternary
+                | ASS_B_LSHIFT        { printf(" >>= "); }    r: Ternary
+                | ASS_B_RSHIFT        { printf(" <<= "); }    r: Ternary
+                | ASS_B_XOR           { printf(" ^= ");  }    r: Ternary
+                | ASS_B_OR            { printf(" |= ");  }    r: Ternary
+                | ASS_B_AND           { printf(" &= ");  }    r: Ternary
+                | ASS_DECL (CONST_KW)?{ printf(" := ");  }    r: Ternary
                 )*
+                
+Ternary =   LogicalOr
+            (
+          - QUEST  { printf(" ? "); }
+          - Expr
+          - COLON  { printf(" : "); }
+          - Expr
+            )*
 
 LogicalOr = l:LogicalAnd
                 ( L_OR          { printf(" || "); }     r: LogicalAnd
@@ -328,6 +337,7 @@ Shift   = l:Sum
 Sum     = l:Product
                 ( PLUS          { printf(" + "); }      r:Product
                 | MINUS         { printf(" - "); }      r:Product
+                | PERCENT       { printf(" %% "); }      r:Product
                 )*
 
 Product = ( L_NOT               { printf("!"); }
@@ -381,16 +391,18 @@ IF_KW        = "if"
 ELSE_KW      = "else"
 FOR_KW       = "for"
 WHILE_KW     = "while"
-IN_KW        = "in"
 AS_KW        = "as"
+IN_KW        = "in"
 
 OPERATOR_KW  = "operator"
+CONST_KW     = "const"
 
-KW           = RETURN_KW | FUNC_KW | CLASS_KW | COVER_KW | FROM_KW
+            # 'class', 'in' voluntarily left out
+KW           = RETURN_KW | FUNC_KW | COVER_KW | FROM_KW
              | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
              | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
-             | IF_KW | ELSE_KW | FOR_KW | WHILE_KW | IN_KW | AS_KW
-             | OPERATOR_KW
+             | IF_KW | ELSE_KW | FOR_KW | WHILE_KW | AS_KW
+             | OPERATOR_KW | CONST_KW
 
 COMMA        = ','
 DOT          = !DOUBLE_DOT '.'
@@ -411,6 +423,8 @@ ASS_B_LSHIFT = '<<='  -
 ASS_B_XOR    = '^='  -
 ASS_B_OR     = '|='  -
 ASS_B_AND    = '&='  -
+
+QUEST        = '?'   -
 
 L_OR         = '||'  -
 
@@ -440,6 +454,7 @@ B_NOT        = '~'   -
 PLUS         = '+'   -
 MINUS        = '-'   -
 
+PERCENT      = '%'   -
 STAR         = '*'   -
 SLASH        = '/'   -
 
