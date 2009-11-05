@@ -1,3 +1,8 @@
+
+wazaa: func (.x, .y, =z) {
+    
+}
+
 blah: func {
 
 }
@@ -37,3 +42,4 @@ add: func (a, b: Int) -> Int {
 main: func ~badjuju {
     
 }
+

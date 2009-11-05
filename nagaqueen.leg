@@ -32,9 +32,36 @@ Import  = IMPORT_KW { printf("import ") }
 Decl    = { printf("\n"); }
           ( ClassDecl
           | CoverDecl
+          | OperatorDecl
           | FunctionDecl
           | VariableDecl
           )
+
+OperatorDecl =
+            OPERATOR_KW { printf("operator ", yytext); }
+            - < (PLUS | MINUS | STAR | SLASH | EQUALS | NOT_EQUALS
+              | MORETHAN | MORETHAN_EQ | LESSTHAN | LESSTHAN_EQ
+              | ASS_ADD | ASS_SUB | ASS_MUL | ASS_DIV | "[]=" | "[]") >
+              { printf("%s ", yytext) }
+            
+            # arguments are optional
+            (
+                - OPEN_PAREN { printf("(") }
+                (WS Argument WS
+                    (COMMA { printf(", ") } WS VariableDecl )*
+                )?
+                - CLOS_PAREN { printf(")") }
+            )?
+            
+            # return type is optional     
+            (
+                - R_ARROW - { printf(" -> "); } Type
+            )?
+            
+            # body
+            - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+            ({ printf("    "); } WS (Stmt) WS)*
+            WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
 
 FunctionDecl =
             IDENT { printf("%s:", yytext); }
@@ -61,7 +88,7 @@ FunctionDecl =
             (
                 - OPEN_PAREN { printf("(") }
                 (WS Argument WS
-                    (COMMA { printf(", ") } WS VariableDecl )*
+                    (COMMA { printf(", ") } WS Argument )*
                 )?
                 - CLOS_PAREN { printf(")") }
             )?
@@ -78,9 +105,11 @@ FunctionDecl =
                 WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
             )?
             
-Argument    = ( VariableDecl
-               | Type
-               )
+Argument    = ( (DOT IDENT -)  { printf(".%s", yytext) }
+              | (ASS IDENT -)  { printf("=%s", yytext) }
+              | VariableDecl
+              | Type
+              )
             
             
 ClassDecl   =
@@ -130,6 +159,12 @@ CoverDecl   =
             - FROM_KW { printf(" from ") }
             - Type
             )?
+            
+            # extending another type
+            (
+            - EXTENDS_KW { printf(" extends ") }
+            - IDENT      { printf("%s", yytext) }
+            )?
 
             # body is optional for covers
             (
@@ -169,9 +204,9 @@ VariableDecl =
             - Type
             
 Type    = < (
-                ( "unsigned"  { printf("unsigned ") }
-                | "signed"    { printf("signed ") }
-                | "long"      { printf("long ") }
+                ( "unsigned"             - { printf("unsigned ") }
+                | "signed"               - { printf("signed ") }
+                | "long" &(- "long")     - { printf("long ") }
                 )
             - )*
             IDENT { printf("%s", yytext); } 
@@ -184,7 +219,7 @@ Stmt    = ( # some statements need an EOL after them...
               ( WS r:Return
               | WS e:Expr
               )
-              (EOL | (&CLOS_BRACK))                 { printf("\n"); }
+              (EOL | (&CLOS_BRACK) | (&CommentLine))         { printf("\n"); }
           )
           | # ...but block don't
           ( WS c:Conditional
@@ -349,10 +384,13 @@ WHILE_KW     = "while"
 IN_KW        = "in"
 AS_KW        = "as"
 
+OPERATOR_KW  = "operator"
+
 KW           = RETURN_KW | FUNC_KW | CLASS_KW | COVER_KW | FROM_KW
              | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
              | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
              | IF_KW | ELSE_KW | FOR_KW | WHILE_KW | IN_KW | AS_KW
+             | OPERATOR_KW
 
 COMMA        = ','
 DOT          = !DOUBLE_DOT '.'
