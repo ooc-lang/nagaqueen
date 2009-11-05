@@ -60,7 +60,7 @@ FunctionDecl =
             # arguments are optional
             (
                 - OPEN_PAREN { printf("(") }
-                (WS VariableDecl WS
+                (WS Argument WS
                     (COMMA { printf(", ") } WS VariableDecl )*
                 )?
                 - CLOS_PAREN { printf(")") }
@@ -75,8 +75,13 @@ FunctionDecl =
             (
                 - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
                 ({ printf("    "); } WS (Stmt) WS)*
-                EOL* CLOS_BRACK  { printf("%s\n", _CBRACK); }
+                WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
             )?
+            
+Argument    = ( VariableDecl
+               | Type
+               )
+            
             
 ClassDecl   =
             IDENT { printf("%s:", yytext); }
@@ -108,7 +113,7 @@ ClassDecl   =
                     )
                 WS)*
                 
-                EOL* CLOS_BRACK  { printf("\n%s", _CBRACK); }
+                WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
             )?
             
 CoverDecl   =
@@ -138,7 +143,7 @@ CoverDecl   =
                     )
                 WS)*
                 
-                EOL* CLOS_BRACK  { printf("\n%s", _CBRACK); }
+                WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
             )?
             
 ExternName = EXTERN_KW { printf(" extern") }
@@ -150,7 +155,16 @@ ExternName = EXTERN_KW { printf(" extern") }
 
 VariableDecl = 
             IDENT { printf("%s", yytext); }
-            (- COMMA - IDENT { printf(", %s", yytext) } -)*
+            (ASS { printf(" = "); } Expr)?
+            
+            # multi-decls
+            (
+            - COMMA
+            - IDENT { printf(", %s", yytext) }
+            (- ASS { printf(" = "); } Expr)?
+            -
+            )*
+            
             - COLON { printf(": "); }
             - Type
             
@@ -166,21 +180,52 @@ Type    = < (
             )*
           > -       { $$=strdup(yytext); }
 
-Stmt    = ( WS r:Return
-          | WS c:Conditional
-          | WS e:Expr
+Stmt    = ( # some statements need an EOL after them...
+              ( WS r:Return
+              | WS e:Expr
+              )
+              (EOL | (&CLOS_BRACK))                 { printf("\n"); }
           )
-          EOL                   { printf("\n"); }
+          | # ...but block don't
+          ( WS c:Conditional
+          | WS f:FlowControl
+          )
           
 Conditional = (If | Else)
 
-If      = IF_KW     { printf("if ") }
+If      = IF_KW     { printf("if ("); }
+          - OPEN_PAREN
           - Expr
-          - OPEN_BRACK    { printf(" %s\n", _OBRACK) }
-          (WS Stmt WS)*
-          WS CLOS_BRACK   { printf("\n%s", _CBRACK) }
+          - CLOS_PAREN  { printf(") "); }
+          - Body
           
-Else    = ELSE_KW
+Else    = ELSE_KW   { printf("else ("); }
+          - OPEN_PAREN
+          - Expr
+          - CLOS_PAREN  { printf(") "); }
+          - Body
+          
+FlowControl = (Foreach | While)
+          
+Foreach = FOR_KW        { printf("for ("); }
+          - OPEN_PAREN
+          - Expr
+          - IN_KW       { printf(" in "); }
+          - Expr
+          - CLOS_PAREN  { printf(") "); }
+          - Body
+          
+While = WHILE_KW    { printf("while ("); }
+        - OPEN_PAREN
+        - Expr
+        - CLOS_PAREN  { printf(") "); }
+        - Body
+
+Body =  (
+        OPEN_BRACK    { printf(" %s\n", _OBRACK) }
+        (WS Stmt WS)*
+        WS CLOS_BRACK   { printf("\n%s", _CBRACK) }
+        ) | Stmt
           
 Return  = RETURN_KW { printf("return ") } - e:Expr
 
@@ -201,6 +246,7 @@ Assignment = l: LogicalOr
                 | ASS_B_XOR     { printf(" ^= ");  }    r: LogicalOr
                 | ASS_B_OR      { printf(" |= ");  }    r: LogicalOr
                 | ASS_B_AND     { printf(" &= ");  }    r: LogicalOr
+                | ASS_DECL      { printf(" := ");  }    r: LogicalOr
                 )*
 
 LogicalOr = l:LogicalAnd
@@ -228,11 +274,15 @@ Equality = l:Inequality
                 | NOT_EQUALS    { printf(" != "); }     r:Inequality
                 )*
 
-Inequality = l:Shift
-                ( LESSTHAN      { printf(" < ");  }     r:Shift
-                | MORETHAN      { printf(" > ");  }     r:Shift
-                | LESSTHAN_EQ   { printf(" <= "); }     r:Shift
-                | MORETHAN_EQ   { printf(" >= "); }     r:Shift
+Inequality = l:Range
+                ( LESSTHAN      { printf(" < ");  }     r:Range
+                | MORETHAN      { printf(" > ");  }     r:Range
+                | LESSTHAN_EQ   { printf(" <= "); }     r:Range
+                | MORETHAN_EQ   { printf(" >= "); }     r:Range
+                )*
+                
+Range   = l:Shift
+                ( DOUBLE_DOT    { printf("..");   }     r:Shift
                 )*
 
 Shift   = l:Sum
@@ -245,9 +295,13 @@ Sum     = l:Product
                 | MINUS         { printf(" - "); }      r:Product
                 )*
 
-Product = l:Access
-                ( STAR         { printf(" * "); }       r:Value
-                | SLASH        { printf(" / "); }       r:Value
+Product = l:Cast
+                ( STAR         { printf(" * "); }       r:Cast
+                | SLASH        { printf(" / "); }       r:Cast
+                )*
+                
+Cast = l: Access
+                ( AS_KW -      { printf(" as "); }      r:Type
                 )*
                 
 Access = Value
@@ -262,8 +316,10 @@ FunctionCall = IDENT OPEN_PAREN { printf("%s(", yytext); } -
 
 VariableAccess = i:IDENT          { printf("%s", yytext)   }
 
-Value   = i:NUMBER                                        { printf("%s", yytext); }
+Value   = f:FLOAT_LIT                                     { printf("%s", yytext); }
+        | i:INT_LIT                                       { printf("%s", yytext); }
         | s:STRING_LIT                                    { printf("\"%s\"", yytext); }
+        | c:CHAR_LIT                                      { printf("'%s'", yytext); }
         | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
         | VariableDecl
         | FunctionCall
@@ -285,24 +341,25 @@ IMPORT_KW    = "import"
 INCLUDE_KW   = "include"
 IF_KW        = "if"
 ELSE_KW      = "else"
+FOR_KW       = "for"
+WHILE_KW     = "while"
+IN_KW        = "in"
+AS_KW        = "as"
 
 KW           = RETURN_KW | FUNC_KW | CLASS_KW | COVER_KW | FROM_KW
              | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
              | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
-             | IF_KW | ELSE_KW
-
-NUMBER       = < "-"? [0-9]+ >                   -
-IDENT        = !KW < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
-
-STRING_LIT   = '"' < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))* > '"'       -
+             | IF_KW | ELSE_KW | FOR_KW | WHILE_KW | IN_KW | AS_KW
 
 COMMA        = ','
-COLON        = ':'
+DOT          = '.'
+COLON        = !ASS_DECL ':'
 
 R_ARROW      = '->'
 
 # Operators
 
+ASS_DECL     = ':='  -
 ASS          = '='   -
 ASS_ADD      = '+='  -
 ASS_SUB      = '-='  -
@@ -335,6 +392,8 @@ MORETHAN_EQ  = '>='  -
 B_LSHIFT     = '<<'  -
 B_RSHIFT     = '>>'  -
 
+DOUBLE_DOT   = '..'  -
+
 PLUS         = '+'   -
 MINUS        = '-'   -
 
@@ -358,6 +417,14 @@ WS      = ([ \t] | Comment | EOL)*
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" (!EOL .)* EOL
 CommentMultiLine = "/*" (!"*/" .)* "*/"
+
+FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >                   -
+INT_LIT      = < "-"? [0-9]+ >                   -
+IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not a name ;)
+               < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
+
+STRING_LIT   = ["] < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))* > ["]       -
+CHAR_LIT     = ['] < (!'"' ('\\\"' | '\\\n' | '\\\r' | '\\\t' | .))  > [']       -
 
 %%
 
