@@ -1,9 +1,6 @@
 
 a = 0..10
-
-if true {
-    doThing()
-}
+a = b in c
 
 if (true) {
     doThang()

@@ -7,6 +7,8 @@
 
 #define YYSTYPE char*
 #define YY_STACK_SIZE 1024
+
+//#define YY_DEBUG 1
 %}
 
 Module  = WS Include WS                       { printf("\n") }
@@ -355,7 +357,7 @@ Cast = l: Access
 Access = Value
                 ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR - { printf("]"); }
                 | { printf(" "); } FunctionCall -
-                | { printf(" "); } VariableAccess -
+                | { printf(" "); } !IN_KW VariableAccess -
                 )*
                 
 FunctionCall = IDENT OPEN_PAREN { printf("%s(", yytext); } -

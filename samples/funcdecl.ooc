@@ -1,4 +1,36 @@
 
+blah: func {
+    
+    
+}
+
+//equals: func(other: String) -> Bool {
+    
+    /*
+    if ((this == null) || (other == null)) {
+        return false
+    }
+    
+    if (this length() != other length()) {
+        return false
+    }
+    */
+    
+    /*
+    for (i : SizeT in 0..other length()) {
+        if (this[i] != other[i]) {
+            return false
+        }
+    }
+    */
+    
+    //for(i: Int in 0..3) {}
+    
+    //return true
+    
+//}
+
+/*
 wazaa: func (.x, .y, =z) {
     
 }
@@ -42,4 +74,4 @@ add: func (a, b: Int) -> Int {
 main: func ~badjuju {
     
 }
-
+*/
