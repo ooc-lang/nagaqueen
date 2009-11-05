@@ -295,7 +295,10 @@ Sum     = l:Product
                 | MINUS         { printf(" - "); }      r:Product
                 )*
 
-Product = l:Cast
+Product = ( L_NOT               { printf("!"); }
+          | B_NOT               { printf("~"); }
+          )*
+          l:Cast
                 ( STAR         { printf(" * "); }       r:Cast
                 | SLASH        { printf(" / "); }       r:Cast
                 )*
@@ -394,6 +397,8 @@ B_RSHIFT     = '>>'  -
 
 DOUBLE_DOT   = '..'  -
 
+L_NOT        = '!'   -
+B_NOT        = '~'   -
 PLUS         = '+'   -
 MINUS        = '-'   -
 
