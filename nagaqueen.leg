@@ -364,7 +364,10 @@ FunctionCall = IDENT OPEN_PAREN { printf("%s(", yytext); } -
 
 VariableAccess = i:IDENT          { printf("%s", yytext)   }
 
-Value   = f:FLOAT_LIT                                     { printf("%s", yytext); }
+Value   = ( PLUS    { printf("+"); }
+          | MINUS   { printf("-"); }
+          )?
+        ( f:FLOAT_LIT                                     { printf("%s", yytext); }
         | i:INT_LIT                                       { printf("%s", yytext); }
         | s:STRING_LIT                                    { printf("\"%s\"", yytext); }
         | c:CHAR_LIT                                      { printf("'%s'", yytext); }
@@ -372,6 +375,7 @@ Value   = f:FLOAT_LIT                                     { printf("%s", yytext)
         | VariableDecl
         | FunctionCall
         | VariableAccess
+        )
 
 RETURN_KW    = "return"
 FUNC_KW      = "func"
