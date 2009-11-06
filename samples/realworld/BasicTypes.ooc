@@ -1,3 +1,3 @@
-abs: func -> This {
-    return this < 0 ? -this : this
+instanceof: final func (T: Class) -> Bool {
+    return (super ? (super as This instanceof(T)) : false)
 }

@@ -346,19 +346,16 @@ Sum     = l:Product
 Product = ( L_NOT               { printf("!"); }
           | B_NOT               { printf("~"); }
           )*
-          l:Cast
-                ( STAR         { printf(" * "); }       r:Cast
-                | SLASH        { printf(" / "); }       r:Cast
-                )*
-                
-Cast = l: Access
-                ( AS_KW -      { printf(" as "); }      r:Type
+          l:Access
+                ( STAR         { printf(" * "); }       r:Access
+                | SLASH        { printf(" / "); }       r:Access
                 )*
                 
 Access = Value
                 ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR - { printf("]"); }
                 | { printf(" "); } FunctionCall -
                 | { printf(" "); } !IN_KW VariableAccess -
+                | { printf(" as "); } AS_KW - r:Type
                 )*
                 
 FunctionCall = IDENT OPEN_PAREN { printf("%s(", yytext); } -
