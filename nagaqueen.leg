@@ -15,7 +15,7 @@ Module  = WS Include WS                       { printf("\n") }
         | WS Import WS                        { printf("\n") }
         | WS Stmt WS
         | WS Decl WS                          { printf("\n") }
-        | WS ( !EOL . )* EOL                  { printf("error\n"); }
+        | WS ( !EOL . )* EOL                  { printf("\nerror"); }
         
 Include = INCLUDE_KW { printf("include ") }
           - IDENT  { printf("%s", yytext) }
@@ -62,7 +62,7 @@ OperatorDecl =
             
             # body
             - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
-            ({ printf("    "); } WS (Stmt) WS)*
+            (WS (Stmt) WS)*
             WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
 
 FunctionDecl =
@@ -103,7 +103,7 @@ FunctionDecl =
             # body is optional (for abstract/extern-named functions)
             (
                 - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
-                ({ printf("    "); } WS (Stmt) WS)*
+                (WS (Stmt) WS)*
                 WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
             )?
             
@@ -205,7 +205,7 @@ VariableDecl =
             - COLON { printf(": "); }
             - Type
             
-Type    = < (CONST_KW -)?
+Type    = < (CONST_KW { printf("const "); } -)?
             (
                 ( "unsigned"             - { printf("unsigned ") }
                 | "signed"               - { printf("signed ") }
@@ -218,17 +218,18 @@ Type    = < (CONST_KW -)?
             )*
           > -       { $$=strdup(yytext); }
 
-Stmt    = ( # some statements need an EOL after them...
+Stmt    = { printf("\n"); } (
+          ( # some statements need an EOL after them...
               ( WS r:Return
               | WS v:VariableDecl
               | WS e:Expr
               )
-              (EOL | (&CLOS_BRACK) | (&CommentLine))         { printf("\n"); }
+              (EOL | (&CLOS_BRACK) | (&CommentLine))
           )
           | # ...but block don't
           ( WS c:Conditional
           | WS f:FlowControl
-          )
+          ) )
           
 Conditional = (If | Else)
 
@@ -285,15 +286,15 @@ Assignment = l: Ternary
                 | ASS_B_XOR           { printf(" ^= ");  }    r: Ternary
                 | ASS_B_OR            { printf(" |= ");  }    r: Ternary
                 | ASS_B_AND           { printf(" &= ");  }    r: Ternary
-                | ASS_DECL (CONST_KW)?{ printf(" := ");  }    r: Ternary
+                | ASS_DECL            { printf(" := ");  } (- CONST_KW { printf(" const") })?  r: Ternary
                 )*
                 
 Ternary =   LogicalOr
             (
           - QUEST  { printf(" ? "); }
-          - Value
+          - LogicalOr
           - COLON  { printf(" : "); }
-          - Value
+          - LogicalOr
             )*
 
 LogicalOr = l:LogicalAnd
@@ -494,5 +495,6 @@ int main()
   GREG g;
   while (yyparse(&g));
 
+  printf("\n");
   return 0;
 }
