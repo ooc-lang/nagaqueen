@@ -9,6 +9,40 @@
 #define YY_STACK_SIZE 1024
 
 //#define YY_DEBUG 1
+
+/* Current line number */
+static int yylineno;
+
+/* Path of the file we're parsing. */
+static char* path;
+ 
+/* The stream we're reading from. */
+static FILE *stream;
+
+/* Send input to yyparse from codebuf instead of stdin */
+#define YY_INPUT(buf, result, max_size) {        \
+    result = fread(buf, 1, max_size, stream);    \
+    static int doneNewlineHack = 0;              \
+    if(result == 0 && doneNewlineHack == 0) {    \
+        doneNewlineHack = 1;                     \
+        char last = buf[strlen(buf) - 1];        \
+        if(last != '\n') {                       \
+            (*buf) = '\n';                       \
+            result = 1;                          \
+        }                                        \
+    }                                            \
+}
+
+///////////////////// callbacks def start, you may want to skip this ////////////////////////
+
+/*
+#ifndef nq_onInclude
+#define nq_onInclude(name) printf("CALLBACK include %s\n", name)
+#endif
+*/
+
+/////////////////////                callbacks def end               ////////////////////////
+
 %}
 
 Module  = WS Include WS                       { printf("\n") }
@@ -17,11 +51,11 @@ Module  = WS Include WS                       { printf("\n") }
         | WS Decl WS                          { printf("\n") }
         | WS ( !EOL . )* EOL                  { printf("\nerror"); }
         
-Include = INCLUDE_KW { printf("include ") }
-          - IDENT  { printf("%s", yytext) }
+Include = INCLUDE_KW
+          - IDENT  { nq_onInclude(yytext) }
           (
           - COMMA
-          - IDENT { printf(", %s", yytext) }
+          - IDENT { nq_onInclude(yytext) }
           )*
           
 Import  = IMPORT_KW { printf("import ") }
@@ -492,7 +526,7 @@ CommentMultiLine = "/*" (!"*/" .)* "*/"
 
 FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >                   -
 INT_LIT      = < "-"? [0-9]+ >                   -
-IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not a name ;)
+IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
 
 STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -
@@ -500,11 +534,19 @@ CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > ['] 
 
 %%
 
-int main()
-{
-  GREG g;
-  while (yyparse(&g));
-
-  printf("\n");
-  return 0;
+int nagaqueen_parse(char *pathArg) {
+    
+    GREG g;
+    
+    /* Parse code */
+    path = pathArg;
+    stream = fopen(path, "r");
+    yylineno = 0;
+    
+    while (yyparse(&g)) {}
+    
+    fclose(stream);
+    
+    return 0;
+    
 }
