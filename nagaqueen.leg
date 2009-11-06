@@ -203,9 +203,10 @@ VariableDecl =
             )*
             
             - COLON { printf(": "); }
+            (- STATIC_KW { printf("static "); })?
             - Type
             
-Type    = < (CONST_KW { printf("const "); } -)?
+Type    = FuncType | (< (CONST_KW { printf("const "); } -)?
             (
                 ( "unsigned"             - { printf("unsigned ") }
                 | "signed"               - { printf("signed ") }
@@ -217,6 +218,15 @@ Type    = < (CONST_KW { printf("const "); } -)?
             | "[" { printf("["); } - Expr? "]" { printf("]"); }
             )*
           > -       { $$=strdup(yytext); }
+          )
+          
+FuncType  = "Func"         { printf("Func") }
+            (
+            - OPEN_PAREN   { printf(" (") }
+            (- Argument)?
+            (COMMA { printf(", ") } - Argument)*
+            - CLOS_PAREN   { printf(")") }
+            )?
 
 Stmt    = { printf("\n"); } (
           ( # some statements need an EOL after them...
