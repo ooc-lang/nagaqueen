@@ -247,7 +247,7 @@ FlowControl = (Foreach | While)
           
 Foreach = FOR_KW        { printf("for ("); }
           - OPEN_PAREN
-          - Expr
+          - (VariableDecl | Expr)
           - IN_KW       { printf(" in "); }
           - Expr
           - CLOS_PAREN  { printf(") "); }
@@ -290,9 +290,9 @@ Assignment = l: Ternary
 Ternary =   LogicalOr
             (
           - QUEST  { printf(" ? "); }
-          - Expr
+          - Value
           - COLON  { printf(" : "); }
-          - Expr
+          - Value
             )*
 
 LogicalOr = l:LogicalAnd
@@ -374,7 +374,6 @@ Value   = ( PLUS    { printf("+"); }
         | s:STRING_LIT                                    { printf("\"%s\"", yytext); }
         | c:CHAR_LIT                                      { printf("'%s'", yytext); }
         | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
-        | VariableDecl
         | FunctionCall
         | VariableAccess
         )
