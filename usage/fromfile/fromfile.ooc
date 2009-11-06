@@ -2,7 +2,8 @@ nagaqueen_parse: extern proto func (String) -> Int
 
 main: func {
 
-    nagaqueen_parse("example.ooc")
+    fileName := "example.ooc"
+    nagaqueen_parse(fileName)
     
 }
 
