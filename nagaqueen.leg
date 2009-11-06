@@ -220,6 +220,7 @@ Type    = < (CONST_KW -)?
 
 Stmt    = ( # some statements need an EOL after them...
               ( WS r:Return
+              | WS v:VariableDecl
               | WS e:Expr
               )
               (EOL | (&CLOS_BRACK) | (&CommentLine))         { printf("\n"); }
