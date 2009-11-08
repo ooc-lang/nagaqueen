@@ -536,14 +536,15 @@ CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > ['] 
 
 int nagaqueen_parse(char *pathArg) {
     
-    GREG g;
+    //GREG g;
     
     /* Parse code */
     path = pathArg;
     stream = fopen(path, "r");
     yylineno = 0;
     
-    while (yyparse(&g)) {}
+    //while (yyparse(&g)) {}
+    while (yyparse()) {}
     
     fclose(stream);
     
