@@ -1,11 +1,11 @@
 import structs/Array
 
-nagaqueen_parse: extern proto func (String) -> Int
+nq_parse: extern proto func (String) -> Int
 
 main: func (args: Array<String>) {
 
     fileName := "example.ooc"
-    nagaqueen_parse(fileName)
+    nq_parse(fileName)
     
 }
 

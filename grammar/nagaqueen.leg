@@ -1,11 +1,16 @@
 %{
+#ifndef strclone
+#define strclone strdup
+#define _BSD_SOURCE 1
+#endif
+    
 #include <stdio.h>
 #include <string.h>
 
 #define _OBRACK "{"
 #define _CBRACK "}"
 
-#define YYSTYPE char*
+#define YYSTYPE void*
 #define YY_STACK_SIZE 1024
 
 //#define YY_DEBUG 1
@@ -35,11 +40,14 @@ static FILE *stream;
 
 ///////////////////// callbacks def start, you may want to skip this ////////////////////////
 
-/*
-#ifndef nq_onInclude
-#define nq_onInclude(name) printf("CALLBACK include %s\n", name)
-#endif
-*/
+void nq_onInclude(char *name);
+
+void nq_onCoverStart(char *name);
+void nq_onCoverFromType(void *type);
+void nq_onCoverEnd();
+
+void *nq_onTypeStart(char *name);   // $$=nq_onTypeStart(yytext)
+void *nq_onTypePointer(void *type); // $$=nq_onTypePointer($$)
 
 /////////////////////                callbacks def end               ////////////////////////
 
@@ -181,8 +189,8 @@ ClassDecl   =
                 WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
             )?
             
-CoverDecl   =
-            IDENT { printf("%s:", yytext); }
+CoverDecl   = (
+            IDENT { nq_onCoverStart(yytext) }
             - COLON
             
             # modifiers
@@ -193,7 +201,7 @@ CoverDecl   =
             # covering another type
             (
             - FROM_KW { printf(" from ") }
-            - Type
+            - Type { nq_onCoverFromType($$) }
             )?
             
             # extending another type
@@ -216,6 +224,8 @@ CoverDecl   =
                 
                 WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
             )?
+            )
+            { nq_onCoverEnd(); }
             
 ExternName = EXTERN_KW { printf(" extern") }
               (
@@ -240,18 +250,20 @@ VariableDecl =
             (- STATIC_KW { printf("static "); })?
             - Type
             
-Type    = FuncType | (< (CONST_KW { printf("const "); } -)?
+Type    = FuncType |
+          (< (CONST_KW { printf("const "); } -)?
             (
                 ( "unsigned"             - { printf("unsigned ") }
                 | "signed"               - { printf("signed ") }
                 | "long" &(- "long")     - { printf("long ") }
                 )
             - )*
-            IDENT { printf("%s", yytext); } 
-            (STAR { printf("*"); } 
-            | "[" { printf("["); } - Expr? "]" { printf("]"); }
-            )*
-          > -       { $$=strdup(yytext); }
+            IDENT 
+          > { $$=nq_onTypeStart(yytext); }
+          (STAR { $$=nq_onTypePointer($$); }
+          | "[" { printf("["); } - Expr? "]" { printf("]"); }
+          )*
+          -
           )
           
 FuncType  = "Func"         { printf("Func") }
@@ -527,14 +539,14 @@ CommentMultiLine = "/*" (!"*/" .)* "*/"
 FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >                   -
 INT_LIT      = < "-"? [0-9]+ >                   -
 IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
-               < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strdup(yytext); }
+               < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=strclone(yytext); }
 
 STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -
 CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > [']       -
 
 %%
 
-int nagaqueen_parse(char *pathArg) {
+int nq_parse(char *pathArg) {
     
     //GREG g;
     
