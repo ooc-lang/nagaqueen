@@ -39,7 +39,14 @@ void nq_onInclude(char *name);
 
 void nq_onCoverStart(char *name);
 void nq_onCoverFromType(void *type);
+void nq_onCoverExtends(void *type);
 void nq_onCoverEnd();
+
+void nq_onClassStart(char *name);
+void nq_onClassAbstract();
+void nq_onClassFinal();
+void nq_onClassExtends(void *type);
+void nq_onClassEnd();
 
 void *nq_onTypeStart(char *name);   // $$=nq_onTypeStart(yytext)
 void *nq_onTypePointer(void *type); // $$=nq_onTypePointer($$)
@@ -151,14 +158,14 @@ Argument    = ( (DOT IDENT -)  { printf(".%s", yytext) }
               )
             
             
-ClassDecl   =
-            IDENT { printf("%s:", yytext); }
+ClassDecl   = (
+            IDENT { nq_onClassStart(yytext); }
             - COLON
             
             # modifiers
             (-  ( ExternName
-                | ABSTRACT_KW { printf(" abstract") }
-                | FINAL_KW    { printf(" final") }
+                | ABSTRACT_KW { nq_onClassAbstract() }
+                | FINAL_KW    { nq_onClassFinal() }
                 )
             )*
             
@@ -166,7 +173,7 @@ ClassDecl   =
             
             # subclassing
             (
-            - EXTENDS_KW - IDENT { printf(" extends %s", yytext) }
+            - EXTENDS_KW - IDENT { nq_onClassExtends(yytext) }
             )?
             
             # body is optional (for abstract classes)
@@ -183,6 +190,7 @@ ClassDecl   =
                 
                 WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
             )?
+            ) { nq_onClassEnd() }
             
 CoverDecl   = (
             IDENT { nq_onCoverStart(yytext) }
