@@ -48,7 +48,14 @@ void nq_onClassFinal();
 void nq_onClassExtends(void *type);
 void nq_onClassEnd();
 
-void *nq_onTypeStart(char *name);   // $$=nq_onTypeStart(yytext)
+void nq_onVarDeclStart();
+void nq_onVarDeclName(char *name);
+void nq_onVarDeclExpr(void *expr);
+void nq_onVarDeclType(void *type);
+void nq_onVarDeclStatic();
+void nq_onVarDeclEnd();
+
+void *nq_onTypeNew(char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *type); // $$=nq_onTypePointer($$)
 
 /////////////////////                callbacks def end               ////////////////////////
@@ -237,21 +244,23 @@ ExternName = EXTERN_KW { printf(" extern") }
               - CLOS_PAREN
               )?
 
-VariableDecl = 
-            IDENT { printf("%s", yytext); }
-            (ASS { printf(" = "); } Expr)?
+VariableDecl = { nq_onVarDeclStart(); }
+            (
+            IDENT { nq_onVarDeclName(yytext); }
+            (ASS Expr { nq_onVarDeclExpr($$); })?
             
             # multi-decls
             (
             - COMMA
-            - IDENT { printf(", %s", yytext) }
-            (- ASS { printf(" = "); } Expr)?
+            - IDENT { nq_onVarDeclName(yytext); }
+            (- ASS Expr { nq_onVarDeclExpr($$); })?
             -
             )*
             
-            - COLON { printf(": "); }
-            (- STATIC_KW { printf("static "); })?
-            - Type
+            - COLON
+            (- STATIC_KW { nq_onVarDeclStatic(); })?
+            - Type { nq_onVarDeclType($$); }
+            )  { nq_onVarDeclEnd(); }
             
 Type    = FuncType |
           (< (CONST_KW { printf("const "); } -)?
@@ -262,20 +271,21 @@ Type    = FuncType |
                 )
             - )*
             IDENT 
-          > { $$=nq_onTypeStart(yytext); }
+          > { $$=nq_onTypeNew(yytext); }
           (STAR { $$=nq_onTypePointer($$); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
           )*
           -
           )
           
-FuncType  = "Func"         { printf("Func") }
+FuncType  = ("Func"
             (
-            - OPEN_PAREN   { printf(" (") }
+            - OPEN_PAREN
             (- Argument)?
-            (COMMA { printf(", ") } - Argument)*
-            - CLOS_PAREN   { printf(")") }
+            (COMMA - Argument)*
+            - CLOS_PAREN
             )?
+            ) { $$=nq_onTypeNew("Func"); }
 
 Stmt    = { printf("\n"); } (
           ( # some statements need an EOL after them...
