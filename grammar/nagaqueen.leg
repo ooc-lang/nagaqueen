@@ -57,6 +57,7 @@ void nq_onVarDeclEnd();
 
 void *nq_onTypeNew(char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *type); // $$=nq_onTypePointer($$)
+void *nq_onTypeFuncStart();
 
 /////////////////////                callbacks def end               ////////////////////////
 
@@ -285,7 +286,7 @@ FuncType  = ("Func"
             (COMMA - Argument)*
             - CLOS_PAREN
             )?
-            ) { $$=nq_onTypeNew("Func"); }
+            ) { $$=nq_onFuncTypeNew(); }
 
 Stmt    = { printf("\n"); } (
           ( # some statements need an EOL after them...
