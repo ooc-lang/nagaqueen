@@ -35,7 +35,10 @@ static FILE *stream;
 
 ///////////////////// callbacks def start, you may want to skip this ////////////////////////
 
-void nq_onInclude(char *name);
+char *nq_StringClone(char *string);
+
+void nq_onInclude(char *path, char *name);
+void nq_onImport (char *path, char *name);
 
 void nq_onCoverStart(char *name);
 void nq_onCoverFromType(void *type);
@@ -57,7 +60,7 @@ void nq_onVarDeclEnd();
 
 void *nq_onTypeNew(char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *type); // $$=nq_onTypePointer($$)
-void *nq_onTypeFuncStart();
+void *nq_onFuncTypeNew();
 
 /////////////////////                callbacks def end               ////////////////////////
 
@@ -70,34 +73,30 @@ Module  = WS Include WS                       { printf("\n") }
         | WS ( !EOL . )* EOL                  { printf("\nerror\n"); }
         
 Include = INCLUDE_KW
-          - IDENT  { nq_onInclude(yytext) }
+          - IDENT  { nq_onInclude("", yytext) }
           (
           - COMMA
-          - IDENT { nq_onInclude(yytext) }
+          - IDENT { nq_onInclude("", yytext) }
           )*
           
-Import  = IMPORT_KW { printf("import ") }
+Import  = IMPORT_KW
           - ImportAtom
           (
-          COMMA
-          - { printf(", ") } ImportAtom
+          COMMA WS
+          - ImportAtom
           )*
           
-ImportAtom = (
-             IDENT        { printf("%s", yytext) }
-             (SLASH { printf("/") } (
-                "[" { printf("[") }
-                    ImportAtomLeaf
-                    (- COMMA { printf(", ") } - ImportAtomLeaf)*
-                "]" { printf("]") }
-                | IDENT  { printf("%s", yytext) }
-             ))*
-             )
-             
-ImportAtomLeaf = (
-             IDENT        { printf("%s", yytext) }
-             (SLASH IDENT  { printf("/%s", yytext) })*
-             )
+ImportAtom = path:ImportPath
+            ((name:ImportName           { nq_onImport((char*) path, (char*) name); })
+            | (
+            OPEN_SQUAR
+            (name:ImportName - COMMA WS { nq_onImport((char*) path, (char*) name); })*
+            (name:ImportName            { nq_onImport((char*) path, (char*) name); })
+            CLOS_SQUAR
+            ))
+
+ImportPath = < (([A-Za-z_0-9] | ".")+ "/")* > { $$=nq_StringClone(yytext); }
+ImportName = < [A-Za-z_0-9]+ >                { $$=nq_StringClone(yytext); }
             
 
 Decl    = { printf("\n"); }
