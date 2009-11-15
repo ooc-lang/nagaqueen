@@ -67,7 +67,7 @@ Module  = WS Include WS                       { printf("\n") }
         | WS Import WS                        { printf("\n") }
         | WS Stmt WS
         | WS Decl WS                          { printf("\n") }
-        | WS ( !EOL . )* EOL                  { printf("\nerror"); }
+        | WS ( !EOL . )* EOL                  { printf("\nerror\n"); }
         
 Include = INCLUDE_KW
           - IDENT  { nq_onInclude(yytext) }
@@ -77,11 +77,28 @@ Include = INCLUDE_KW
           )*
           
 Import  = IMPORT_KW { printf("import ") }
-          - IDENT  { printf("%s", yytext) }
+          - ImportAtom
           (
-          - COMMA
-          - IDENT { printf(", %s", yytext) }
+          COMMA
+          - { printf(", ") } ImportAtom
           )*
+          
+ImportAtom = (
+             IDENT        { printf("%s", yytext) }
+             (SLASH { printf("/") } (
+                "[" { printf("[") }
+                    ImportAtomLeaf
+                    (- COMMA { printf(", ") } - ImportAtomLeaf)*
+                "]" { printf("]") }
+                | IDENT  { printf("%s", yytext) }
+             ))*
+             )
+             
+ImportAtomLeaf = (
+             IDENT        { printf("%s", yytext) }
+             (SLASH IDENT  { printf("/%s", yytext) })*
+             )
+            
 
 Decl    = { printf("\n"); }
           ( ClassDecl
