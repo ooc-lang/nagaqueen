@@ -2,9 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 
+// workaround for peg/leg/greg's shady parsing of "{}" even in 
+// character class literals
 #define _OBRACK "{"
 #define _CBRACK "}"
 
+// TODO: not everyone wants to use nagaqueen with the gc, make that
+// more modular
 void *GC_malloc(size_t);
 void *GC_calloc(size_t, size_t);
 void *GC_realloc(void *, size_t);
@@ -16,22 +20,16 @@ void GC_free(void *);
 #define YY_FREE             GC_free
 
 #define YYSTYPE void*
+
+// in old peg/leg versions, this was set to 32, but it's wayyy too small
+// for a non-trivial grammar like ooc's
 #define YY_STACK_SIZE 1024
 
 //#define YY_DEBUG 1
 
-/* Current line number */
-static int yylineno;
-
-/* Path of the file we're parsing. */
-static char* path;
- 
-/* The stream we're reading from. */
-static FILE *stream;
-
 /* Send input to yyparse from codebuf instead of stdin */
 #define YY_INPUT(buf, result, max_size) {        \
-    result = fread(buf, 1, max_size, stream);    \
+    result = fread(buf, 1, max_size, core->stream);    \
     static int doneNewlineHack = 0;              \
     if(result == 0 && doneNewlineHack == 0) {    \
         doneNewlineHack = 1;                     \
@@ -43,34 +41,52 @@ static FILE *stream;
     }                                            \
 }
 
+///////////////////// main struct, for the sake of being re-entrant ////////////////////////
+
+struct _NagaQueenCore {
+    /* The user's data */
+    void *this;
+    /* Current line number */
+    int yylineno;
+    /* Path of the file we're parsing. */
+    char* path; 
+    /* The stream we're reading from. */
+    FILE *stream;
+};
+
+typedef struct _NagaQueenCore NagaQueenCore;
+
+#define YY_XTYPE NagaQueenCore *
+#define YY_XVAR core
+
 ///////////////////// callbacks def start, you may want to skip this ////////////////////////
 
 char *nq_StringClone(char *string);
 
-void nq_onInclude(char *path, char *name);
-void nq_onImport (char *path, char *name);
+void nq_onInclude(void *this, char *path, char *name);
+void nq_onImport (void *this, char *path, char *name);
 
-void nq_onCoverStart(char *name);
-void nq_onCoverFromType(void *type);
-void nq_onCoverExtends(void *type);
-void nq_onCoverEnd();
+void nq_onCoverStart(void *this, char *name);
+void nq_onCoverFromType(void *this, void *type);
+void nq_onCoverExtends(void *this, void *type);
+void nq_onCoverEnd(void *this);
 
-void nq_onClassStart(char *name);
-void nq_onClassAbstract();
-void nq_onClassFinal();
-void nq_onClassExtends(void *type);
-void nq_onClassEnd();
+void nq_onClassStart(void *this, char *name);
+void nq_onClassAbstract(void *this);
+void nq_onClassFinal(void *this);
+void nq_onClassExtends(void *this, void *type);
+void nq_onClassEnd(void *this);
 
-void nq_onVarDeclStart();
-void nq_onVarDeclName(char *name);
-void nq_onVarDeclExpr(void *expr);
-void nq_onVarDeclType(void *type);
-void nq_onVarDeclStatic();
-void nq_onVarDeclEnd();
+void nq_onVarDeclStart(void *this);
+void nq_onVarDeclName(void *this, char *name);
+void nq_onVarDeclExpr(void *this, void *expr);
+void nq_onVarDeclType(void *this, void *type);
+void nq_onVarDeclStatic(void *this);
+void nq_onVarDeclEnd(void *this);
 
-void *nq_onTypeNew(char *name);     // $$=nq_onTypeNew(yytext)
-void *nq_onTypePointer(void *type); // $$=nq_onTypePointer($$)
-void *nq_onFuncTypeNew();
+void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
+void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
+void *nq_onFuncTypeNew(void *this);
 
 /////////////////////                callbacks def end               ////////////////////////
 
@@ -83,10 +99,10 @@ Module  = WS Include WS                       { printf("\n") }
         | WS ( !EOL . )* EOL                  { printf("\nerror\n"); }
         
 Include = INCLUDE_KW
-          - IDENT  { nq_onInclude("", yytext) }
+          - IDENT  { nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           (
           - COMMA
-          - IDENT { nq_onInclude("", yytext) }
+          - IDENT { nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           )*
           
 Import  = IMPORT_KW
@@ -97,11 +113,11 @@ Import  = IMPORT_KW
           )*
           
 ImportAtom = path:ImportPath
-            ((name:ImportName           { nq_onImport((char*) path, (char*) name); })
+            ((name:ImportName           { nq_onImport(core->this, (char*) path, (char*) name); })
             | (
             OPEN_SQUAR
-            (name:ImportName - COMMA WS { nq_onImport((char*) path, (char*) name); })*
-            (name:ImportName            { nq_onImport((char*) path, (char*) name); })
+            (name:ImportName - COMMA WS { nq_onImport(core->this, (char*) path, (char*) name); })*
+            (name:ImportName            { nq_onImport(core->this, (char*) path, (char*) name); })
             CLOS_SQUAR
             ))
 
@@ -193,13 +209,13 @@ Argument    = ( (DOT IDENT -)  { printf(".%s", yytext) }
             
             
 ClassDecl   = (
-            IDENT { nq_onClassStart(yytext); }
+            IDENT { nq_onClassStart(core->this, yytext); }
             - COLON
             
             # modifiers
             (-  ( ExternName
-                | ABSTRACT_KW { nq_onClassAbstract() }
-                | FINAL_KW    { nq_onClassFinal() }
+                | ABSTRACT_KW { nq_onClassAbstract(core->this) }
+                | FINAL_KW    { nq_onClassFinal(core->this) }
                 )
             )*
             
@@ -207,7 +223,7 @@ ClassDecl   = (
             
             # subclassing
             (
-            - EXTENDS_KW - IDENT { nq_onClassExtends(yytext) }
+            - EXTENDS_KW - IDENT { nq_onClassExtends(core->this, yytext) }
             )?
             
             # body is optional (for abstract classes)
@@ -224,10 +240,10 @@ ClassDecl   = (
                 
                 WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
             )?
-            ) { nq_onClassEnd() }
+            ) { nq_onClassEnd(core->this) }
             
 CoverDecl   = (
-            IDENT { nq_onCoverStart(yytext) }
+            IDENT { nq_onCoverStart(core->this, yytext) }
             - COLON
             
             # modifiers
@@ -238,7 +254,7 @@ CoverDecl   = (
             # covering another type
             (
             - FROM_KW { printf(" from ") }
-            - Type { nq_onCoverFromType($$) }
+            - Type { nq_onCoverFromType(core->this, $$) }
             )?
             
             # extending another type
@@ -262,7 +278,7 @@ CoverDecl   = (
                 WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
             )?
             )
-            { nq_onCoverEnd(); }
+            { nq_onCoverEnd(core->this); }
             
 ExternName = EXTERN_KW { printf(" extern") }
               (
@@ -271,23 +287,23 @@ ExternName = EXTERN_KW { printf(" extern") }
               - CLOS_PAREN
               )?
 
-VariableDecl = { nq_onVarDeclStart(); }
+VariableDecl = { nq_onVarDeclStart(core->this); }
             (
-            IDENT { nq_onVarDeclName(yytext); }
-            (ASS Expr { nq_onVarDeclExpr($$); })?
+            IDENT { nq_onVarDeclName(core->this, yytext); }
+            (ASS Expr { nq_onVarDeclExpr(core->this, $$); })?
             
             # multi-decls
             (
             - COMMA
-            - IDENT { nq_onVarDeclName(yytext); }
-            (- ASS Expr { nq_onVarDeclExpr($$); })?
+            - IDENT { nq_onVarDeclName(core->this, yytext); }
+            (- ASS Expr { nq_onVarDeclExpr(core->this, $$); })?
             -
             )*
             
             - COLON
-            (- STATIC_KW { nq_onVarDeclStatic(); })?
-            - Type { nq_onVarDeclType($$); }
-            )  { nq_onVarDeclEnd(); }
+            (- STATIC_KW { nq_onVarDeclStatic(core->this); })?
+            - Type { nq_onVarDeclType(core->this, $$); }
+            )  { nq_onVarDeclEnd(core->this); }
             
 Type    = FuncType |
           (< (CONST_KW { printf("const "); } -)?
@@ -298,8 +314,8 @@ Type    = FuncType |
                 )
             - )*
             IDENT 
-          > { $$=nq_onTypeNew(yytext); }
-          (STAR { $$=nq_onTypePointer($$); }
+          > { $$=nq_onTypeNew(core->this, yytext); }
+          (STAR { $$=nq_onTypePointer(core->this, $$); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
           )*
           -
@@ -312,7 +328,7 @@ FuncType  = ("Func"
             (COMMA - Argument)*
             - CLOS_PAREN
             )?
-            ) { $$=nq_onFuncTypeNew(); }
+            ) { $$=nq_onFuncTypeNew(core->this); }
 
 Stmt    = { printf("\n"); } (
           ( # some statements need an EOL after them...
@@ -569,14 +585,14 @@ CLOS_BRACK   = '}'   -
 
 TILDE   = '~'   -
 -       = [ \t]*
-EOL     = '\n' | '\r\n' | '\r' | ';'  { yylineno++; }
+EOL     = '\n' | '\r\n' | '\r' | ';'  { core->yylineno++; }
 WS      = ([ \t] | Comment | EOL)*
 
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" (!EOL .)* EOL
 CommentMultiLine = "/*" (!"*/" .)* "*/"
 
-FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >                   -
+FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >        -
 INT_LIT      = < "-"? [0-9]+ >                   -
 IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=yytext; }
@@ -586,18 +602,20 @@ CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > ['] 
 
 %%
 
-int nq_parse(char *pathArg) {
+int nq_parse(void *this, char *path) {
     
     GREG *g = YY_ALLOC(sizeof(GREG), 0);
     
-    /* Parse code */
-    yylineno = 0;
-    path = pathArg;
-    stream = fopen(path, "r");
-    yylineno = 0;
+    NagaQueenCore *core = YY_ALLOC(sizeof(NagaQueenCore), 0);
+    core->yylineno = 0;
+    core->this = this;
+    core->path = path;
+    core->stream = fopen(path, "r");
+    
+    g->data = core;
     
     while (yyparse(g)) {}
-    fclose(stream);
+    fclose(core->stream);
     
     return 0;
     
