@@ -5,6 +5,16 @@
 #define _OBRACK "{"
 #define _CBRACK "}"
 
+void *GC_malloc(size_t);
+void *GC_calloc(size_t, size_t);
+void *GC_realloc(void *, size_t);
+void GC_free(void *);
+
+#define YY_ALLOC(N, D)      GC_malloc(N)
+#define YY_CALLOC(N, S, D)  GC_malloc((N) * (S))
+#define YY_REALLOC(B, N, D) GC_realloc(B, N)
+#define YY_FREE             GC_free
+
 #define YYSTYPE void*
 #define YY_STACK_SIZE 1024
 
@@ -559,7 +569,7 @@ CLOS_BRACK   = '}'   -
 
 TILDE   = '~'   -
 -       = [ \t]*
-EOL     = '\n' | '\r\n' | '\r' | ';'
+EOL     = '\n' | '\r\n' | '\r' | ';'  { yylineno++; }
 WS      = ([ \t] | Comment | EOL)*
 
 Comment = (CommentLine | CommentMultiLine)
@@ -578,16 +588,15 @@ CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > ['] 
 
 int nq_parse(char *pathArg) {
     
-    //GREG g;
+    GREG *g = YY_ALLOC(sizeof(GREG), 0);
     
     /* Parse code */
+    yylineno = 0;
     path = pathArg;
     stream = fopen(path, "r");
     yylineno = 0;
     
-    //while (yyparse(&g)) {}
-    while (yyparse()) {}
-    
+    while (yyparse(g)) {}
     fclose(stream);
     
     return 0;
