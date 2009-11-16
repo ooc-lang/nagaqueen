@@ -88,6 +88,14 @@ void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
 void *nq_onFuncTypeNew(void *this);
 
+void *nq_onFunctionStart(void *this, char *name);
+void nq_onFunctionAbstract(void *this);
+void nq_onFunctionStatic(void *this);
+void nq_onFunctionInline(void *this);
+void nq_onFunctionFinal(void *this);
+void nq_onFunctionSuffix(void *this, char *name);
+void nq_onFunctionEnd(void *this);
+
 /////////////////////                callbacks def end               ////////////////////////
 
 %}
@@ -125,11 +133,10 @@ ImportPath = < (([A-Za-z_0-9] | ".")+ "/")* > { $$=nq_StringClone(yytext); }
 ImportName = < [A-Za-z_0-9]+ >                { $$=nq_StringClone(yytext); }
             
 
-Decl    = { printf("\n"); }
-          ( ClassDecl
+Decl    = ( ClassDecl
           | CoverDecl
           | OperatorDecl
-          | FunctionDecl
+          | fDecl:FunctionDecl
           | VariableDecl
           )
 
@@ -159,25 +166,25 @@ OperatorDecl =
             (WS (Stmt) WS)*
             WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
 
-FunctionDecl =
-            IDENT { printf("%s:", yytext); }
+FunctionDecl =(
+            IDENT { nq_onFunctionStart(core->this, yytext); }
             - COLON
             
             # modifiers
             (-  ( ExternName
-                | ABSTRACT_KW { printf(" abstract") }
-                | STATIC_KW   { printf(" static") }
-                | INLINE_KW   { printf(" inline") }
-                | FINAL_KW    { printf(" final") }
+                | ABSTRACT_KW { nq_onFunctionAbstract(core->this); }
+                | STATIC_KW   { nq_onFunctionStatic(core->this); }
+                | INLINE_KW   { nq_onFunctionInline(core->this); }
+                | FINAL_KW    { nq_onFunctionFinal(core->this); }
                 )
             )*
             
-            - FUNC_KW { printf(" func") }
+            - FUNC_KW
             
             # optional suffix
             (
             - TILDE
-            - IDENT { printf(" ~%s", yytext) }
+            - IDENT { nq_onFunctionSuffix(core->this, yytext); }
             )?
             
             # arguments are optional
@@ -200,6 +207,7 @@ FunctionDecl =
                 (WS (Stmt) WS)*
                 WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
             )?
+            ) { nq_onFunctionEnd(core->this); }
             
 Argument    = ( (DOT IDENT -)  { printf(".%s", yytext) }
               | (ASS IDENT -)  { printf("=%s", yytext) }
@@ -249,11 +257,11 @@ CoverDecl   = (
             # modifiers
             (- ExternName)?
             
-            - COVER_KW { printf(" cover") }
+            - COVER_KW
             
             # covering another type
             (
-            - FROM_KW { printf(" from ") }
+            - FROM_KW
             - Type { nq_onCoverFromType(core->this, $$) }
             )?
             
@@ -611,6 +619,10 @@ int nq_parse(void *this, char *path) {
     core->this = this;
     core->path = path;
     core->stream = fopen(path, "r");
+    if(!core->stream) {
+        printf("Not found: %s\n", path);
+        return -1;
+    }
     
     g->data = core;
     
