@@ -88,23 +88,26 @@ void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
 void *nq_onFuncTypeNew(void *this);
 
-void *nq_onFunctionStart(void *this, char *name);
+void nq_onFunctionStart(void *this, char *name);
 void nq_onFunctionAbstract(void *this);
+void nq_onFunctionArgsStart(void *this);
+void nq_onFunctionArgsEnd(void *this);
+void nq_onFunctionReturnType(void *this, void *type);
 void nq_onFunctionStatic(void *this);
 void nq_onFunctionInline(void *this);
 void nq_onFunctionFinal(void *this);
 void nq_onFunctionSuffix(void *this, char *name);
-void nq_onFunctionEnd(void *this);
+void *nq_onFunctionEnd(void *this);
 
 /////////////////////                callbacks def end               ////////////////////////
 
 %}
 
-Module  = WS Include WS                       { printf("\n") }
-        | WS Import WS                        { printf("\n") }
+Module  = WS Include WS
+        | WS Import WS
         | WS Stmt WS
-        | WS Decl WS                          { printf("\n") }
-        | WS ( !EOL . )* EOL                  { printf("\nerror\n"); }
+        | WS Decl WS
+        | WS ( !EOL . )* EOL                  { printf("\nerror at line %d\n", core->yylineno); }
         
 Include = INCLUDE_KW
           - IDENT  { nq_onInclude(core->this, "", nq_StringClone(yytext)) }
@@ -136,7 +139,7 @@ ImportName = < [A-Za-z_0-9]+ >                { $$=nq_StringClone(yytext); }
 Decl    = ( ClassDecl
           | CoverDecl
           | OperatorDecl
-          | fDecl:FunctionDecl
+          | FunctionDecl
           | VariableDecl
           )
 
@@ -189,16 +192,16 @@ FunctionDecl =(
             
             # arguments are optional
             (
-                - OPEN_PAREN { printf("(") }
+                - OPEN_PAREN { nq_onFunctionArgsStart(core->this); }
                 (WS Argument WS
                     (COMMA { printf(", ") } WS Argument )*
                 )?
-                - CLOS_PAREN { printf(")") }
+                - CLOS_PAREN { nq_onFunctionArgsEnd(core->this); }
             )?
             
             # return type is optional     
             (
-                - R_ARROW - { printf(" -> "); } Type
+                - R_ARROW - t:Type { nq_onFunctionReturnType(core->this, t); }
             )?
             
             # body is optional (for abstract/extern-named functions)
@@ -207,7 +210,7 @@ FunctionDecl =(
                 (WS (Stmt) WS)*
                 WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
             )?
-            ) { nq_onFunctionEnd(core->this); }
+            ) { $$=nq_onFunctionEnd(core->this); }
             
 Argument    = ( (DOT IDENT -)  { printf(".%s", yytext) }
               | (ASS IDENT -)  { printf("=%s", yytext) }
