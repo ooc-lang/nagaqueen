@@ -1,6 +1,7 @@
 %{
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
 // workaround for peg/leg/greg's shady parsing of "{}" even in 
 // character class literals
@@ -14,10 +15,21 @@ void *GC_calloc(size_t, size_t);
 void *GC_realloc(void *, size_t);
 void GC_free(void *);
 
+#ifdef __OOC_USE_GC__
+
 #define YY_ALLOC(N, D)      GC_malloc(N)
 #define YY_CALLOC(N, S, D)  GC_malloc((N) * (S))
 #define YY_REALLOC(B, N, D) GC_realloc(B, N)
 #define YY_FREE             GC_free
+
+#else
+
+#define YY_ALLOC(N, D)      malloc(N)
+#define YY_CALLOC(N, S, D)  calloc(N, S)
+#define YY_REALLOC(B, N, D) realloc(B, N)
+#define YY_FREE             free
+
+#endif
 
 #define YYSTYPE void*
 
@@ -82,7 +94,8 @@ void nq_onVarDeclName(void *this, char *name);
 void nq_onVarDeclExpr(void *this, void *expr);
 void nq_onVarDeclType(void *this, void *type);
 void nq_onVarDeclStatic(void *this);
-void nq_onVarDeclEnd(void *this);
+void *nq_onVarDeclEnd(void *this);
+void *nq_onVarDeclAssign(void *this, void *access, bool isConst, void *expr);
 
 void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
@@ -98,6 +111,32 @@ void nq_onFunctionInline(void *this);
 void nq_onFunctionFinal(void *this);
 void nq_onFunctionSuffix(void *this, char *name);
 void *nq_onFunctionEnd(void *this);
+
+void nq_onFunctionCallStart(void *this, char *yytext);
+void nq_onFunctionCallArg(void *this, void *expr);
+void *nq_onFunctionCallEnd(void *this);
+
+void *nq_onStringLiteral(void *this, char *text);
+
+void nq_onStatement(void *this, void *statement);
+void *nq_onReturn(void *this, void *expr);
+
+void *nq_onVarAccess(void *this, char *name);
+void *nq_onCast(void *this, void *expr, void *type);
+
+void nq_onIfStart(void *this, void *condition);
+void *nq_onIfEnd(void *this);
+void nq_onElseStart(void *this, void *condition);
+void *nq_onElseEnd(void *this);
+
+void *nq_onEquals(void *this, void *left, void *right);
+void *nq_onNotEquals(void *this, void *left, void *right);
+void *nq_onLessThan(void *this, void *left, void *right);
+void *nq_onMoreThan(void *this, void *left, void *right);
+void *nq_onLessThanOrEqual(void *this, void *left, void *right);
+void *nq_onMoreThanOrEqual(void *this, void *left, void *right);
+
+void *nq_onIntLiteral(void *this, char *value);
 
 /////////////////////                callbacks def end               ////////////////////////
 
@@ -194,7 +233,7 @@ FunctionDecl =(
             (
                 - OPEN_PAREN { nq_onFunctionArgsStart(core->this); }
                 (WS Argument WS
-                    (COMMA { printf(", ") } WS Argument )*
+                    (COMMA WS Argument)*
                 )?
                 - CLOS_PAREN { nq_onFunctionArgsEnd(core->this); }
             )?
@@ -206,9 +245,11 @@ FunctionDecl =(
             
             # body is optional (for abstract/extern-named functions)
             (
-                - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
-                (WS (Stmt) WS)*
-                WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
+                - OPEN_BRACK WS
+                (WS
+                (s:Stmt { nq_onStatement(core->this, s) })
+                WS)*
+                WS CLOS_BRACK
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
@@ -230,7 +271,7 @@ ClassDecl   = (
                 )
             )*
             
-            - CLASS_KW { printf(" class") }
+            - CLASS_KW
             
             # subclassing
             (
@@ -239,17 +280,16 @@ ClassDecl   = (
             
             # body is optional (for abstract classes)
             (
-                - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+                - OPEN_BRACK WS
                 
                 # classdecl contents
                 (WS
-                    { printf("\n") }
                     ( VariableDecl
                     | FunctionDecl
                     )
                 WS)*
                 
-                WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
+                WS CLOS_BRACK
             )?
             ) { nq_onClassEnd(core->this) }
             
@@ -270,8 +310,8 @@ CoverDecl   = (
             
             # extending another type
             (
-            - EXTENDS_KW { printf(" extends ") }
-            - IDENT      { printf("%s", yytext) }
+            - EXTENDS_KW #{ printf(" extends ") }
+            - IDENT      #{ printf("%s", yytext) }
             )?
 
             # body is optional for covers
@@ -314,14 +354,14 @@ VariableDecl = { nq_onVarDeclStart(core->this); }
             - COLON
             (- STATIC_KW { nq_onVarDeclStatic(core->this); })?
             - Type { nq_onVarDeclType(core->this, $$); }
-            )  { nq_onVarDeclEnd(core->this); }
+            )  { $$=nq_onVarDeclEnd(core->this); }
             
 Type    = FuncType |
-          (< (CONST_KW { printf("const "); } -)?
+          (< (CONST_KW -)?
             (
-                ( "unsigned"             - { printf("unsigned ") }
-                | "signed"               - { printf("signed ") }
-                | "long" &(- "long")     - { printf("long ") }
+                ( "unsigned"             - 
+                | "signed"               - 
+                | "long" &(- "long")     - 
                 )
             - )*
             IDENT 
@@ -356,17 +396,21 @@ Stmt    = { printf("\n"); } (
           
 Conditional = (If | Else)
 
-If      = IF_KW     { printf("if ("); }
+If      = (
+          IF_KW
           - OPEN_PAREN
-          - Expr
-          - CLOS_PAREN  { printf(") "); }
+          - e:Expr       { nq_onIfStart(core->this, e); }
+          - CLOS_PAREN
           - Body
+          )              { $$=nq_onIfEnd(core->this); }
           
-Else    = ELSE_KW   { printf("else ("); }
+Else    = (
+          ELSE_KW
           - OPEN_PAREN
-          - Expr
-          - CLOS_PAREN  { printf(") "); }
+          - e:Expr       { nq_onElseStart(core->this, e); }
+          - CLOS_PAREN
           - Body
+          )              { $$=nq_onElseEnd(core->this); }
           
 FlowControl = (Foreach | While)
           
@@ -385,18 +429,20 @@ While = WHILE_KW    { printf("while ("); }
         - Body
 
 Body =  (
-        OPEN_BRACK    { printf(" %s\n", _OBRACK) }
-        (WS Stmt WS)*
-        WS CLOS_BRACK   { printf("\n%s", _CBRACK) }
-        ) | Stmt
+        OPEN_BRACK
+        (WS s:Stmt { nq_onStatement(core->this, s) } WS)*
+        WS CLOS_BRACK
+        ) | s:Stmt { nq_onStatement(core->this, s) }
           
-Return  = RETURN_KW { printf("return ") } - e:Expr
+Return  = (RETURN_KW - e:Expr { $$=nq_onReturn(core->this, e); })
 
 Expr    = b:BinaryOperation -
 
 #operators
 
 BinaryOperation = Assignment
+
+ConstKeyword = - (!CONST_KW { $$=(void*) false } | CONST_KW { $$=(void*) true })
 
 Assignment = l: Ternary
                 ( ASS                 { printf(" = ");   }    r: Ternary
@@ -409,7 +455,11 @@ Assignment = l: Ternary
                 | ASS_B_XOR           { printf(" ^= ");  }    r: Ternary
                 | ASS_B_OR            { printf(" |= ");  }    r: Ternary
                 | ASS_B_AND           { printf(" &= ");  }    r: Ternary
-                | ASS_DECL            { printf(" := ");  } (- CONST_KW { printf(" const") })?  r: Ternary
+                | (
+                  ASS_DECL         
+                  c:ConstKeyword
+                  r:Ternary
+                  )                   { $$=nq_onVarDeclAssign(core->this, l, c, r); }
                 )*
                 
 Ternary =   LogicalOr
@@ -441,15 +491,15 @@ BinaryAnd = l:Equality
                 )*
 
 Equality = l:Inequality
-                ( EQUALS        { printf(" == "); }     r:Inequality
-                | NOT_EQUALS    { printf(" != "); }     r:Inequality
+                ( EQUALS        r:Inequality           # { $$=nq_onEquals(core->this, l, r); }
+                | NOT_EQUALS    r:Inequality           # { $$=nq_onNotEquals(core->this, l, r); }
                 )*
 
 Inequality = l:Range
-                ( LESSTHAN      { printf(" < ");  }     r:Range
-                | MORETHAN      { printf(" > ");  }     r:Range
-                | LESSTHAN_EQ   { printf(" <= "); }     r:Range
-                | MORETHAN_EQ   { printf(" >= "); }     r:Range
+                ( LESSTHAN      r:Range                # { $$=nq_onLessThan(core->this, l, r); }
+                | MORETHAN      r:Range                # { $$=nq_onMoreThan(core->this, l, r); }
+                | LESSTHAN_EQ   r:Range                # { $$=nq_onLessThanOrEqual(core->this, l, r); }
+                | MORETHAN_EQ   r:Range                # { $$=nq_onMoreThanOrEqual(core->this, l, r); }
                 )*
                 
 Range   = l:Shift
@@ -475,29 +525,39 @@ Product = ( L_NOT               { printf("!"); }
                 | SLASH        { printf(" / "); }       r:Access
                 )*
                 
-Access = Value
+Access = l:Value
                 ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR - { printf("]"); }
                 | { printf(" "); } FunctionCall -
-                | { printf(" "); } !IN_KW VariableAccess -
-                | { printf(" as "); } AS_KW - r:Type
+                | { printf(" "); } !IN_KW  VariableAccess -
+                | AS_KW - r:Type  { $$=nq_onCast(core->this, l, r); }
                 )*
                 
-FunctionCall = IDENT OPEN_PAREN { printf("%s(", yytext); } -
-               (Expr (- COMMA { printf(", "); } WS Expr)*)?
-               - CLOS_PAREN { printf(")"); }
+FunctionCall = (
+               IDENT { nq_onFunctionCallStart(core->this, yytext); }
+               OPEN_PAREN -
+               (
+               e:Expr    { nq_onFunctionCallArg(core->this, e); }
+               (-
+               COMMA
+               WS
+               e:Expr    { nq_onFunctionCallArg(core->this, e); }
+               )*
+               )?
+               - CLOS_PAREN
+               ) { $$=nq_onFunctionCallEnd(core->this); }
 
-VariableAccess = i:IDENT          { printf("%s", yytext)   }
+VariableAccess = i:IDENT
 
 Value   = ( PLUS    { printf("+"); }
           | MINUS   { printf("-"); }
           )?
         ( f:FLOAT_LIT                                     { printf("%s", yytext); }
-        | i:INT_LIT                                       { printf("%s", yytext); }
-        | s:STRING_LIT                                    { printf("\"%s\"", yytext); }
+        | i:INT_LIT                                       { $$=nq_onIntLiteral(core->this, yytext); }
+        | s:STRING_LIT
         | c:CHAR_LIT                                      { printf("'%s'", yytext); }
         | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
         | FunctionCall
-        | VariableAccess
+        | VariableAccess                                  { $$=nq_onVarAccess(core->this, yytext); }
         )
 
 RETURN_KW    = "return"
@@ -596,19 +656,19 @@ CLOS_BRACK   = '}'   -
 
 TILDE   = '~'   -
 -       = [ \t]*
-EOL     = '\n' | '\r\n' | '\r' | ';'  { core->yylineno++; }
+EOL     = ('\n' | '\r\n' | '\r' | ';')  { core->yylineno++; }
 WS      = ([ \t] | Comment | EOL)*
 
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" (!EOL .)* EOL
-CommentMultiLine = "/*" (!"*/" .)* "*/"
+CommentMultiLine = "/*" (!"*/" (EOL | .))* "*/"
 
-FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >        -
 INT_LIT      = < "-"? [0-9]+ >                   -
+FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >        -
 IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=yytext; }
 
-STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -
+STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -  { $$=nq_onStringLiteral(core->this, yytext); }
 CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > [']       -
 
 %%
