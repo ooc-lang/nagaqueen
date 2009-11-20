@@ -491,15 +491,15 @@ BinaryAnd = l:Equality
                 )*
 
 Equality = l:Inequality
-                ( EQUALS        r:Inequality           # { $$=nq_onEquals(core->this, l, r); }
-                | NOT_EQUALS    r:Inequality           # { $$=nq_onNotEquals(core->this, l, r); }
+                ( EQUALS        r:Inequality           { $$=nq_onEquals(core->this, l, r); }
+                | NOT_EQUALS    r:Inequality           { $$=nq_onNotEquals(core->this, l, r); }
                 )*
 
 Inequality = l:Range
-                ( LESSTHAN      r:Range                # { $$=nq_onLessThan(core->this, l, r); }
-                | MORETHAN      r:Range                # { $$=nq_onMoreThan(core->this, l, r); }
-                | LESSTHAN_EQ   r:Range                # { $$=nq_onLessThanOrEqual(core->this, l, r); }
-                | MORETHAN_EQ   r:Range                # { $$=nq_onMoreThanOrEqual(core->this, l, r); }
+                ( LESSTHAN      r:Range                { $$=nq_onLessThan(core->this, l, r); }
+                | MORETHAN      r:Range                { $$=nq_onMoreThan(core->this, l, r); }
+                | LESSTHAN_EQ   r:Range                { $$=nq_onLessThanOrEqual(core->this, l, r); }
+                | MORETHAN_EQ   r:Range                { $$=nq_onMoreThanOrEqual(core->this, l, r); }
                 )*
                 
 Range   = l:Shift
