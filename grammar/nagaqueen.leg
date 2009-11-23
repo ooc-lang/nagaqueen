@@ -64,6 +64,8 @@ struct _NagaQueenCore {
     char* path; 
     /* The stream we're reading from. */
     FILE *stream;
+    /* A pointer to the position in the stream */
+    int* posPointer;
 };
 
 typedef struct _NagaQueenCore NagaQueenCore;
@@ -72,6 +74,8 @@ typedef struct _NagaQueenCore NagaQueenCore;
 #define YY_XVAR core
 
 ///////////////////// callbacks def start, you may want to skip this ////////////////////////
+
+void nq_setPosPointer(void *this, int *posPointer);
 
 char *nq_StringClone(char *string);
 
@@ -115,13 +119,14 @@ void *nq_onFunctionEnd(void *this);
 void nq_onFunctionCallStart(void *this, char *yytext);
 void nq_onFunctionCallArg(void *this, void *expr);
 void *nq_onFunctionCallEnd(void *this);
+void nq_onFunctionCallExpr(void *this, void *call, void *expr);
 
 void *nq_onStringLiteral(void *this, char *text);
 
 void nq_onStatement(void *this, void *statement);
 void *nq_onReturn(void *this, void *expr);
 
-void *nq_onVarAccess(void *this, char *name);
+void *nq_onVarAccess(void *this, void *expr, char *name);
 void *nq_onCast(void *this, void *expr, void *type);
 
 void nq_onIfStart(void *this, void *condition);
@@ -137,6 +142,18 @@ void *nq_onLessThanOrEqual(void *this, void *left, void *right);
 void *nq_onMoreThanOrEqual(void *this, void *left, void *right);
 
 void *nq_onIntLiteral(void *this, char *value);
+
+void *nq_onTernary(void *this, void *condition, void *ifTrue, void *ifFalse);
+void *nq_onAssignAnd(void *this, void *left, void *right);
+void *nq_onAssignOr(void *this, void *left, void *right);
+void *nq_onAssignXor(void *this, void *left, void *right);
+void *nq_onAssignRightShift(void *this, void *left, void *right);
+void *nq_onAssignLeftShift(void *this, void *left, void *right);
+void *nq_onAssignDiv(void *this, void *left, void *right);
+void *nq_onAssignMul(void *this, void *left, void *right);
+void *nq_onAssignSub(void *this, void *left, void *right);
+void *nq_onAssignAdd(void *this, void *left, void *right);
+void *nq_onAssign(void *this, void *left, void *right);
 
 /////////////////////                callbacks def end               ////////////////////////
 
@@ -255,7 +272,7 @@ FunctionDecl =(
             
 Argument    = ( (DOT IDENT -)  { printf(".%s", yytext) }
               | (ASS IDENT -)  { printf("=%s", yytext) }
-              | VariableDecl
+              | vd:VariableDecl  { nq_onStatement(core->this, vd); }
               | Type
               )
             
@@ -284,8 +301,8 @@ ClassDecl   = (
                 
                 # classdecl contents
                 (WS
-                    ( VariableDecl
-                    | FunctionDecl
+                    ( vd:VariableDecl { nq_onStatement(core->this, vd); }
+                    | fd:FunctionDecl
                     )
                 WS)*
                 
@@ -316,17 +333,17 @@ CoverDecl   = (
 
             # body is optional for covers
             (
-                - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+                - OPEN_BRACK WS
                 
                 # coverdecl contents
                 (WS
                     { printf("\n") }
-                    ( VariableDecl
-                    | FunctionDecl
+                    ( vd:VariableDecl { nq_onStatement(core->this, vd); }
+                    | fd:FunctionDecl
                     )
                 WS)*
                 
-                WS CLOS_BRACK  { printf("\n%s", _CBRACK); }
+                WS CLOS_BRACK
             )?
             )
             { nq_onCoverEnd(core->this); }
@@ -381,7 +398,7 @@ FuncType  = ("Func"
             )?
             ) { $$=nq_onFuncTypeNew(core->this); }
 
-Stmt    = { printf("\n"); } (
+Stmt    = (
           ( # some statements need an EOL after them...
               ( WS r:Return
               | WS v:VariableDecl
@@ -445,16 +462,16 @@ BinaryOperation = Assignment
 ConstKeyword = - (!CONST_KW { $$=(void*) false } | CONST_KW { $$=(void*) true })
 
 Assignment = l: Ternary
-                ( ASS                 { printf(" = ");   }    r: Ternary
-                | ASS_ADD             { printf(" += ");  }    r: Ternary
-                | ASS_SUB             { printf(" -= ");  }    r: Ternary
-                | ASS_MUL             { printf(" *= ");  }    r: Ternary
-                | ASS_DIV             { printf(" /= ");  }    r: Ternary
-                | ASS_B_LSHIFT        { printf(" >>= "); }    r: Ternary
-                | ASS_B_RSHIFT        { printf(" <<= "); }    r: Ternary
-                | ASS_B_XOR           { printf(" ^= ");  }    r: Ternary
-                | ASS_B_OR            { printf(" |= ");  }    r: Ternary
-                | ASS_B_AND           { printf(" &= ");  }    r: Ternary
+                ( ASS                 r: Ternary              { $$=nq_onAssign(core->this, l, r); }
+                | ASS_ADD             r: Ternary              { $$=nq_onAssignAdd(core->this, l, r); }
+                | ASS_SUB             r: Ternary              { $$=nq_onAssignSub(core->this, l, r); }
+                | ASS_MUL             r: Ternary              { $$=nq_onAssignMul(core->this, l, r); }
+                | ASS_DIV             r: Ternary              { $$=nq_onAssignDiv(core->this, l, r); }
+                | ASS_B_LSHIFT        r: Ternary              { $$=nq_onAssignLeftShift(core->this, l, r); }
+                | ASS_B_RSHIFT        r: Ternary              { $$=nq_onAssignRightShift(core->this, l, r); }
+                | ASS_B_XOR           r: Ternary              { $$=nq_onAssignXor(core->this, l, r); }
+                | ASS_B_OR            r: Ternary              { $$=nq_onAssignOr(core->this, l, r); }
+                | ASS_B_AND           r: Ternary              { $$=nq_onAssignAnd(core->this, l, r); }
                 | (
                   ASS_DECL         
                   c:ConstKeyword
@@ -462,13 +479,14 @@ Assignment = l: Ternary
                   )                   { $$=nq_onVarDeclAssign(core->this, l, c, r); }
                 )*
                 
-Ternary =   LogicalOr
+Ternary =   cond:LogicalOr
             (
-          - QUEST  { printf(" ? "); }
-          - LogicalOr
-          - COLON  { printf(" : "); }
-          - LogicalOr
-            )*
+          - QUEST
+          - ifTrue:LogicalOr
+          - COLON
+          - ifFalse:LogicalOr
+            { $$=nq_onTernary(core->this, cond, ifTrue, ifFalse); }
+            )?
 
 LogicalOr = l:LogicalAnd
                 ( L_OR          { printf(" || "); }     r: LogicalAnd
@@ -527,8 +545,8 @@ Product = ( L_NOT               { printf("!"); }
                 
 Access = l:Value
                 ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR - { printf("]"); }
-                | { printf(" "); } FunctionCall -
-                | { printf(" "); } !IN_KW  VariableAccess -
+                | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
+                | !IN_KW r:IDENT { $$=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW - r:Type  { $$=nq_onCast(core->this, l, r); }
                 )*
                 
@@ -557,7 +575,7 @@ Value   = ( PLUS    { printf("+"); }
         | c:CHAR_LIT                                      { printf("'%s'", yytext); }
         | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
         | FunctionCall
-        | VariableAccess                                  { $$=nq_onVarAccess(core->this, yytext); }
+        | VariableAccess                                  { $$=nq_onVarAccess(core->this, NULL, yytext); }
         )
 
 RETURN_KW    = "return"
@@ -682,6 +700,7 @@ int nq_parse(void *this, char *path) {
     core->this = this;
     core->path = path;
     core->stream = fopen(path, "r");
+    nq_setPosPointer(this, &(g->pos));
     if(!core->stream) {
         printf("Not found: %s\n", path);
         return -1;
