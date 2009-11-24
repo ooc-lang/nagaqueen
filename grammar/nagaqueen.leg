@@ -106,6 +106,7 @@ void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
 void *nq_onFuncTypeNew(void *this);
 
 void nq_onFunctionStart(void *this, char *name);
+void nq_onFunctionExtern(void *this, char *externName);
 void nq_onFunctionAbstract(void *this);
 void nq_onFunctionArgsStart(void *this);
 void nq_onFunctionArgsEnd(void *this);
@@ -230,7 +231,7 @@ FunctionDecl =(
             - COLON
             
             # modifiers
-            (-  ( ExternName
+            (-  ( externName:ExternName  { nq_onFunctionExtern(core->this, externName); }
                 | ABSTRACT_KW { nq_onFunctionAbstract(core->this); }
                 | STATIC_KW   { nq_onFunctionStatic(core->this); }
                 | INLINE_KW   { nq_onFunctionInline(core->this); }
@@ -348,10 +349,10 @@ CoverDecl   = (
             )
             { nq_onCoverEnd(core->this); }
             
-ExternName = EXTERN_KW { printf(" extern") }
+ExternName = EXTERN_KW { $$="" }
               (
               - OPEN_PAREN
-              - IDENT { printf("(%s)", yytext); }
+              - IDENT { $$=yytext } # is that correct? should it be $$=$$? what's happening?
               - CLOS_PAREN
               )?
 
