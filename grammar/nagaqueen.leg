@@ -66,6 +66,8 @@ struct _NagaQueenCore {
     FILE *stream;
     /* A pointer to the position in the stream */
     int* posPointer;
+    /* The beginning of the current token */
+    int begin;
 };
 
 typedef struct _NagaQueenCore NagaQueenCore;
@@ -694,22 +696,23 @@ CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > ['] 
 
 int nq_parse(void *this, char *path) {
     
-    GREG *g = YY_ALLOC(sizeof(GREG), 0);
+    GREG *G = YY_ALLOC(sizeof(GREG), 0);
     
     NagaQueenCore *core = YY_ALLOC(sizeof(NagaQueenCore), 0);
     core->yylineno = 0;
     core->this = this;
     core->path = path;
     core->stream = fopen(path, "r");
-    nq_setPosPointer(this, &(g->pos));
+    core->begin = 0;
+    nq_setPosPointer(this, &(G->begin));
     if(!core->stream) {
         printf("Not found: %s\n", path);
         return -1;
     }
     
-    g->data = core;
+    G->data = core;
     
-    while (yyparse(g)) {}
+    while (yyparse(G)) {}
     fclose(core->stream);
     
     return 0;
