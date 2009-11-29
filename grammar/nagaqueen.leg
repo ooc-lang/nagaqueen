@@ -165,6 +165,8 @@ void *nq_onMod(void *this, void *left, void *right);
 void *nq_onMul(void *this, void *left, void *right);
 void *nq_onDiv(void *this, void *left, void *right);
 
+void *nq_onParenthesis(void *this, void *inner);
+
 void nq_onGenericArgument(void *this, char *name);
 
 /////////////////////                callbacks def end               ////////////////////////
@@ -594,7 +596,7 @@ Value   = ( PLUS    { printf("+"); }
         | s:STRING_LIT
         | c:CHAR_LIT                                      { printf("'%s'", yytext); }
         | b:BOOL_LIT                                      { $$=nq_onBoolLiteral(core->this, $$); }
-        | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
+        | OPEN_PAREN i:Expr CLOS_PAREN                    { $$=nq_onParenthesis(core->this, i); }
         | FunctionCall
         | VariableAccess                                  { $$=nq_onVarAccess(core->this, NULL, yytext); }
         )
