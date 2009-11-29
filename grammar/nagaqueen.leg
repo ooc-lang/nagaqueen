@@ -66,8 +66,6 @@ struct _NagaQueenCore {
     FILE *stream;
     /* A pointer to the position in the stream */
     int* posPointer;
-    /* The beginning of the current token */
-    int begin;
 };
 
 typedef struct _NagaQueenCore NagaQueenCore;
@@ -125,16 +123,18 @@ void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
 
 void *nq_onStringLiteral(void *this, char *text);
+void *nq_onCharLiteral(void *this, bool value);
 
 void nq_onStatement(void *this, void *statement);
 void *nq_onReturn(void *this, void *expr);
 
 void *nq_onVarAccess(void *this, void *expr, char *name);
+void nq_onVarArg(void *this);
 void *nq_onCast(void *this, void *expr, void *type);
 
 void nq_onIfStart(void *this, void *condition);
 void *nq_onIfEnd(void *this);
-void nq_onElseStart(void *this, void *condition);
+void nq_onElseStart(void *this);
 void *nq_onElseEnd(void *this);
 
 void *nq_onEquals(void *this, void *left, void *right);
@@ -145,6 +145,7 @@ void *nq_onLessThanOrEqual(void *this, void *left, void *right);
 void *nq_onMoreThanOrEqual(void *this, void *left, void *right);
 
 void *nq_onIntLiteral(void *this, char *value);
+void *nq_onBoolLiteral(void *this, bool value);
 
 void *nq_onTernary(void *this, void *condition, void *ifTrue, void *ifFalse);
 void *nq_onAssignAnd(void *this, void *left, void *right);
@@ -157,6 +158,8 @@ void *nq_onAssignMul(void *this, void *left, void *right);
 void *nq_onAssignSub(void *this, void *left, void *right);
 void *nq_onAssignAdd(void *this, void *left, void *right);
 void *nq_onAssign(void *this, void *left, void *right);
+
+void nq_onGenericArgument(void *this, char *name);
 
 /////////////////////                callbacks def end               ////////////////////////
 
@@ -249,6 +252,16 @@ FunctionDecl =(
             - IDENT { nq_onFunctionSuffix(core->this, yytext); }
             )?
             
+            # generic arguments
+            (
+            "<" -
+            IDENT -         { nq_onGenericArgument(core->this, yytext); }
+            (
+            COMMA - IDENT - { nq_onGenericArgument(core->this, yytext); }
+            )*
+            ">" -
+            )?
+            
             # arguments are optional
             (
                 - OPEN_PAREN { nq_onFunctionArgsStart(core->this); }
@@ -273,10 +286,11 @@ FunctionDecl =(
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
-Argument    = ( (DOT IDENT -)  { printf(".%s", yytext) }
-              | (ASS IDENT -)  { printf("=%s", yytext) }
+Argument    = ( (DOT IDENT -)    { printf(".%s", yytext) }
+              | (ASS IDENT -)    { printf("=%s", yytext) }
               | vd:VariableDecl  { nq_onStatement(core->this, vd); }
               | Type
+              | "..."            { nq_onVarArg(core->this); }
               )
             
             
@@ -425,10 +439,7 @@ If      = (
           )              { $$=nq_onIfEnd(core->this); }
           
 Else    = (
-          ELSE_KW
-          - OPEN_PAREN
-          - e:Expr       { nq_onElseStart(core->this, e); }
-          - CLOS_PAREN
+          ELSE_KW        { nq_onElseStart(core->this); }
           - Body
           )              { $$=nq_onElseEnd(core->this); }
           
@@ -576,6 +587,7 @@ Value   = ( PLUS    { printf("+"); }
         | i:INT_LIT                                       { $$=nq_onIntLiteral(core->this, yytext); }
         | s:STRING_LIT
         | c:CHAR_LIT                                      { printf("'%s'", yytext); }
+        | b:BOOL_LIT                                      { $$=nq_onBoolLiteral(core->this, $$); }
         | OPEN_PAREN { printf("(") }  i:Expr CLOS_PAREN   { printf(")"); }
         | FunctionCall
         | VariableAccess                                  { $$=nq_onVarAccess(core->this, NULL, yytext); }
@@ -605,12 +617,15 @@ IN_KW        = "in"
 OPERATOR_KW  = "operator"
 CONST_KW     = "const"
 
+TRUE_KW      = "true"
+FALSE_KW     = "false"
+
             # 'class', 'in' voluntarily left out
 KW           = RETURN_KW | FUNC_KW | COVER_KW | FROM_KW
              | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
              | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
              | IF_KW | ELSE_KW | FOR_KW | WHILE_KW | AS_KW
-             | OPERATOR_KW | CONST_KW
+             | OPERATOR_KW | CONST_KW | TRUE_KW | FALSE_KW
 
 COMMA        = ','
 DOT          = !DOUBLE_DOT '.'
@@ -691,6 +706,7 @@ IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
 
 STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -  { $$=nq_onStringLiteral(core->this, yytext); }
 CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > [']       -
+BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
 
 %%
 
@@ -703,7 +719,6 @@ int nq_parse(void *this, char *path) {
     core->this = this;
     core->path = path;
     core->stream = fopen(path, "r");
-    core->begin = 0;
     nq_setPosPointer(this, &(G->begin));
     if(!core->stream) {
         printf("Not found: %s\n", path);
