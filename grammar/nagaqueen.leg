@@ -161,7 +161,9 @@ void *nq_onAssign(void *this, void *left, void *right);
 
 void *nq_onAdd(void *this, void *left, void *right);
 void *nq_onSub(void *this, void *left, void *right);
+void *nq_onMod(void *this, void *left, void *right);
 void *nq_onMul(void *this, void *left, void *right);
+void *nq_onDiv(void *this, void *left, void *right);
 
 void nq_onGenericArgument(void *this, char *name);
 
@@ -548,17 +550,17 @@ Shift   = l:Sum
                 )*
 
 Sum     = l:Product
-                ( PLUS          { $$=nq_onAdd(core->this, l, r); }      r:Product
-                | MINUS         { $$=nq_onSub(core->this, l, r); }      r:Product
-                | PERCENT       { printf(" %% "); }      r:Product
+                ( PLUS          r:Product              { $$=nq_onAdd(core->this, l, r); }
+                | MINUS         r:Product              { $$=nq_onSub(core->this, l, r); }
+                | PERCENT       r:Product              { $$=nq_onMod(core->this, l, r); }
                 )*
 
 Product = ( L_NOT               { printf("!"); }
           | B_NOT               { printf("~"); }
           )*
           l:Access
-                ( STAR         { $$=nq_onMul(core->this, l, r); }       r:Access
-                | SLASH        { printf(" / "); }       r:Access
+                ( STAR         r:Access                { $$=nq_onMul(core->this, l, r); }
+                | SLASH        r:Access                { $$=nq_onDiv(core->this, l, r); }
                 )*
                 
 Access = l:Value
