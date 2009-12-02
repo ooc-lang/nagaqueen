@@ -262,12 +262,13 @@ FunctionDecl =(
             
             # generic arguments
             (
-            "<" -
-            IDENT -         { nq_onGenericArgument(core->this, yytext); }
+            - LESSTHAN
+            - IDENT         { nq_onGenericArgument(core->this, yytext); }
             (
-            COMMA - IDENT - { nq_onGenericArgument(core->this, yytext); }
+            - COMMA
+            - IDENT         { nq_onGenericArgument(core->this, yytext); }
             )*
-            ">" -
+            MORETHAN -
             )?
             
             # arguments are optional
