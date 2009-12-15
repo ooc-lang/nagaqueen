@@ -475,6 +475,7 @@ Body =  (
         ) | s:Stmt { nq_onStatement(core->this, s) }
           
 Return  = (RETURN_KW - e:Expr { $$=nq_onReturn(core->this, e); })
+        | (RETURN_KW          { $$=nq_onReturn(core->this, NULL); })
 
 Expr    = b:BinaryOperation -
 
