@@ -570,7 +570,7 @@ Product = ( L_NOT               { printf("!"); }
 Access = l:Value
                 ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR - { printf("]"); }
                 | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
-                | !IN_KW r:IDENT { $$=nq_onVarAccess(core->this, l, r); } -
+                | !(IN_KW ![A-Za-z0-9_]) r:IDENT { $$=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW - r:Type  { $$=nq_onCast(core->this, l, r); }
                 )*
                 
@@ -630,7 +630,7 @@ CONST_KW     = "const"
 TRUE_KW      = "true"
 FALSE_KW     = "false"
 
-            # 'class', 'in' voluntarily left out
+             # class in voluntarily left out
 KW           = RETURN_KW | FUNC_KW | COVER_KW | FROM_KW
              | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
              | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
