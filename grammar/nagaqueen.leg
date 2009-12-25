@@ -31,6 +31,8 @@ void GC_free(void *);
 
 #endif
 
+#define tokenPos { core->token[0] = thunk->begin + G->offset; core->token[1] = (thunk->end - thunk->begin); }
+
 #define YYSTYPE void*
 
 // in old peg/leg versions, this was set to 32, but it's wayyy too small
@@ -64,8 +66,8 @@ struct _NagaQueenCore {
     char* path; 
     /* The stream we're reading from. */
     FILE *stream;
-    /* A pointer to the position in the stream */
-    int* posPointer;
+    /* The begin position and length of the current token in the text */
+    int token[2];
 };
 
 typedef struct _NagaQueenCore NagaQueenCore;
@@ -75,7 +77,7 @@ typedef struct _NagaQueenCore NagaQueenCore;
 
 ///////////////////// callbacks def start, you may want to skip this ////////////////////////
 
-void nq_setPosPointer(void *this, int *posPointer);
+void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 
 char *nq_StringClone(char *string);
 
@@ -180,10 +182,10 @@ Module  = WS Include WS
         | WS ( !EOL . )* EOL                  { printf("\nerror at line %d\n", core->yylineno); }
         
 Include = INCLUDE_KW
-          - IDENT  { nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+          - IDENT  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           (
           - COMMA
-          - IDENT { nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+          - IDENT { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           )*
           
 Import  = IMPORT_KW
@@ -194,11 +196,11 @@ Import  = IMPORT_KW
           )*
           
 ImportAtom = path:ImportPath
-            ((name:ImportName           { nq_onImport(core->this, (char*) path, (char*) name); })
+            ((name:ImportName { tokenPos; }           { nq_onImport(core->this, (char*) path, (char*) name); })
             | (
             OPEN_SQUAR
-            (name:ImportName - COMMA WS { nq_onImport(core->this, (char*) path, (char*) name); })*
-            (name:ImportName            { nq_onImport(core->this, (char*) path, (char*) name); })
+            (name:ImportName { tokenPos; } - COMMA WS { nq_onImport(core->this, (char*) path, (char*) name); })*
+            (name:ImportName { tokenPos; }            { nq_onImport(core->this, (char*) path, (char*) name); })
             CLOS_SQUAR
             ))
 
@@ -214,7 +216,7 @@ Decl    = ( ClassDecl
           )
 
 OperatorDecl =
-            OPERATOR_KW { printf("operator "); }
+            OPERATOR_KW { tokenPos; }
             - < (PLUS | MINUS | STAR | SLASH | EQUALS | NOT_EQUALS
               | MORETHAN | MORETHAN_EQ | LESSTHAN | LESSTHAN_EQ
               | ASS_ADD | ASS_SUB | ASS_MUL | ASS_DIV | "[]=" | "[]") >
@@ -240,7 +242,7 @@ OperatorDecl =
             WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
 
 FunctionDecl =(
-            IDENT { nq_onFunctionStart(core->this, yytext); }
+            IDENT { tokenPos; nq_onFunctionStart(core->this, yytext); }
             - COLON
             
             # modifiers
@@ -297,14 +299,14 @@ FunctionDecl =(
             
 Argument    = ( (DOT IDENT -)    { printf(".%s", yytext) }
               | (ASS IDENT -)    { printf("=%s", yytext) }
-              | vd:VariableDecl  { nq_onStatement(core->this, vd); }
+              | vd:VariableDecl  { tokenPos; nq_onStatement(core->this, vd); }
               | Type
-              | "..."            { nq_onVarArg(core->this); }
+              | "..."            { tokenPos; nq_onVarArg(core->this); }
               )
             
             
 ClassDecl   = (
-            IDENT { nq_onClassStart(core->this, yytext); }
+            IDENT { tokenPos; nq_onClassStart(core->this, yytext); }
             - COLON
             
             # modifiers
@@ -327,7 +329,7 @@ ClassDecl   = (
                 
                 # classdecl contents
                 (WS
-                    ( vd:VariableDecl { nq_onStatement(core->this, vd); }
+                    ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
                     | fd:FunctionDecl
                     )
                 WS)*
@@ -337,7 +339,7 @@ ClassDecl   = (
             ) { nq_onClassEnd(core->this) }
             
 CoverDecl   = (
-            IDENT { nq_onCoverStart(core->this, yytext) }
+            IDENT { tokenPos; nq_onCoverStart(core->this, yytext) }
             - COLON
             
             # modifiers
@@ -364,7 +366,7 @@ CoverDecl   = (
                 # coverdecl contents
                 (WS
                     { printf("\n") }
-                    ( vd:VariableDecl { nq_onStatement(core->this, vd); }
+                    ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
                     | fd:FunctionDecl
                     )
                 WS)*
@@ -383,7 +385,7 @@ ExternName = EXTERN_KW { $$="" }
 
 VariableDecl = { nq_onVarDeclStart(core->this); }
             (
-            IDENT { nq_onVarDeclName(core->this, yytext); }
+            IDENT { tokenPos; nq_onVarDeclName(core->this, yytext); }
             (ASS Expr { nq_onVarDeclExpr(core->this, $$); })?
             
             # multi-decls
@@ -407,7 +409,7 @@ Type    = FuncType |
                 | "long" &(- "long")     - 
                 )
             - )*
-            IDENT 
+            IDENT { tokenPos; }
           > { $$=nq_onTypeNew(core->this, yytext); }
           (STAR { $$=nq_onTypePointer(core->this, $$); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
@@ -415,7 +417,7 @@ Type    = FuncType |
           -
           )
           
-FuncType  = ("Func"
+FuncType  = ("Func" { tokenPos; }
             (
             - OPEN_PAREN
             (- Argument)?
@@ -440,7 +442,7 @@ Stmt    = (
 Conditional = (If | Else)
 
 If      = (
-          IF_KW
+          IF_KW { tokenPos; }
           - OPEN_PAREN
           - e:Expr       { nq_onIfStart(core->this, e); }
           - CLOS_PAREN
@@ -448,34 +450,35 @@ If      = (
           )              { $$=nq_onIfEnd(core->this); }
           
 Else    = (
-          ELSE_KW        { nq_onElseStart(core->this); }
+          ELSE_KW  { tokenPos; }
+                         { nq_onElseStart(core->this); }
           - Body
           )              { $$=nq_onElseEnd(core->this); }
           
 FlowControl = (Foreach | While)
           
-Foreach = FOR_KW        { printf("for ("); }
+Foreach = FOR_KW { tokenPos; }
           - OPEN_PAREN
           - (VariableDecl | Expr)
-          - IN_KW       { printf(" in "); }
+          - IN_KW
           - Expr
-          - CLOS_PAREN  { printf(") "); }
+          - CLOS_PAREN
           - Body
           
-While = WHILE_KW    { printf("while ("); }
+While = WHILE_KW { tokenPos; }
         - OPEN_PAREN
         - Expr
-        - CLOS_PAREN  { printf(") "); }
+        - CLOS_PAREN
         - Body
 
 Body =  (
         OPEN_BRACK
-        (WS s:Stmt { nq_onStatement(core->this, s) } WS)*
+        (WS s:Stmt { tokenPos; nq_onStatement(core->this, s) } WS)*
         WS CLOS_BRACK
-        ) | s:Stmt { nq_onStatement(core->this, s) }
+        ) | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
           
-Return  = (RETURN_KW - e:Expr { $$=nq_onReturn(core->this, e); })
-        | (RETURN_KW          { $$=nq_onReturn(core->this, NULL); })
+Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
+        | (RETURN_KW { tokenPos; }          { $$=nq_onReturn(core->this, NULL); })
 
 Expr    = b:BinaryOperation -
 
@@ -486,18 +489,18 @@ BinaryOperation = Assignment
 ConstKeyword = - (!CONST_KW { $$=(void*) false } | CONST_KW { $$=(void*) true })
 
 Assignment = l: Ternary
-                ( ASS                 r: Ternary              { $$=nq_onAssign(core->this, l, r); }
-                | ASS_ADD             r: Ternary              { $$=nq_onAssignAdd(core->this, l, r); }
-                | ASS_SUB             r: Ternary              { $$=nq_onAssignSub(core->this, l, r); }
-                | ASS_MUL             r: Ternary              { $$=nq_onAssignMul(core->this, l, r); }
-                | ASS_DIV             r: Ternary              { $$=nq_onAssignDiv(core->this, l, r); }
-                | ASS_B_LSHIFT        r: Ternary              { $$=nq_onAssignLeftShift(core->this, l, r); }
-                | ASS_B_RSHIFT        r: Ternary              { $$=nq_onAssignRightShift(core->this, l, r); }
-                | ASS_B_XOR           r: Ternary              { $$=nq_onAssignXor(core->this, l, r); }
-                | ASS_B_OR            r: Ternary              { $$=nq_onAssignOr(core->this, l, r); }
-                | ASS_B_AND           r: Ternary              { $$=nq_onAssignAnd(core->this, l, r); }
+                ( ASS            { tokenPos; }     r: Ternary              { $$=nq_onAssign(core->this, l, r); }
+                | ASS_ADD        { tokenPos; }     r: Ternary              { $$=nq_onAssignAdd(core->this, l, r); }
+                | ASS_SUB        { tokenPos; }     r: Ternary              { $$=nq_onAssignSub(core->this, l, r); }
+                | ASS_MUL        { tokenPos; }     r: Ternary              { $$=nq_onAssignMul(core->this, l, r); }
+                | ASS_DIV        { tokenPos; }     r: Ternary              { $$=nq_onAssignDiv(core->this, l, r); }
+                | ASS_B_LSHIFT   { tokenPos; }     r: Ternary              { $$=nq_onAssignLeftShift(core->this, l, r); }
+                | ASS_B_RSHIFT   { tokenPos; }     r: Ternary              { $$=nq_onAssignRightShift(core->this, l, r); }
+                | ASS_B_XOR      { tokenPos; }     r: Ternary              { $$=nq_onAssignXor(core->this, l, r); }
+                | ASS_B_OR       { tokenPos; }     r: Ternary              { $$=nq_onAssignOr(core->this, l, r); }
+                | ASS_B_AND      { tokenPos; }     r: Ternary              { $$=nq_onAssignAnd(core->this, l, r); }
                 | (
-                  ASS_DECL         
+                  ASS_DECL       { tokenPos; }  
                   c:ConstKeyword
                   r:Ternary
                   )                   { $$=nq_onVarDeclAssign(core->this, l, c, r); }
@@ -505,7 +508,7 @@ Assignment = l: Ternary
                 
 Ternary =   cond:LogicalOr
             (
-          - QUEST
+          - QUEST { tokenPos; }
           - ifTrue:LogicalOr
           - COLON
           - ifFalse:LogicalOr
@@ -513,76 +516,76 @@ Ternary =   cond:LogicalOr
             )?
 
 LogicalOr = l:LogicalAnd
-                ( L_OR          { printf(" || "); }     r: LogicalAnd
+                ( L_OR        { tokenPos; }  { printf(" || "); }     r: LogicalAnd
                 )*
 
 LogicalAnd = l:BinaryOr
-                ( L_AND         { printf(" && "); }     r: BinaryOr
+                ( L_AND       { tokenPos; }  { printf(" && "); }     r: BinaryOr
                 )*
 
 BinaryOr = l:BinaryXor
-                ( B_OR          { printf(" | "); }      r: BinaryXor
+                ( B_OR        { tokenPos; }  { printf(" | "); }      r: BinaryXor
                 )*
 
 BinaryXor = l:BinaryAnd
-                ( B_XOR         { printf(" ^ "); }      r: BinaryAnd
+                ( B_XOR       { tokenPos; }  { printf(" ^ "); }      r: BinaryAnd
                 )*
 
 BinaryAnd = l:Equality
-                ( B_AND         { printf(" & "); }      r: Equality
+                ( B_AND       { tokenPos; }  { printf(" & "); }      r: Equality
                 )*
 
 Equality = l:Inequality
-                ( EQUALS        r:Inequality           { $$=nq_onEquals(core->this, l, r); }
-                | NOT_EQUALS    r:Inequality           { $$=nq_onNotEquals(core->this, l, r); }
+                ( EQUALS      { tokenPos; }  r:Inequality           { $$=nq_onEquals(core->this, l, r); }
+                | NOT_EQUALS  { tokenPos; }  r:Inequality           { $$=nq_onNotEquals(core->this, l, r); }
                 )*
 
 Inequality = l:Range
-                ( LESSTHAN      r:Range                { $$=nq_onLessThan(core->this, l, r); }
-                | MORETHAN      r:Range                { $$=nq_onMoreThan(core->this, l, r); }
-                | LESSTHAN_EQ   r:Range                { $$=nq_onLessThanOrEqual(core->this, l, r); }
-                | MORETHAN_EQ   r:Range                { $$=nq_onMoreThanOrEqual(core->this, l, r); }
+                ( LESSTHAN    { tokenPos; }  r:Range                { $$=nq_onLessThan(core->this, l, r); }
+                | MORETHAN    { tokenPos; }  r:Range                { $$=nq_onMoreThan(core->this, l, r); }
+                | LESSTHAN_EQ { tokenPos; }  r:Range                { $$=nq_onLessThanOrEqual(core->this, l, r); }
+                | MORETHAN_EQ { tokenPos; }  r:Range                { $$=nq_onMoreThanOrEqual(core->this, l, r); }
                 )*
                 
 Range   = l:Shift
-                ( DOUBLE_DOT    { printf("..");   }     r:Shift
+                ( DOUBLE_DOT  { tokenPos; }  { printf("..");   }     r:Shift
                 )*
 
 Shift   = l:Sum
-                ( B_LSHIFT      { printf(" << "); }     r:Sum
-                | B_RSHIFT      { printf(" >> "); }     r:Sum
+                ( B_LSHIFT    { tokenPos; }  { printf(" << "); }     r:Sum
+                | B_RSHIFT    { tokenPos; }  { printf(" >> "); }     r:Sum
                 )*
 
 Sum     = l:Product
-                ( PLUS          r:Product              { $$=nq_onAdd(core->this, l, r); }
-                | MINUS         r:Product              { $$=nq_onSub(core->this, l, r); }
-                | PERCENT       r:Product              { $$=nq_onMod(core->this, l, r); }
+                ( PLUS        { tokenPos; }  r:Product              { $$=nq_onAdd(core->this, l, r); }
+                | MINUS       { tokenPos; }  r:Product              { $$=nq_onSub(core->this, l, r); }
+                | PERCENT     { tokenPos; }  r:Product              { $$=nq_onMod(core->this, l, r); }
                 )*
 
-Product = ( L_NOT               { printf("!"); }
-          | B_NOT               { printf("~"); }
+Product = ( L_NOT              { tokenPos; } { printf("!"); }
+          | B_NOT              { tokenPos; } { printf("~"); }
           )*
           l:Access
-                ( STAR         r:Access                { $$=nq_onMul(core->this, l, r); }
-                | SLASH        r:Access                { $$=nq_onDiv(core->this, l, r); }
+                ( STAR        { tokenPos; } r:Access                { $$=nq_onMul(core->this, l, r); }
+                | SLASH       { tokenPos; } r:Access                { $$=nq_onDiv(core->this, l, r); }
                 )*
                 
 Access = l:Value
-                ( { printf("["); } OPEN_SQUAR - Expr - CLOS_SQUAR - { printf("]"); }
+                ( { printf("["); } OPEN_SQUAR { tokenPos; } - Expr - CLOS_SQUAR - { printf("]"); }
                 | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
                 | !(IN_KW ![A-Za-z0-9_]) r:IDENT { $$=nq_onVarAccess(core->this, l, r); } -
-                | AS_KW - r:Type  { $$=nq_onCast(core->this, l, r); }
+                | AS_KW { tokenPos; } - r:Type   { $$=nq_onCast(core->this, l, r); }
                 )*
                 
 FunctionCall = (
-               IDENT { nq_onFunctionCallStart(core->this, yytext); }
+               IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
                OPEN_PAREN -
                (
-               e:Expr    { nq_onFunctionCallArg(core->this, e); }
+               e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
                (-
                COMMA
                WS
-               e:Expr    { nq_onFunctionCallArg(core->this, e); }
+               e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
                )*
                )?
                - CLOS_PAREN
@@ -593,14 +596,14 @@ VariableAccess = i:IDENT
 Value   = ( PLUS    { printf("+"); }
           | MINUS   { printf("-"); }
           )?
-        ( f:FLOAT_LIT                                     { printf("%s", yytext); }
-        | i:INT_LIT                                       { $$=nq_onIntLiteral(core->this, yytext); }
+        ( f:FLOAT_LIT                                     { tokenPos; printf("%s", yytext); }
+        | i:INT_LIT                                       { tokenPos; $$=nq_onIntLiteral(core->this, yytext); }
         | s:STRING_LIT
-        | c:CHAR_LIT                                      { printf("'%s'", yytext); }
-        | b:BOOL_LIT                                      { $$=nq_onBoolLiteral(core->this, $$); }
-        | OPEN_PAREN i:Expr CLOS_PAREN                    { $$=nq_onParenthesis(core->this, i); }
+        | c:CHAR_LIT                                      { tokenPos; printf("'%s'", yytext); }
+        | b:BOOL_LIT                                      { tokenPos; $$=nq_onBoolLiteral(core->this, $$); }
+        | OPEN_PAREN { tokenPos; } i:Expr CLOS_PAREN      { $$=nq_onParenthesis(core->this, i); }
         | FunctionCall
-        | VariableAccess                                  { $$=nq_onVarAccess(core->this, NULL, yytext); }
+        | VariableAccess                                  { tokenPos; $$=nq_onVarAccess(core->this, NULL, yytext); }
         )
 
 RETURN_KW    = "return"
@@ -729,7 +732,7 @@ int nq_parse(void *this, char *path) {
     core->this = this;
     core->path = path;
     core->stream = fopen(path, "r");
-    nq_setPosPointer(this, &(G->begin));
+    nq_setTokenPositionPointer(this, core->token);
     if(!core->stream) {
         printf("Not found: %s\n", path);
         return -1;
