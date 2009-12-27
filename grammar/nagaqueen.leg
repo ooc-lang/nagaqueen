@@ -179,13 +179,13 @@ Module  = WS Include WS
         | WS Import WS
         | WS Stmt WS
         | WS Decl WS
-        | WS ( !EOL . )* EOL                  { printf("\nerror at line %d\n", core->yylineno); }
+        | WS ( !EOL . )* EOL                  { printf("%s:%d Parsing error\n", core->path, core->yylineno); }
         
 Include = INCLUDE_KW
-          - IDENT  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+          - < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           (
           - COMMA
-          - IDENT { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+          - < [A-Za-z/.]* > { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           )*
           
 Import  = IMPORT_KW
@@ -237,9 +237,9 @@ OperatorDecl =
             )?
             
             # body
-            - OPEN_BRACK WS { printf(" %s\n", _OBRACK) }
+            - OPEN_BRACK WS
             (WS (Stmt) WS)*
-            WS CLOS_BRACK  { printf("%s\n", _CBRACK); }
+            WS CLOS_BRACK
 
 FunctionDecl =(
             IDENT { tokenPos; nq_onFunctionStart(core->this, yytext); }
@@ -365,7 +365,6 @@ CoverDecl   = (
                 
                 # coverdecl contents
                 (WS
-                    { printf("\n") }
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
                     | fd:FunctionDecl
                     )
@@ -573,7 +572,7 @@ Product = ( L_NOT              { tokenPos; } { printf("!"); }
 Access = l:Value
                 ( { printf("["); } OPEN_SQUAR { tokenPos; } - Expr - CLOS_SQUAR - { printf("]"); }
                 | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
-                | !(IN_KW ![A-Za-z0-9_]) r:IDENT { $$=nq_onVarAccess(core->this, l, r); } -
+                | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW { tokenPos; } - r:Type   { $$=nq_onCast(core->this, l, r); }
                 )*
                 
