@@ -177,17 +177,18 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 /////////////////////                 error IDs start                ////////////////////////
 
-#define NQE_EXP_STATEMENT_OR_CLOSING_BRACKET 1
+#define NQE_EXP_STATEMENT_OR_CLOSING_BRACKET                1
+#define NQE_EXP_INC_IMP_STMT_OR_DECL                        2
 
 /////////////////////                  error IDs end                 ////////////////////////
 
 %}
 
-Module  = WS Include WS
-        | WS Import WS
-        | WS Stmt WS
-        | WS Decl WS
-        | WS ( !EOL . )* EOL                  { printf("%s:%d Parsing error\n", core->path, core->yylineno); }
+Module  = ( WS Include WS
+          | WS Import WS
+          | WS Stmt WS
+          | WS Decl ~{ nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", yyindex); } WS
+          )
         
 Include = INCLUDE_KW
           - < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
