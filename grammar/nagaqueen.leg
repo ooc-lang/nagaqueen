@@ -184,11 +184,11 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 %}
 
-Module  = ( WS Include WS
+Module  =   WS Include WS
           | WS Import WS
           | WS Stmt WS
-          | WS Decl ~{ nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", yyindex); } WS
-          )
+          | WS Decl WS
+          | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
         
 Include = INCLUDE_KW
           - < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
