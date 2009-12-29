@@ -291,9 +291,9 @@ FunctionDecl =(
             (
                 - OPEN_BRACK WS
                 (WS
-                (s:Stmt { nq_onStatement(core->this, s) })
+                (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-                WS CLOS_BRACK
+                WS CLOS_BRACK ~{ printf("Expected statement or closing brack here: %s at %d!\n", core->path, G->pos + G->offset); exit(1) }
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
