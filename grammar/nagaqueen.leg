@@ -171,7 +171,15 @@ void *nq_onParenthesis(void *this, void *inner);
 
 void nq_onGenericArgument(void *this, char *name);
 
+void nq_error(void *this, int errorID, char *defaultMessage, int index);
+
 /////////////////////                callbacks def end               ////////////////////////
+
+/////////////////////                 error IDs start                ////////////////////////
+
+#define NQE_EXP_STATEMENT_OR_CLOSING_BRACKET 1
+
+/////////////////////                  error IDs end                 ////////////////////////
 
 %}
 
@@ -293,7 +301,7 @@ FunctionDecl =(
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-                WS CLOS_BRACK ~{ printf("Expected statement or closing brack here: %s at %d!\n", core->path, G->pos + G->offset); exit(1) }
+                WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset); exit(1) }
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
