@@ -1,0 +1,5 @@
+Name: nagaqueen
+Version: vcs
+Origin: git://github.com/nddrylliog/nagaqueen.git
+Description: greg grammar for ooc
+SourcePath: .

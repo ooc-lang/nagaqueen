@@ -171,6 +171,9 @@ void *nq_onParenthesis(void *this, void *inner);
 
 void nq_onGenericArgument(void *this, char *name);
 
+void *nq_onAddressOf  (void *this, void *inner);
+void *nq_onDereference(void *this, void *inner);
+
 void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 /////////////////////                callbacks def end               ////////////////////////
@@ -583,6 +586,8 @@ Access = l:Value
                 | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
                 | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW { tokenPos; } - r:Type   { $$=nq_onCast(core->this, l, r); }
+                | B_AND                          { $$=nq_onAddressOf(core->this, l); }
+                | AT                             { $$=nq_onDereference(core->this, l); }
                 )*
                 
 FunctionCall = (
@@ -711,6 +716,7 @@ CLOS_SQUAR   = ']'   -
 OPEN_BRACK   = '{'   -
 CLOS_BRACK   = '}'   -
 
+AT      = '@'
 TILDE   = '~'   -
 -       = [ \t]*
 EOL     = ('\n' | '\r\n' | '\r' | ';')  { core->yylineno++; }
