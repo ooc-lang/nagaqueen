@@ -109,6 +109,9 @@ void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
 void nq_onTypeGenericArgument(void *this, void *type, char *name);
 void *nq_onFuncTypeNew(void *this);
 
+void nq_onOperatorStart(void *this, char *symbol);
+void nq_onOperatorEnd(void *this);
+
 void nq_onFunctionStart(void *this, char *name);
 void nq_onFunctionExtern(void *this, char *externName);
 void nq_onFunctionAbstract(void *this);
@@ -233,32 +236,6 @@ Decl    = ( ClassDecl
           | VariableDecl
           )
 
-OperatorDecl =
-            OPERATOR_KW { tokenPos; }
-            - < (PLUS | MINUS | STAR | SLASH | EQUALS | NOT_EQUALS
-              | MORETHAN | MORETHAN_EQ | LESSTHAN | LESSTHAN_EQ
-              | ASS_ADD | ASS_SUB | ASS_MUL | ASS_DIV | "[]=" | "[]") >
-              { printf("%s ", yytext) }
-            
-            # arguments are optional
-            (
-                - OPEN_PAREN { printf("(") }
-                (WS Argument WS
-                    (COMMA { printf(", ") } WS VariableDecl )*
-                )?
-                - CLOS_PAREN { printf(")") }
-            )?
-            
-            # return type is optional     
-            (
-                - R_ARROW - { printf(" -> "); } Type
-            )?
-            
-            # body
-            - OPEN_BRACK WS
-            (WS (Stmt) WS)*
-            WS CLOS_BRACK
-
 GenericArguments = 
             (
             - LESSTHAN
@@ -270,7 +247,17 @@ GenericArguments =
             MORETHAN -
             )
 
-FunctionDecl =(
+OperatorDecl =
+            OPERATOR_KW { tokenPos; } -
+            - < (PLUS | MINUS | STAR | SLASH | EQUALS | NOT_EQUALS
+              | MORETHAN | MORETHAN_EQ | LESSTHAN | LESSTHAN_EQ
+              | ASS_ADD | ASS_SUB | ASS_MUL | ASS_DIV | "[]=" | "[]") > -
+            { nq_onOperatorStart(core->this, yytext); }
+            FunctionDeclBody
+            { nq_onOperatorEnd(core->this); }
+            
+
+FunctionDecl =
             IDENT { tokenPos; nq_onFunctionStart(core->this, yytext); }
             - COLON
             
@@ -291,6 +278,9 @@ FunctionDecl =(
             - IDENT { nq_onFunctionSuffix(core->this, yytext); }
             )?
             
+            FunctionDeclBody
+            
+FunctionDeclBody = (
             GenericArguments?
             
             # arguments are optional
