@@ -422,7 +422,7 @@ VariableDecl = { nq_onVarDeclStart(core->this); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             )  { $$=nq_onVarDeclEnd(core->this); }
             
-Type    = FuncType |
+TypeBase = FuncType |
           (< (CONST_KW -)?
             (
                 ( "unsigned"             - 
@@ -431,15 +431,16 @@ Type    = FuncType |
                 )
             - )*
             IDENT { tokenPos; }
-          > { $$=nq_onTypeNew(core->this, yytext); }
-          - (LESSTHAN - IDENT { nq_onTypeGenericArgument(core->this, $$, yytext); }
-          (- COMMA  - IDENT { nq_onTypeGenericArgument(core->this, $$, yytext); })*
+          > { $$=nq_onTypeNew(core->this, yytext); })
+            
+Type    = t:TypeBase
+          (- LESSTHAN - IDENT { nq_onTypeGenericArgument(core->this, t, yytext); }
+          (- COMMA    - IDENT { nq_onTypeGenericArgument(core->this, t, yytext); })*
           - MORETHAN)?
           - (STAR { $$=nq_onTypePointer(core->this, $$); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
           )*
           -
-          )
           
 FuncType  = ("Func" { tokenPos; }
             (
