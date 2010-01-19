@@ -250,7 +250,7 @@ GenericArguments =
 OperatorDecl =
             OPERATOR_KW { tokenPos; } -
             - < (PLUS | MINUS | STAR | SLASH | EQUALS | NOT_EQUALS
-              | MORETHAN | MORETHAN_EQ | LESSTHAN | LESSTHAN_EQ
+              | MORETHAN_EQ | LESSTHAN_EQ | MORETHAN | LESSTHAN
               | ASS_ADD | ASS_SUB | ASS_MUL | ASS_DIV | "[]=" | "[]") > -
             { nq_onOperatorStart(core->this, yytext); }
             FunctionDeclBody
