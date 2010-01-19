@@ -97,6 +97,7 @@ void nq_onClassEnd(void *this);
 
 void nq_onVarDeclStart(void *this);
 void nq_onVarDeclName(void *this, char *name);
+void nq_onVarDeclExtern(void *this, char *externName);
 void nq_onVarDeclExpr(void *this, void *expr);
 void nq_onVarDeclType(void *this, void *type);
 void nq_onVarDeclStatic(void *this);
@@ -417,7 +418,10 @@ VariableDecl = { nq_onVarDeclStart(core->this); }
             )*
             
             - COLON
-            (- STATIC_KW { nq_onVarDeclStatic(core->this); })?
+            (
+              (- STATIC_KW { nq_onVarDeclStatic(core->this); })
+            | (- externName:ExternName { nq_onVarDeclExtern(core->this, externName); })
+            )*
             - Type { nq_onVarDeclType(core->this, $$); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             )  { $$=nq_onVarDeclEnd(core->this); }
