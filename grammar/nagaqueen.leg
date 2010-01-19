@@ -406,19 +406,20 @@ ExternName = EXTERN_KW { $$="" }
 VariableDecl = { nq_onVarDeclStart(core->this); }
             (
             IDENT { tokenPos; nq_onVarDeclName(core->this, yytext); }
-            (ASS Expr { nq_onVarDeclExpr(core->this, $$); })?
+            (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             
             # multi-decls
             (
             - COMMA
             - IDENT { nq_onVarDeclName(core->this, yytext); }
-            (- ASS Expr { nq_onVarDeclExpr(core->this, $$); })?
+            (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             -
             )*
             
             - COLON
             (- STATIC_KW { nq_onVarDeclStatic(core->this); })?
             - Type { nq_onVarDeclType(core->this, $$); }
+            (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             )  { $$=nq_onVarDeclEnd(core->this); }
             
 Type    = FuncType |
