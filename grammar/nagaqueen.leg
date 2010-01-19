@@ -105,6 +105,7 @@ void *nq_onVarDeclAssign(void *this, void *access, bool isConst, void *expr);
 
 void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
+void nq_onTypeGenericArgument(void *this, void *type, char *name);
 void *nq_onFuncTypeNew(void *this);
 
 void nq_onFunctionStart(void *this, char *name);
@@ -340,7 +341,7 @@ ClassDecl   = (
             
             # subclassing
             (
-            - EXTENDS_KW - IDENT { nq_onClassExtends(core->this, yytext) }
+            - EXTENDS_KW - t:Type { nq_onClassExtends(core->this, t) }
             )?
             
             # body is optional (for abstract classes)
@@ -430,7 +431,10 @@ Type    = FuncType |
             - )*
             IDENT { tokenPos; }
           > { $$=nq_onTypeNew(core->this, yytext); }
-          (STAR { $$=nq_onTypePointer(core->this, $$); }
+          - (LESSTHAN - IDENT { nq_onTypeGenericArgument(core->this, $$, yytext); }
+          (- COMMA  - IDENT { nq_onTypeGenericArgument(core->this, $$, yytext); })*
+          - MORETHAN)?
+          - (STAR { $$=nq_onTypePointer(core->this, $$); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
           )*
           -
