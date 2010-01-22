@@ -176,6 +176,14 @@ void *nq_onSub(void *this, void *left, void *right);
 void *nq_onMod(void *this, void *left, void *right);
 void *nq_onMul(void *this, void *left, void *right);
 void *nq_onDiv(void *this, void *left, void *right);
+void *nq_onRangeLiteral(void *this, void *left, void *right);
+void *nq_onBinaryLeftShift(void *this, void *left, void *right);
+void *nq_onBinaryRightShift(void *this, void *left, void *right);
+void *nq_onLogicalOr(void *this, void *left, void *right);
+void *nq_onLogicalAnd(void *this, void *left, void *right);
+void *nq_onBinaryOr(void *this, void *left, void *right);
+void *nq_onBinaryXor(void *this, void *left, void *right);
+void *nq_onBinaryAnd(void *this, void *left, void *right);
 
 void *nq_onParenthesis(void *this, void *inner);
 
@@ -543,23 +551,23 @@ Ternary =   cond:LogicalOr
             )?
 
 LogicalOr = l:LogicalAnd
-                ( L_OR        { tokenPos; }  { printf(" || "); }     r: LogicalAnd
+                ( L_OR        { tokenPos; }  r: LogicalAnd          { $$=nq_onLogicalOr(core->this, l, r); }
                 )*
 
 LogicalAnd = l:BinaryOr
-                ( L_AND       { tokenPos; }  { printf(" && "); }     r: BinaryOr
+                ( L_AND       { tokenPos; }  r: BinaryOr            { $$=nq_onLogicalAnd(core->this, l, r); }
                 )*
 
 BinaryOr = l:BinaryXor
-                ( B_OR        { tokenPos; }  { printf(" | "); }      r: BinaryXor
+                ( B_OR        { tokenPos; }  r: BinaryXor           { $$=nq_onBinaryOr(core->this, l, r); }
                 )*
 
 BinaryXor = l:BinaryAnd
-                ( B_XOR       { tokenPos; }  { printf(" ^ "); }      r: BinaryAnd
+                ( B_XOR       { tokenPos; }  r: BinaryAnd           { $$=nq_onBinaryXor(core->this, l, r); }
                 )*
 
 BinaryAnd = l:Equality
-                ( B_AND       { tokenPos; }  { printf(" & "); }      r: Equality
+                ( B_AND       { tokenPos; }  r: Equality            { $$=nq_onBinaryAnd(core->this, l, r); }
                 )*
 
 Equality = l:Inequality
@@ -575,12 +583,12 @@ Inequality = l:Range
                 )*
                 
 Range   = l:Shift
-                ( DOUBLE_DOT  { tokenPos; }  { printf("..");   }     r:Shift
+                ( DOUBLE_DOT  { tokenPos; }  r:Shift                { $$=nq_onRangeLiteral(core->this, l, r); }
                 )*
 
 Shift   = l:Sum
-                ( B_LSHIFT    { tokenPos; }  { printf(" << "); }     r:Sum
-                | B_RSHIFT    { tokenPos; }  { printf(" >> "); }     r:Sum
+                ( B_LSHIFT    { tokenPos; }  r:Sum                  { $$=nq_onBinaryLeftShift(core->this, l, r) }
+                | B_RSHIFT    { tokenPos; }  r:Sum                  { $$=nq_onBinaryRightShift(core->this, l, r) }
                 )*
 
 Sum     = l:Product
@@ -597,13 +605,13 @@ Product = ( L_NOT              { tokenPos; } { printf("!"); }
                 | SLASH       { tokenPos; } r:Access                { $$=nq_onDiv(core->this, l, r); }
                 )*
                 
-Access =  (IDENT_CORE B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
+Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value
                 ( { printf("["); } OPEN_SQUAR { tokenPos; } - Expr - CLOS_SQUAR - { printf("]"); }
                 | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
                 | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW { tokenPos; } - r:Type   { $$=nq_onCast(core->this, l, r); }
-                | B_AND - ![0-9A-Za-z_]             { $$=nq_onAddressOf(core->this, l); }
+                | !ASS_B_AND B_AND - ![0-9A-Za-z_]             { $$=nq_onAddressOf(core->this, l); }
                 | AT                             { $$=nq_onDereference(core->this, l); }
                 )*
                 
