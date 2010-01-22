@@ -597,12 +597,13 @@ Product = ( L_NOT              { tokenPos; } { printf("!"); }
                 | SLASH       { tokenPos; } r:Access                { $$=nq_onDiv(core->this, l, r); }
                 )*
                 
-Access = l:Value
+Access =  (IDENT_CORE B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
+          | l:Value
                 ( { printf("["); } OPEN_SQUAR { tokenPos; } - Expr - CLOS_SQUAR - { printf("]"); }
                 | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
                 | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW { tokenPos; } - r:Type   { $$=nq_onCast(core->this, l, r); }
-                | B_AND                          { $$=nq_onAddressOf(core->this, l); }
+                | B_AND - ![0-9A-Za-z_]             { $$=nq_onAddressOf(core->this, l); }
                 | AT                             { $$=nq_onDereference(core->this, l); }
                 )*
                 
@@ -748,8 +749,9 @@ CommentMultiLine = "/*" (!"*/" (EOL | .))* "*/"
 
 INT_LIT      = < "-"? [0-9]+ >                   -
 FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >        -
-IDENT        = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
-               < [a-zA-Z_][0-9a-zA-Z_]*  >  -   { $$=yytext; }
+IDENT        = IDENT_CORE -
+IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
+               < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
 
 STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -  { $$=nq_onStringLiteral(core->this, yytext); }
 CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > [']       -
