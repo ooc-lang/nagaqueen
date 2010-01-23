@@ -151,6 +151,7 @@ void *nq_onEquals(void *this, void *left, void *right);
 void *nq_onNotEquals(void *this, void *left, void *right);
 void *nq_onLessThan(void *this, void *left, void *right);
 void *nq_onMoreThan(void *this, void *left, void *right);
+void *nq_onCmp(void *this, void *left, void *right);
 void *nq_onLessThanOrEqual(void *this, void *left, void *right);
 void *nq_onMoreThanOrEqual(void *this, void *left, void *right);
 
@@ -184,6 +185,10 @@ void *nq_onLogicalAnd(void *this, void *left, void *right);
 void *nq_onBinaryOr(void *this, void *left, void *right);
 void *nq_onBinaryXor(void *this, void *left, void *right);
 void *nq_onBinaryAnd(void *this, void *left, void *right);
+
+void *nq_onLogicalNot(void *this, void *inner);
+void *nq_onBinaryNot(void *this, void *inner);
+void *nq_onUnaryMinus(void *this, void *inner);
 
 void *nq_onParenthesis(void *this, void *inner);
 
@@ -258,7 +263,7 @@ GenericArguments =
 
 OperatorDecl =
             OPERATOR_KW { tokenPos; } -
-            - < ( ">>="| "<<="| ">>" | "<<"
+            - < ( "<=>"| ">>="| "<<="| ">>" | "<<"
                 | ">=" | "<=" | "!=" | "==" | ">" | "<" | "!"
                 | "+=" | "-=" | "*=" | "/=" | "+" | "-" | "*" | "/" | "="
                 | "[]="| "[]" | "&&" | "||" | "%" | "as"
@@ -578,6 +583,7 @@ Equality = l:Inequality
 Inequality = l:Range
                 ( LESSTHAN    { tokenPos; }  r:Range                { $$=nq_onLessThan(core->this, l, r); }
                 | MORETHAN    { tokenPos; }  r:Range                { $$=nq_onMoreThan(core->this, l, r); }
+                | CMP         { tokenPos; }  r:Range                { $$=nq_onCmp(core->this, l, r); }
                 | LESSTHAN_EQ { tokenPos; }  r:Range                { $$=nq_onLessThanOrEqual(core->this, l, r); }
                 | MORETHAN_EQ { tokenPos; }  r:Range                { $$=nq_onMoreThanOrEqual(core->this, l, r); }
                 )*
@@ -597,13 +603,15 @@ Sum     = l:Product
                 | PERCENT     { tokenPos; }  r:Product              { $$=nq_onMod(core->this, l, r); }
                 )*
 
-Product = ( L_NOT              { tokenPos; } { printf("!"); }
-          | B_NOT              { tokenPos; } { printf("~"); }
-          )*
-          l:Access
-                ( STAR        { tokenPos; } r:Access                { $$=nq_onMul(core->this, l, r); }
-                | SLASH       { tokenPos; } r:Access                { $$=nq_onDiv(core->this, l, r); }
-                )*
+Product = (ProductLogicalNot | ProductBinaryNot | ProductCore)
+          
+ProductLogicalNot = L_NOT { tokenPos; } - (inner:Product) - { $$=nq_onLogicalNot(core->this, inner); }
+ProductBinaryNot  = B_NOT { tokenPos; } - (inner:Product) - { $$=nq_onBinaryNot (core->this, inner); }
+          
+ProductCore = l:Access
+                    ( STAR        { tokenPos; } r:Access                { $$=nq_onMul(core->this, l, r); }
+                    | SLASH       { tokenPos; } r:Access                { $$=nq_onDiv(core->this, l, r); }
+                    )*
                 
 Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value
@@ -631,9 +639,10 @@ FunctionCall = (
 
 VariableAccess = i:IDENT
 
-Value   = ( PLUS    { printf("+"); }
-          | MINUS   { printf("-"); }
-          )?
+Value   = (MINUS { tokenPos; } val:ValueCore { $$=nq_onUnaryMinus(core->this, val); })
+        | ValueCore
+          
+ValueCore =
         ( f:FLOAT_LIT                                     { tokenPos; $$=nq_onFloatLiteral(core->this, yytext); }
         | i:INT_LIT                                       { tokenPos; $$=nq_onIntLiteral(core->this, yytext); }
         | s:STRING_LIT
@@ -719,6 +728,7 @@ NOT_EQUALS   = '!='  -
 
 LESSTHAN     = '<'   -
 MORETHAN     = '>'   -
+CMP          = '<=>' -
 LESSTHAN_EQ  = '<='  -
 MORETHAN_EQ  = '>='  -
 
