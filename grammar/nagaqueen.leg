@@ -136,6 +136,7 @@ void nq_onStatement(void *this, void *statement);
 void *nq_onReturn(void *this, void *expr);
 
 void *nq_onVarAccess(void *this, void *expr, char *name);
+void *nq_onArrayAccess(void *this, void *array, void *index);
 void nq_onVarArg(void *this);
 void *nq_onCast(void *this, void *expr, void *type);
 
@@ -615,7 +616,7 @@ ProductCore = l:Access
                 
 Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value
-                ( { printf("["); } OPEN_SQUAR { tokenPos; } - Expr - CLOS_SQUAR - { printf("]"); }
+                ( OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=nq_onArrayAccess(core->this, l, index); }
                 | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
                 | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW { tokenPos; } - r:Type   { $$=nq_onCast(core->this, l, r); }
