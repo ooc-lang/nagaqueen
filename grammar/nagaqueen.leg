@@ -504,8 +504,8 @@ Else    = (
           )              { $$=nq_onElseEnd(core->this); }
 
 Case    = CASE_KW  { nq_onCaseStart(core->this); }
-        (- v:Value { nq_onCaseExpr(core->this, v); })?
-        - "=>"
+        (- v:Expr { nq_onCaseExpr(core->this, v); })?
+        WS "=>"
         - (WS
           (s:Stmt  { nq_onStatement(core->this, s) })
           WS)*
@@ -551,12 +551,11 @@ Body =  (
 Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
         | (RETURN_KW { tokenPos; }          { $$=nq_onReturn(core->this, NULL); })
 
-Expr = l:ExprCore ( call:FunctionCall -                                  { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
-                  | OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
-        )*
-  
-ExprCore = ( OPEN_PAREN { tokenPos; } i:Expr CLOS_PAREN { $$=nq_onParenthesis(core->this, i); }
-           | b:BinaryOperation) -
+
+#Expr     = (OPEN_PAREN { tokenPos; } - i:Expr - CLOS_PAREN { $$=nq_onParenthesis(core->this, i); } -)
+#         | (b:BinaryOperation -)
+
+Expr     = BinaryOperation -
 
 #operators
 
@@ -565,21 +564,21 @@ BinaryOperation = Assignment
 ConstKeyword = - (!CONST_KW { $$=(void*) false } | CONST_KW { $$=(void*) true })
 
 Assignment = l: Ternary
-                ( ASS            { tokenPos; }     r: Ternary              { $$=nq_onAssign(core->this, l, r); }
-                | ASS_ADD        { tokenPos; }     r: Ternary              { $$=nq_onAssignAdd(core->this, l, r); }
-                | ASS_SUB        { tokenPos; }     r: Ternary              { $$=nq_onAssignSub(core->this, l, r); }
-                | ASS_MUL        { tokenPos; }     r: Ternary              { $$=nq_onAssignMul(core->this, l, r); }
-                | ASS_DIV        { tokenPos; }     r: Ternary              { $$=nq_onAssignDiv(core->this, l, r); }
-                | ASS_B_LSHIFT   { tokenPos; }     r: Ternary              { $$=nq_onAssignLeftShift(core->this, l, r); }
-                | ASS_B_RSHIFT   { tokenPos; }     r: Ternary              { $$=nq_onAssignRightShift(core->this, l, r); }
-                | ASS_B_XOR      { tokenPos; }     r: Ternary              { $$=nq_onAssignXor(core->this, l, r); }
-                | ASS_B_OR       { tokenPos; }     r: Ternary              { $$=nq_onAssignOr(core->this, l, r); }
-                | ASS_B_AND      { tokenPos; }     r: Ternary              { $$=nq_onAssignAnd(core->this, l, r); }
+                ( ASS            { tokenPos; }     r: Ternary              { $$=l=nq_onAssign(core->this, l, r); }
+                | ASS_ADD        { tokenPos; }     r: Ternary              { $$=l=nq_onAssignAdd(core->this, l, r); }
+                | ASS_SUB        { tokenPos; }     r: Ternary              { $$=l=nq_onAssignSub(core->this, l, r); }
+                | ASS_MUL        { tokenPos; }     r: Ternary              { $$=l=nq_onAssignMul(core->this, l, r); }
+                | ASS_DIV        { tokenPos; }     r: Ternary              { $$=l=nq_onAssignDiv(core->this, l, r); }
+                | ASS_B_LSHIFT   { tokenPos; }     r: Ternary              { $$=l=nq_onAssignLeftShift(core->this, l, r); }
+                | ASS_B_RSHIFT   { tokenPos; }     r: Ternary              { $$=l=nq_onAssignRightShift(core->this, l, r); }
+                | ASS_B_XOR      { tokenPos; }     r: Ternary              { $$=l=nq_onAssignXor(core->this, l, r); }
+                | ASS_B_OR       { tokenPos; }     r: Ternary              { $$=l=nq_onAssignOr(core->this, l, r); }
+                | ASS_B_AND      { tokenPos; }     r: Ternary              { $$=l=nq_onAssignAnd(core->this, l, r); }
                 | (
                   ASS_DECL       { tokenPos; }  
                   c:ConstKeyword
                   r:Expr
-                  )                   { $$=nq_onVarDeclAssign(core->this, l, c, r); }
+                  )                   { $$=l=nq_onVarDeclAssign(core->this, l, c, r); }
                 )*
                 
 Ternary =   cond:LogicalOr
@@ -592,51 +591,51 @@ Ternary =   cond:LogicalOr
             )?
 
 LogicalOr = l:LogicalAnd
-                ( L_OR        { tokenPos; }  r: LogicalAnd          { $$=nq_onLogicalOr(core->this, l, r); }
+                ( L_OR        { tokenPos; }  r: LogicalAnd          { $$=l=nq_onLogicalOr(core->this, l, r); }
                 )*
 
 LogicalAnd = l:BinaryOr
-                ( L_AND       { tokenPos; }  r: BinaryOr            { $$=nq_onLogicalAnd(core->this, l, r); }
+                ( L_AND       { tokenPos; }  r: BinaryOr            { $$=l=nq_onLogicalAnd(core->this, l, r); }
                 )*
 
 BinaryOr = l:BinaryXor
-                ( B_OR        { tokenPos; }  r: BinaryXor           { $$=nq_onBinaryOr(core->this, l, r); }
+                ( B_OR        { tokenPos; }  r: BinaryXor           { $$=l=nq_onBinaryOr(core->this, l, r); }
                 )*
 
 BinaryXor = l:BinaryAnd
-                ( B_XOR       { tokenPos; }  r: BinaryAnd           { $$=nq_onBinaryXor(core->this, l, r); }
+                ( B_XOR       { tokenPos; }  r: BinaryAnd           { $$=l=nq_onBinaryXor(core->this, l, r); }
                 )*
 
 BinaryAnd = l:Equality
-                ( B_AND       { tokenPos; }  r: Equality            { $$=nq_onBinaryAnd(core->this, l, r); }
+                ( B_AND       { tokenPos; }  r: Equality            { $$=l=nq_onBinaryAnd(core->this, l, r); }
                 )*
 
 Equality = l:Inequality
-                ( EQUALS      { tokenPos; }  r:Inequality           { $$=nq_onEquals(core->this, l, r); }
-                | NOT_EQUALS  { tokenPos; }  r:Inequality           { $$=nq_onNotEquals(core->this, l, r); }
+                ( EQUALS      { tokenPos; }  r:Inequality           { $$=l=nq_onEquals(core->this, l, r); }
+                | NOT_EQUALS  { tokenPos; }  r:Inequality           { $$=l=nq_onNotEquals(core->this, l, r); }
                 )*
 
 Inequality = l:Range
-                ( LESSTHAN    { tokenPos; }  r:Range                { $$=nq_onLessThan(core->this, l, r); }
-                | MORETHAN    { tokenPos; }  r:Range                { $$=nq_onMoreThan(core->this, l, r); }
-                | CMP         { tokenPos; }  r:Range                { $$=nq_onCmp(core->this, l, r); }
-                | LESSTHAN_EQ { tokenPos; }  r:Range                { $$=nq_onLessThanOrEqual(core->this, l, r); }
-                | MORETHAN_EQ { tokenPos; }  r:Range                { $$=nq_onMoreThanOrEqual(core->this, l, r); }
+                ( LESSTHAN    { tokenPos; }  r:Range                { $$=l=nq_onLessThan(core->this, l, r); }
+                | MORETHAN    { tokenPos; }  r:Range                { $$=l=nq_onMoreThan(core->this, l, r); }
+                | CMP         { tokenPos; }  r:Range                { $$=l=nq_onCmp(core->this, l, r); }
+                | LESSTHAN_EQ { tokenPos; }  r:Range                { $$=l=nq_onLessThanOrEqual(core->this, l, r); }
+                | MORETHAN_EQ { tokenPos; }  r:Range                { $$=l=nq_onMoreThanOrEqual(core->this, l, r); }
                 )*
                 
 Range   = l:Shift
-                ( DOUBLE_DOT  { tokenPos; }  r:Shift                { $$=nq_onRangeLiteral(core->this, l, r); }
+                ( DOUBLE_DOT  { tokenPos; }  r:Shift                { $$=l=nq_onRangeLiteral(core->this, l, r); }
                 )*
 
 Shift   = l:Sum
-                ( B_LSHIFT    { tokenPos; }  r:Sum                  { $$=nq_onBinaryLeftShift(core->this, l, r) }
-                | B_RSHIFT    { tokenPos; }  r:Sum                  { $$=nq_onBinaryRightShift(core->this, l, r) }
+                ( B_LSHIFT    { tokenPos; }  r:Sum                  { $$=l=nq_onBinaryLeftShift(core->this, l, r) }
+                | B_RSHIFT    { tokenPos; }  r:Sum                  { $$=l=nq_onBinaryRightShift(core->this, l, r) }
                 )*
 
 Sum     = l:Product
-                ( PLUS        { tokenPos; }  r:Product              { $$=nq_onAdd(core->this, l, r); }
-                | MINUS       { tokenPos; }  r:Product              { $$=nq_onSub(core->this, l, r); }
-                | PERCENT     { tokenPos; }  r:Product              { $$=nq_onMod(core->this, l, r); }
+                ( PLUS        { tokenPos; }  r:Product              { $$=l=nq_onAdd(core->this, l, r); }
+                | MINUS       { tokenPos; }  r:Product              { $$=l=nq_onSub(core->this, l, r); }
+                | PERCENT     { tokenPos; }  r:Product              { $$=l=nq_onMod(core->this, l, r); }
                 )*
 
 Product = (ProductLogicalNot | ProductBinaryNot | ProductCore)
@@ -675,7 +674,8 @@ FunctionCall = (
 
 VariableAccess = i:IDENT
 
-Value   = (MINUS { tokenPos; } val:ValueCore { $$=nq_onUnaryMinus(core->this, val); })
+Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
+        | (OPEN_PAREN { tokenPos; } - inner:Expr - CLOS_PAREN - { $$=nq_onParenthesis(core->this, inner); })
         | ValueCore
 
           
