@@ -512,10 +512,7 @@ Case    = CASE_KW  { nq_onCaseStart(core->this); }
           { nq_onCaseEnd(core->this); }
           
 Match   = MATCH_KW { tokenPos; nq_onMatchStart(core->this); }
-            (- OPEN_PAREN
-             - v: Value { nq_onMatchExpr(core->this, v); }
-             - CLOS_PAREN
-            )?
+            (- v: Value { nq_onMatchExpr(core->this, v); })?
           - OPEN_BRACK
           (WS Case WS)*
           WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset); exit(1) }
@@ -554,8 +551,12 @@ Body =  (
 Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
         | (RETURN_KW { tokenPos; }          { $$=nq_onReturn(core->this, NULL); })
 
-Expr    = ( OPEN_PAREN { tokenPos; } i:Expr CLOS_PAREN      { $$=nq_onParenthesis(core->this, i); }
-          | b:BinaryOperation) -
+Expr = l:ExprCore ( call:FunctionCall -                                  { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
+                  | OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
+        )*
+  
+ExprCore = ( OPEN_PAREN { tokenPos; } i:Expr CLOS_PAREN { $$=nq_onParenthesis(core->this, i); }
+           | b:BinaryOperation) -
 
 #operators
 
@@ -577,7 +578,7 @@ Assignment = l: Ternary
                 | (
                   ASS_DECL       { tokenPos; }  
                   c:ConstKeyword
-                  r:Ternary
+                  r:Expr
                   )                   { $$=nq_onVarDeclAssign(core->this, l, c, r); }
                 )*
                 
@@ -650,12 +651,12 @@ ProductCore = l:Access
                 
 Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value
-                ( OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=nq_onArrayAccess(core->this, l, index); }
-                | call:FunctionCall - { nq_onFunctionCallExpr(core->this, call, l); }
-                | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=nq_onVarAccess(core->this, l, r); } -
-                | AS_KW { tokenPos; } - r:Type   { $$=nq_onCast(core->this, l, r); }
-                | !ASS_B_AND B_AND - ![0-9A-Za-z_]             { $$=nq_onAddressOf(core->this, l); }
-                | AT                             { $$=nq_onDereference(core->this, l); }
+                ( OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
+                | call:FunctionCall -            { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
+                | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); } -
+                | AS_KW { tokenPos; } - r:Type   { $$=l=nq_onCast(core->this, l, r); }
+                | !ASS_B_AND B_AND - ![0-9A-Za-z_]             { $$=l=nq_onAddressOf(core->this, l); }
+                | AT                             { $$=l=nq_onDereference(core->this, l); }
                 )*
                 
 FunctionCall = (
@@ -676,6 +677,7 @@ VariableAccess = i:IDENT
 
 Value   = (MINUS { tokenPos; } val:ValueCore { $$=nq_onUnaryMinus(core->this, val); })
         | ValueCore
+
           
 ValueCore =
         ( f:FLOAT_LIT                                     { tokenPos; $$=nq_onFloatLiteral(core->this, yytext); }
