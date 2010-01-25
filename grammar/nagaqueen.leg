@@ -198,14 +198,24 @@ void nq_onGenericArgument(void *this, char *name);
 void *nq_onAddressOf  (void *this, void *inner);
 void *nq_onDereference(void *this, void *inner);
 
+void nq_onMatchStart(void *this);
+void nq_onMatchExpr(void *this, void *value);
+void *nq_onMatchEnd(void *this);
+void nq_onCaseStart(void *this);
+void nq_onCaseExpr(void *this, void *value);
+void nq_onCaseEnd(void *this);
+
 void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 /////////////////////                callbacks def end               ////////////////////////
 
 /////////////////////                 error IDs start                ////////////////////////
 
+// NQE stands for 'NagaQueen Error"
+
 #define NQE_EXP_STATEMENT_OR_CLOSING_BRACKET                1
 #define NQE_EXP_INC_IMP_STMT_OR_DECL                        2
+#define NQE_EXP_CASE_IN_MATCH                               3
 
 /////////////////////                  error IDs end                 ////////////////////////
 
@@ -474,6 +484,7 @@ Stmt    = (
           | # ...but block don't
           ( WS c:Conditional
           | WS f:FlowControl
+          | WS m:Match
           ) )
           
 Conditional = (If | Else)
@@ -491,11 +502,32 @@ Else    = (
                          { nq_onElseStart(core->this); }
           - Body
           )              { $$=nq_onElseEnd(core->this); }
+
+Case    = CASE_KW  { nq_onCaseStart(core->this); }
+        (- v:Value { nq_onCaseExpr(core->this, v); })?
+        - "=>"
+        - (WS
+          (s:Stmt  { nq_onStatement(core->this, s) })
+          WS)*
+          { nq_onCaseEnd(core->this); }
           
-FlowControl = (Foreach | While)
+Match   = MATCH_KW { tokenPos; nq_onMatchStart(core->this); }
+            (- OPEN_PAREN
+             - v: Value { nq_onMatchExpr(core->this, v); }
+             - CLOS_PAREN
+            )?
+          - OPEN_BRACK
+          (WS Case WS)*
+          WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset); exit(1) }
+          { $$=nq_onMatchEnd(core->this); }
           
-ImplicitDecl = v:VariableDecl { $$=v }
-             | i:IDENT        { nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); $$=nq_onVarDeclEnd(core->this); }
+FlowControl = (Foreach | While | Break | Continue)
+
+Break    = BREAK_KW    { tokenPos; $$=nq_onBreak(core->this); }
+Continue = CONTINUE_KW { tokenPos; $$=nq_onContinue(core->this); }
+          
+ImplicitDecl = (v:VariableDecl { $$=v })
+             | (i:IDENT        { $$=nq_onVarAccess(core->this, NULL, yytext); })
           
 Foreach = FOR_KW { tokenPos; }
           - OPEN_PAREN
@@ -508,9 +540,10 @@ Foreach = FOR_KW { tokenPos; }
           
 While = WHILE_KW { tokenPos; }
         - OPEN_PAREN
-        - Expr
-        - CLOS_PAREN
+        - condition:Expr
+        - CLOS_PAREN { nq_onWhileStart(core->this, condition); }
         - Body
+        -            { $$=nq_onWhileEnd(core->this); }
 
 Body =  (
         OPEN_BRACK
@@ -521,7 +554,8 @@ Body =  (
 Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
         | (RETURN_KW { tokenPos; }          { $$=nq_onReturn(core->this, NULL); })
 
-Expr    = b:BinaryOperation -
+Expr    = ( OPEN_PAREN { tokenPos; } i:Expr CLOS_PAREN      { $$=nq_onParenthesis(core->this, i); }
+          | b:BinaryOperation) -
 
 #operators
 
@@ -650,12 +684,14 @@ ValueCore =
         | c:CHAR_LIT                                      { tokenPos; printf("'%s'", yytext); }
         | b:BOOL_LIT                                      { tokenPos; $$=nq_onBoolLiteral(core->this, $$); }
         | NULL_KW                                         { tokenPos; $$=nq_onNull(core->this); }
-        | OPEN_PAREN { tokenPos; } i:Expr CLOS_PAREN      { $$=nq_onParenthesis(core->this, i); }
         | FunctionCall
         | VariableAccess                                  { tokenPos; $$=nq_onVarAccess(core->this, NULL, yytext); }
         )
 
+BREAK_KW     = "break"
+CONTINUE_KW  = "continue"
 RETURN_KW    = "return"
+
 FUNC_KW      = "func"
 CLASS_KW     = "class"
 COVER_KW     = "cover"
@@ -673,6 +709,8 @@ IF_KW        = "if"
 ELSE_KW      = "else"
 FOR_KW       = "for"
 WHILE_KW     = "while"
+MATCH_KW     = "match"
+CASE_KW      = "case"
 AS_KW        = "as"
 IN_KW        = "in"
 
@@ -685,12 +723,12 @@ FALSE_KW     = "false"
 NULL_KW      = "null"
 
              # class in voluntarily left out
-KW           = RETURN_KW | FUNC_KW | COVER_KW | FROM_KW
-             | ABSTRACT_KW | FINAL_KW | STATIC_KW | INLINE_KW
-             | EXTENDS_KW | EXTERN_KW | IMPORT_KW | INCLUDE_KW
-             | IF_KW | ELSE_KW | FOR_KW | WHILE_KW | AS_KW
-             | OPERATOR_KW | CONST_KW | TRUE_KW | FALSE_KW
-             | NULL_KW
+KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
+             | COVER_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
+             | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW
+             | IMPORT_KW | INCLUDE_KW | IF_KW | ELSE_KW | FOR_KW
+             | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | TRUE_KW
+             | FALSE_KW | NULL_KW | MATCH_KW | CASE_KW
 
 COMMA        = ','
 DOT          = !DOUBLE_DOT '.'
