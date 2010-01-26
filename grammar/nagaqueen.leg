@@ -68,6 +68,8 @@ struct _NagaQueenCore {
     FILE *stream;
     /* The begin position and length of the current token in the text */
     int token[2];
+    /* type parsing buffer */
+    char typeBuffer[4096];
 };
 
 typedef struct _NagaQueenCore NagaQueenCore;
@@ -443,15 +445,15 @@ VariableDecl = { nq_onVarDeclStart(core->this); }
             )  { $$=nq_onVarDeclEnd(core->this); }
             
 TypeBase = FuncType |
-          (< (CONST_KW -)?
+          (< { tokenPos; core->typeBuffer[0]='\0'; } (CONST_KW -)?
             (
-                ( "unsigned"             - 
-                | "signed"               - 
-                | "long" &(- "long")     - 
+                ( "unsigned"             { strcat(core->typeBuffer, "unsigned "); } - 
+                | "signed"               { strcat(core->typeBuffer, "signed "); } - 
+                | "long" &(- "long")     { strcat(core->typeBuffer, "long "); } - 
                 )
             - )*
-            IDENT { tokenPos; }
-          > { $$=nq_onTypeNew(core->this, yytext); })
+            IDENT { strcat(core->typeBuffer, $$); }
+          > { $$=nq_onTypeNew(core->this, core->typeBuffer); })
             
 Type    = t:TypeBase
           (- LESSTHAN - IDENT { nq_onTypeGenericArgument(core->this, t, yytext); }
