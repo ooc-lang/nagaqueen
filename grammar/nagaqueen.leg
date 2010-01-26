@@ -338,7 +338,7 @@ FunctionDeclBody = (
 Argument    = ( (DOT IDENT -)    { printf(".%s", yytext) }
               | (ASS IDENT -)    { printf("=%s", yytext) }
               | vd:VariableDecl  { tokenPos; nq_onStatement(core->this, vd); }
-              | Type
+              | type:Type        { nq_onTypeArg(core->this, type); }
               | "..."            { tokenPos; nq_onVarArg(core->this); }
               )
             
@@ -389,14 +389,12 @@ CoverDecl   = (
             
             # covering another type
             (
-            - FROM_KW
-            - Type { nq_onCoverFromType(core->this, $$) }
+            - FROM_KW - t:Type { nq_onCoverFromType(core->this, t) }
             )?
             
             # extending another type
             (
-            - EXTENDS_KW #{ printf(" extends ") }
-            - IDENT      #{ printf("%s", yytext) }
+            - EXTENDS_KW - t:Type { nq_onCoverExtends(core->this, t) }
             )?
 
             # body is optional for covers
