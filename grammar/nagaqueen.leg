@@ -126,6 +126,11 @@ void nq_onFunctionFinal(void *this);
 void nq_onFunctionSuffix(void *this, char *name);
 void *nq_onFunctionEnd(void *this);
 
+void nq_onTypeArg(void *this, void *type);
+void nq_onVarArg(void *this);
+void nq_onDotArg(void *this, char *name);
+void nq_onAssArg(void *this, char *name);
+
 void nq_onFunctionCallStart(void *this, char *yytext);
 void nq_onFunctionCallArg(void *this, void *expr);
 void *nq_onFunctionCallEnd(void *this);
@@ -139,7 +144,6 @@ void *nq_onReturn(void *this, void *expr);
 
 void *nq_onVarAccess(void *this, void *expr, char *name);
 void *nq_onArrayAccess(void *this, void *array, void *index);
-void nq_onVarArg(void *this);
 void *nq_onCast(void *this, void *expr, void *type);
 
 void nq_onIfStart(void *this, void *condition);
@@ -337,10 +341,10 @@ FunctionDeclBody = (
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
-Argument    = ( (DOT IDENT -)    { printf(".%s", yytext) }
-              | (ASS IDENT -)    { printf("=%s", yytext) }
+Argument    = ( (DOT IDENT -)    { tokenPos; nq_onDotArg(core->this, yytext); }
+              | (ASS IDENT -)    { tokenPos; nq_onAssArg(core->this, yytext); }
               | vd:VariableDecl  { tokenPos; nq_onStatement(core->this, vd); }
-              | type:Type        { nq_onTypeArg(core->this, type); }
+              | type:Type        { tokenPos; nq_onTypeArg(core->this, type); }
               | "..."            { tokenPos; nq_onVarArg(core->this); }
               )
             
