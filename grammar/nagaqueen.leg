@@ -222,6 +222,7 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 #define NQE_EXP_STATEMENT_OR_CLOSING_BRACKET                1
 #define NQE_EXP_INC_IMP_STMT_OR_DECL                        2
 #define NQE_EXP_CASE_IN_MATCH                               3
+#define NQE_EXP_VAR_OR_FUNC_DECL                            4
 
 /////////////////////                  error IDs end                 ////////////////////////
 
@@ -411,7 +412,7 @@ CoverDecl   = (
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
                     | fd:FunctionDecl
-                    )
+                    ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
                 WS)*
                 
                 WS CLOS_BRACK
@@ -483,7 +484,7 @@ Stmt    = (
               | WS v:VariableDecl
               | WS e:Expr
               )
-              (EOL | (&CLOS_BRACK) | (&CommentLine))
+              (Terminator | (&CLOS_BRACK) | (&CommentLine))
           )
           | # ...but block don't
           ( WS c:Conditional
@@ -800,11 +801,12 @@ CLOS_SQUAR   = ']'   -
 OPEN_BRACK   = '{'   -
 CLOS_BRACK   = '}'   -
 
-AT      = '@'
-TILDE   = '~'   -
--       = [ \t]*
-EOL     = ('\n' | '\r\n' | '\r' | ';')  { core->yylineno++; }
-WS      = ([ \t] | Comment | EOL)*
+AT         = '@'
+TILDE      = '~'   -
+-          = [ \t]*
+EOL        = ('\n' | '\r\n' | '\r')  { core->yylineno++; }
+Terminator =  (EOL | ';')
+WS         = ([ \t] | Comment | EOL)*
 
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" (!EOL .)* EOL
