@@ -816,8 +816,8 @@ IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
 
-STRING_LIT   = ["] < (!'"' ('\\\"' | '\\n' | '\\r' | '\\t' | '\\0' | .))* > ["]       -  { $$=nq_onStringLiteral(core->this, yytext); }
-CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\n' | '\\r' | '\\t' | '\\0' | .))  > [']       -
+STRING_LIT   = ["] < (!'"' ('\\\"' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))* > ["]       -  { $$=nq_onStringLiteral(core->this, yytext); }
+CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']       -
 BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
 
 %%
