@@ -137,7 +137,7 @@ void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
 
 void *nq_onStringLiteral(void *this, char *text);
-void *nq_onCharLiteral(void *this, bool value);
+void *nq_onCharLiteral(void *this, char *value);
 
 void nq_onStatement(void *this, void *statement);
 void *nq_onReturn(void *this, void *expr);
@@ -688,7 +688,7 @@ ValueCore =
         ( f:FLOAT_LIT                                     { tokenPos; $$=nq_onFloatLiteral(core->this, yytext); }
         | i:INT_LIT                                       { tokenPos; $$=nq_onIntLiteral(core->this, yytext); }
         | s:STRING_LIT
-        | c:CHAR_LIT                                      { tokenPos; printf("'%s'", yytext); }
+        | c:CHAR_LIT
         | b:BOOL_LIT                                      { tokenPos; $$=nq_onBoolLiteral(core->this, $$); }
         | NULL_KW                                         { tokenPos; $$=nq_onNull(core->this); }
         | FunctionCall
@@ -818,8 +818,8 @@ IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
 
-STRING_LIT   = ["] < (!'"' ('\\\"' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))* > ["]       -  { $$=nq_onStringLiteral(core->this, yytext); }
-CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']       -
+STRING_LIT   = ["] < (!'"' ('\\\"' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))* > ["]       -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
+CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']       -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
 BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
 
 %%
