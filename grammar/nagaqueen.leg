@@ -665,7 +665,7 @@ Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarA
                 
 FunctionCall = (
                IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
-               OPEN_PAREN -
+               OPEN_PAREN WS
                (
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
                (-
