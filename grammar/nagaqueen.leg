@@ -461,13 +461,13 @@ TypeBase = FuncType |
           > { $$=nq_onTypeNew(core->this, core->typeBuffer); })
             
 Type    = t:TypeBase
-          (- LESSTHAN - IDENT { nq_onTypeGenericArgument(core->this, t, yytext); }
-          (- COMMA    - IDENT { nq_onTypeGenericArgument(core->this, t, yytext); })*
+          (- LESSTHAN - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); }
+          (- COMMA    - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); })*
           - MORETHAN)?
-          - (STAR { $$=nq_onTypePointer(core->this, $$); }
+          - (STAR { t=$$=nq_onTypePointer(core->this, $$); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
           )*
-          -
+          - { $$=t; }
           
 FuncType  = ("Func" { tokenPos; }
             (
