@@ -427,7 +427,15 @@ ExternName = EXTERN_KW { $$="" }
               - CLOS_PAREN
               )?
 
-VariableDecl = { nq_onVarDeclStart(core->this); }
+VarDeclFromExpr = ( l:VariableAccess { l=nq_onVarAccess(core->this, NULL, l); }
+                  - ASS_DECL       { tokenPos; }
+                  - c:ConstKeyword
+                  - r:Expr
+                  - { $$=nq_onVarDeclAssign(core->this, l, c, r); }
+                  )
+
+ConventionalVarDecl =
+            { nq_onVarDeclStart(core->this); }
             (
             IDENT { tokenPos; nq_onVarDeclName(core->this, yytext); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
@@ -448,6 +456,9 @@ VariableDecl = { nq_onVarDeclStart(core->this); }
             - Type { nq_onVarDeclType(core->this, $$); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             )  { $$=nq_onVarDeclEnd(core->this); }
+
+VariableDecl = (v:VarDeclFromExpr     { $$=v })
+             | (v:ConventionalVarDecl { $$=v })
             
 TypeBase = FuncType |
           (< { tokenPos; core->typeBuffer[0]='\0'; } (CONST_KW -)?
@@ -579,11 +590,6 @@ Assignment = l: Ternary
                 | ASS_B_XOR      { tokenPos; }  WS   r: Ternary              { $$=l=nq_onAssignXor(core->this, l, r); }
                 | ASS_B_OR       { tokenPos; }  WS   r: Ternary              { $$=l=nq_onAssignOr(core->this, l, r); }
                 | ASS_B_AND      { tokenPos; }  WS   r: Ternary              { $$=l=nq_onAssignAnd(core->this, l, r); }
-                | (
-                  ASS_DECL       { tokenPos; }  
-                  c:ConstKeyword
-                  r:Expr
-                  )                   { $$=l=nq_onVarDeclAssign(core->this, l, c, r); }
                 )*
                 
 Ternary =   cond:LogicalOr
