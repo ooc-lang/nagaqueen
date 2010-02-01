@@ -469,6 +469,7 @@ TypeBase = FuncType |
                 ( "unsigned"             { strcat(core->typeBuffer, "unsigned "); } - 
                 | "signed"               { strcat(core->typeBuffer, "signed "); } - 
                 | "long" &(- "long")     { strcat(core->typeBuffer, "long "); } - 
+                | "struct"			     { strcat(core->typeBuffer, "struct "); } -
                 )
             - )*
             IDENT { strcat(core->typeBuffer, $$); }
