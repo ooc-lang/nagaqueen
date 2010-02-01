@@ -3,3 +3,4 @@ nagaqueen
 nagaqueen.c
 *.o
 usage/fromfile/fromfile
+*~
