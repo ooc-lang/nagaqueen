@@ -95,6 +95,7 @@ void nq_onClassStart(void *this, char *name);
 void nq_onClassAbstract(void *this);
 void nq_onClassFinal(void *this);
 void nq_onClassExtends(void *this, void *type);
+void nq_onClassBody(void *this);
 void nq_onClassEnd(void *this);
 
 void nq_onVarDeclStart(void *this);
@@ -373,6 +374,8 @@ ClassDecl   = (
             - EXTENDS_KW - t:Type { nq_onClassExtends(core->this, t) }
             )?
             
+            { nq_onClassBody(core->this); }
+            
             # body is optional (for abstract classes)
             (
                 - OPEN_BRACK WS
@@ -474,6 +477,18 @@ TypeBase = FuncType |
             - )*
             IDENT { strcat(core->typeBuffer, $$); }
           > { $$=nq_onTypeNew(core->this, core->typeBuffer); })
+
+# a GenericType is just like a Type but with non-optional generic type arguments
+# it's used when we have to decide between a Type and a VariableAccess
+GenericType
+        = t:TypeBase
+           - LESSTHAN - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); }
+          (- COMMA    - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); })*
+           - MORETHAN
+           - (STAR { t=$$=nq_onTypePointer(core->this, $$); }
+          | "[" { printf("["); } - Expr? "]" { printf("]"); }
+          )*
+          - { $$=t; }
             
 Type    = t:TypeBase
           (- LESSTHAN - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); }
@@ -702,6 +717,7 @@ ValueCore =
         | b:BOOL_LIT                                      { tokenPos; $$=nq_onBoolLiteral(core->this, $$); }
         | NULL_KW                                         { tokenPos; $$=nq_onNull(core->this); }
         | FunctionCall
+        | t:GenericType                                   { printf("Got type!\n"); $$=t; }
         | VariableAccess                                  { tokenPos; $$=nq_onVarAccess(core->this, NULL, yytext); }
         )
 
