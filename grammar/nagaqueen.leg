@@ -95,8 +95,13 @@ void nq_onClassStart(void *this, char *name);
 void nq_onClassAbstract(void *this);
 void nq_onClassFinal(void *this);
 void nq_onClassExtends(void *this, void *type);
+void nq_onClassImplements(void *this, void *type);
 void nq_onClassBody(void *this);
 void nq_onClassEnd(void *this);
+
+void nq_onInterfaceStart(void *this, char *name);
+void nq_onInterfaceExtends(void *this, void *type);
+void nq_onInterfaceEnd(void *this);
 
 void nq_onVarDeclStart(void *this);
 void nq_onVarDeclName(void *this, char *name);
@@ -265,6 +270,7 @@ ImportName = < [A-Za-z_0-9]+ >                { $$=nq_StringClone(yytext); }
 
 Decl    = ( ClassDecl
           | CoverDecl
+          | InterfaceDecl
           | OperatorDecl
           | FunctionDecl
           | VariableDecl
@@ -374,6 +380,13 @@ ClassDecl   = (
             - EXTENDS_KW - t:Type { nq_onClassExtends(core->this, t) }
             )?
             
+            # interface subclassing
+            (
+            - IMPLEMENTS_KW
+                     - t:Type { nq_onClassImplements(core->this, t) }
+            (- COMMA - t:Type { nq_onClassImplements(core->this, t) })*
+            )?
+            
             { nq_onClassBody(core->this); }
             
             # body is optional (for abstract classes)
@@ -414,7 +427,7 @@ CoverDecl   = (
             (
                 - OPEN_BRACK WS
                 
-                # coverdecl contents
+                # coverdecl content
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
                     | fd:FunctionDecl
@@ -425,6 +438,31 @@ CoverDecl   = (
             )?
             )
             { nq_onCoverEnd(core->this); }
+            
+InterfaceDecl = (
+            IDENT { tokenPos; nq_onInterfaceStart(core->this, yytext) }
+            - COLON
+            
+            - INTERFACE_KW
+            
+            # extending another interface
+            (
+            - EXTENDS_KW - t:Type { nq_onInterfaceExtends(core->this, t) }
+            )?
+            
+            # body is required for interfaces
+            (
+                - OPEN_BRACK WS
+                
+                # interface content
+                (WS
+                    (fd:FunctionDecl | " ") ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", core->token[0]); }
+                WS)*
+                
+                WS CLOS_BRACK
+            )
+            )
+            { nq_onInterfaceEnd(core->this); }
             
 ExternName = EXTERN_KW { $$="" }
               (
@@ -717,7 +755,7 @@ ValueCore =
         | b:BOOL_LIT                                      { tokenPos; $$=nq_onBoolLiteral(core->this, $$); }
         | NULL_KW                                         { tokenPos; $$=nq_onNull(core->this); }
         | FunctionCall
-        | t:GenericType                                   { printf("Got type!\n"); $$=t; }
+        | t:GenericType                                   { $$=t; }
         | VariableAccess                                  { tokenPos; $$=nq_onVarAccess(core->this, NULL, yytext); }
         )
 
@@ -728,6 +766,7 @@ RETURN_KW    = "return"
 FUNC_KW      = "func"
 CLASS_KW     = "class"
 COVER_KW     = "cover"
+INTERFACE_KW = "interface"
 FROM_KW      = "from"
 ABSTRACT_KW  = "abstract"
 FINAL_KW     = "final"
@@ -735,6 +774,8 @@ STATIC_KW    = "static"
 INLINE_KW    = "inline"
 EXTENDS_KW   = "extends"
 EXTERN_KW    = "extern"
+IMPLEMENTS_KW= "implements"
+IMPLEMENT_KW = "implement"
 
 IMPORT_KW    = "import"
 INCLUDE_KW   = "include"
