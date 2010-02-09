@@ -507,10 +507,10 @@ VariableDecl = (v:VarDeclFromExpr     { $$=v })
 TypeBase = FuncType |
           (< { tokenPos; core->typeBuffer[0]='\0'; } (CONST_KW -)?
             (
-                ( "unsigned"             { strcat(core->typeBuffer, "unsigned "); } - 
-                | "signed"               { strcat(core->typeBuffer, "signed "); } - 
-                | "long" &(- "long")     { strcat(core->typeBuffer, "long "); } - 
-                | "struct"			     { strcat(core->typeBuffer, "struct "); } -
+                ( "unsigned"                                  { strcat(core->typeBuffer, "unsigned "); } - 
+                | "signed"                                    { strcat(core->typeBuffer, "signed "); } - 
+                | "long" &(- ("long" | "double" | "int"))     { strcat(core->typeBuffer, "long "); } - 
+                | "struct"			                          { strcat(core->typeBuffer, "struct "); } -
                 )
             - )*
             IDENT { strcat(core->typeBuffer, $$); }
