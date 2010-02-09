@@ -90,6 +90,7 @@ void nq_onCoverStart(void *this, char *name);
 void nq_onCoverExtern(void *this, char *externName);
 void nq_onCoverFromType(void *this, void *type);
 void nq_onCoverExtends(void *this, void *type);
+void nq_onCoverImplements(void *this, void *type);
 void nq_onCoverEnd(void *this);
 
 void nq_onClassStart(void *this, char *name);
@@ -423,6 +424,13 @@ CoverDecl   = (
             # extending another type
             (
             - EXTENDS_KW - t:Type { nq_onCoverExtends(core->this, t) }
+            )?
+            
+            # interface subclassing
+            (
+            - IMPLEMENTS_KW
+                     - t:Type { nq_onCoverImplements(core->this, t) }
+            (- COMMA - t:Type { nq_onCoverImplements(core->this, t) })*
             )?
 
             # body is optional for covers
