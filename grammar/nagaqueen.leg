@@ -87,6 +87,7 @@ void nq_onInclude(void *this, char *path, char *name);
 void nq_onImport (void *this, char *path, char *name);
 
 void nq_onCoverStart(void *this, char *name);
+void nq_onCoverExtern(void *this, char *externName);
 void nq_onCoverFromType(void *this, void *type);
 void nq_onCoverExtends(void *this, void *type);
 void nq_onCoverEnd(void *this);
@@ -138,6 +139,7 @@ void nq_onDotArg(void *this, char *name);
 void nq_onAssArg(void *this, char *name);
 
 void nq_onFunctionCallStart(void *this, char *yytext);
+void nq_onFunctionCallSuffix(void *this, char *yytext);
 void nq_onFunctionCallArg(void *this, void *expr);
 void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
@@ -409,7 +411,7 @@ CoverDecl   = (
             - COLON
             
             # modifiers
-            (- ExternName)?
+            (- externName:ExternName { nq_onCoverExtern(core->this, externName); })?
             
             - COVER_KW
             
@@ -728,6 +730,7 @@ Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarA
                 
 FunctionCall = (
                IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
+               (B_NOT - IDENT { nq_onFunctionCallSuffix(core->this, yytext); })?
                OPEN_PAREN WS
                (
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
