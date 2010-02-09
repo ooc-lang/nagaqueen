@@ -163,6 +163,9 @@ void *nq_onElseEnd(void *this);
 void nq_onForeachStart(void *this, void *decl, void *collec);
 void *nq_onForeachEnd(void *this);
 
+void nq_onWhileStart(void *this, void *condition);
+void *nq_onWhileEnd(void *this);
+
 void *nq_onEquals(void *this, void *left, void *right);
 void *nq_onNotEquals(void *this, void *left, void *right);
 void *nq_onLessThan(void *this, void *left, void *right);
