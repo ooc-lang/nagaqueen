@@ -243,8 +243,8 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 Module  =   (WS Include WS
           | WS Import WS
-          | WS Stmt WS
-          | WS Decl WS)
+          | WS Decl WS
+          | WS Stmt WS)
           | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
         
 Include = INCLUDE_KW
@@ -279,7 +279,7 @@ Decl    = ( ClassDecl
           | InterfaceDecl
           | OperatorDecl
           | FunctionDecl
-          | VariableDecl
+          | vd:VariableDecl { nq_onStatement(core->this, vd); }
           )
 
 GenericArguments = 
