@@ -85,6 +85,7 @@ char *nq_StringClone(char *string);
 
 void nq_onInclude(void *this, char *path, char *name);
 void nq_onImport (void *this, char *path, char *name);
+void nq_onImportNamespace(void *this, char *namespace);
 
 void nq_onCoverStart(void *this, char *name);
 void nq_onCoverExtern(void *this, char *externName);
@@ -262,8 +263,9 @@ Import  = IMPORT_KW
           )*
           
 ImportAtom = path:ImportPath
-            ((name:ImportName { tokenPos; }           { nq_onImport(core->this, (char*) path, (char*) name); })
-            | (
+            ((name:ImportName { tokenPos; }             { nq_onImport(core->this, (char*) path, (char*) name); }
+             (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace); })?
+             ) | (
             OPEN_SQUAR
             (name:ImportName { tokenPos; } - COMMA WS { nq_onImport(core->this, (char*) path, (char*) name); })*
             (name:ImportName { tokenPos; }            { nq_onImport(core->this, (char*) path, (char*) name); })
@@ -801,6 +803,7 @@ MATCH_KW     = "match"
 CASE_KW      = "case"
 AS_KW        = "as"
 IN_KW        = "in"
+INTO_KW      = "into"
 
 OPERATOR_KW  = "operator"
 CONST_KW     = "const"
@@ -810,7 +813,7 @@ FALSE_KW     = "false"
 
 NULL_KW      = "null"
 
-             # class in voluntarily left out
+             # a few keywords voluntarily left out
 KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
              | COVER_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
              | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW
