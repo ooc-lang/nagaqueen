@@ -86,6 +86,7 @@ void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 char *nq_StringClone(char *string);
 
 void nq_onInclude(void *this, char *path, char *name);
+void nq_onIncludeDefine(void *this, char *name, char *value);
 void nq_onImport (void *this, char *path, char *name);
 void nq_onImportNamespace(void *this, char *namespace, int quantity);
 
@@ -278,11 +279,21 @@ VersionName = - i:IDENT { tokenPos; $$=nq_onVersionName(core->this, i); }
 VersionNegation = - '!' { tokenPos; } - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec); }
         
 Include = INCLUDE_KW
-          - < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+          - IncludeCore
           (
           - COMMA
-          - < [A-Za-z/.]* > { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+          - IncludeCore
           )*
+          
+IncludeCore = < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+          (- '|'
+           - OPEN_PAREN
+           - def:IDENT  { nq_onIncludeDefine(core->this, def, ""); }
+           (- COMMA
+            - def:IDENT { nq_onIncludeDefine(core->this, def, ""); }
+           )?
+           - CLOS_PAREN
+          )?
           
 Import  = IMPORT_KW
           - ImportAtom
@@ -533,7 +544,7 @@ ConventionalVarDecl =
             # multi-decls
             (
             - COMMA
-            - IDENT { nq_onVarDeclName(core->this, yytext); }
+            WS IDENT { nq_onVarDeclName(core->this, yytext); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             -
             )*
@@ -939,8 +950,8 @@ Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" (!EOL .)* EOL
 CommentMultiLine = "/*" (!"*/" (EOL | .))* "*/"
 
-INT_LIT      = < "-"? [0-9]+ >                   -
-FLOAT_LIT    = < "-"? [0-9]+ DOT [0-9]* >        -
+INT_LIT      = < "-"? [0-9_]+ >                   -
+FLOAT_LIT    = < "-"? [0-9_]+ DOT [0-9_]* >        -
 IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
