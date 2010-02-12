@@ -255,20 +255,26 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 Module  =  ModuleCore
           | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
           
-ModuleCore = (WS VERSION_KW { tokenPos; } - OPEN_PAREN - spec:VersionSpec - CLOS_PAREN - OPEN_BRACK WS { nq_onVersionStart(core->this, spec); } ModuleCore* WS CLOS_BRACK { nq_onVersionEnd(core->this); })
+ModuleCore = (WS VERSION_KW { tokenPos; }
+              - OPEN_PAREN
+              - spec:VersionSpec
+              - CLOS_PAREN
+              - OPEN_BRACK { nq_onVersionStart(core->this, spec); }
+              WS ModuleCore* WS
+              - CLOS_BRACK { nq_onVersionEnd(core->this); })
           |(WS Include WS
           | WS Import WS
           | WS Decl WS
           | WS Stmt WS)
           
-VersionSpec = ((- OPEN_PAREN - VersionSpec - CLOS_PAREN) | (l:VersionCore))
-                ((- '&&' - r:VersionSpec { l=$$=nq_onVersionAnd(core->this, l, r); }) |
-                 (- '||' - r:VersionSpec { l=$$=nq_onVersionOr (core->this, l, r); }))*
+VersionSpec = ((- OPEN_PAREN - l:VersionSpec - CLOS_PAREN) | (l:VersionCore))
+                ((- '&&' { tokenPos; } - r:VersionSpec { l=$$=nq_onVersionAnd(core->this, l, r); }) |
+                 (- '||' { tokenPos; } - r:VersionSpec { l=$$=nq_onVersionOr (core->this, l, r); }))*
                
 VersionCore = (VersionNegation | VersionName)
 
-VersionName = - i:IDENT { $$=nq_onVersionName(core->this, i); }
-VersionNegation = - '!' - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec); }
+VersionName = - i:IDENT { tokenPos; $$=nq_onVersionName(core->this, i); }
+VersionNegation = - '!' { tokenPos; } - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec); }
         
 Include = INCLUDE_KW
           - < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
@@ -584,7 +590,14 @@ FuncType  = ("Func" { tokenPos; }
             )?
             ) { $$=nq_onFuncTypeNew(core->this); }
 
-Stmt     = (WS VERSION_KW { tokenPos; } - OPEN_PAREN - spec:VersionSpec - CLOS_PAREN - OPEN_BRACK { nq_onVersionStart(core->this, spec); } WS (s:StmtCore { nq_onStatement(core->this, s); })* WS CLOS_BRACK { $$=nq_onVersionEnd(core->this); })
+Stmt     = (
+                WS VERSION_KW { tokenPos; }
+                - OPEN_PAREN
+                - spec:VersionSpec
+                - CLOS_PAREN
+                - OPEN_BRACK { nq_onVersionStart(core->this, spec); }
+                WS (s:Stmt { nq_onStatement(core->this, s); })* WS
+                - CLOS_BRACK { $$=nq_onVersionEnd(core->this); })
          | StmtCore
 
 StmtCore = (
