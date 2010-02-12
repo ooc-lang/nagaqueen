@@ -95,7 +95,7 @@ void *nq_onVersionAnd(void *this, void *specLeft, void *specRight);
 void *nq_onVersionOr(void *this, void *specLeft, void *specRight);
 
 void nq_onVersionStart(void *this, void *spec);
-void nq_onVersionEnd(void *this);
+void *nq_onVersionEnd(void *this);
 
 void nq_onCoverStart(void *this, char *name);
 void nq_onCoverExtern(void *this, char *externName);
@@ -255,7 +255,7 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 Module  =  ModuleCore
           | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
           
-ModuleCore = (WS VERSION_KW - OPEN_PAREN - VersionSpec - CLOS_PAREN - OPEN_BRACK WS ModuleCore* WS CLOS_BRACK)
+ModuleCore = (WS VERSION_KW { tokenPos; } - OPEN_PAREN - spec:VersionSpec - CLOS_PAREN - OPEN_BRACK WS { nq_onVersionStart(core->this, spec); } ModuleCore* WS CLOS_BRACK { nq_onVersionEnd(core->this); })
           |(WS Include WS
           | WS Import WS
           | WS Decl WS
@@ -584,7 +584,7 @@ FuncType  = ("Func" { tokenPos; }
             )?
             ) { $$=nq_onFuncTypeNew(core->this); }
 
-Stmt     = (WS VERSION_KW - OPEN_PAREN - VersionSpec - CLOS_PAREN - OPEN_BRACK WS StmtCore* WS CLOS_BRACK)
+Stmt     = (WS VERSION_KW { tokenPos; } - OPEN_PAREN - spec:VersionSpec - CLOS_PAREN - OPEN_BRACK { nq_onVersionStart(core->this, spec); } WS (s:StmtCore { nq_onStatement(core->this, s); })* WS CLOS_BRACK { $$=nq_onVersionEnd(core->this); })
          | StmtCore
 
 StmtCore = (
