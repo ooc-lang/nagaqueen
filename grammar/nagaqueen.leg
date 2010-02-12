@@ -142,6 +142,7 @@ void nq_onFunctionReturnType(void *this, void *type);
 void nq_onFunctionStatic(void *this);
 void nq_onFunctionInline(void *this);
 void nq_onFunctionFinal(void *this);
+void nq_onFunctionProto(void *this);
 void nq_onFunctionSuffix(void *this, char *name);
 void *nq_onFunctionEnd(void *this);
 
@@ -347,6 +348,7 @@ FunctionDecl =
                 | STATIC_KW   { nq_onFunctionStatic(core->this); }
                 | INLINE_KW   { nq_onFunctionInline(core->this); }
                 | FINAL_KW    { nq_onFunctionFinal(core->this); }
+                | PROTO_KW    { nq_onFunctionProto(core->this); }
                 )
             )*
             
@@ -777,7 +779,7 @@ Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarA
                 | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); } -
                 | AS_KW { tokenPos; } - r:Type   { $$=l=nq_onCast(core->this, l, r); }
                 | !ASS_B_AND B_AND - ![0-9A-Za-z_]             { $$=l=nq_onAddressOf(core->this, l); }
-                | AT                             { $$=l=nq_onDereference(core->this, l); }
+                | AT -                           { $$=l=nq_onDereference(core->this, l); }
                 )*
                 
 FunctionCall = (
@@ -844,6 +846,7 @@ AS_KW        = "as"
 IN_KW        = "in"
 INTO_KW      = "into"
 VERSION_KW   = "version"
+PROTO_KW     = "proto"
 
 OPERATOR_KW  = "operator"
 CONST_KW     = "const"
