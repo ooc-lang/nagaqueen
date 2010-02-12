@@ -89,6 +89,14 @@ void nq_onInclude(void *this, char *path, char *name);
 void nq_onImport (void *this, char *path, char *name);
 void nq_onImportNamespace(void *this, char *namespace, int quantity);
 
+void *nq_onVersionName(void *this, char *name);
+void *nq_onVersionNegation(void *this, void *spec);
+void *nq_onVersionAnd(void *this, void *specLeft, void *specRight);
+void *nq_onVersionOr(void *this, void *specLeft, void *specRight);
+
+void nq_onVersionStart(void *this, void *spec);
+void nq_onVersionEnd(void *this);
+
 void nq_onCoverStart(void *this, char *name);
 void nq_onCoverExtern(void *this, char *externName);
 void nq_onCoverFromType(void *this, void *type);
@@ -244,11 +252,23 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 %}
 
-Module  =   (WS Include WS
+Module  =  ModuleCore
+          | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
+          
+ModuleCore = (WS VERSION_KW - OPEN_PAREN - VersionSpec - CLOS_PAREN - OPEN_BRACK WS ModuleCore* WS CLOS_BRACK)
+          |(WS Include WS
           | WS Import WS
           | WS Decl WS
           | WS Stmt WS)
-          | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
+          
+VersionSpec = ((- OPEN_PAREN - VersionSpec - CLOS_PAREN) | (l:VersionCore))
+                ((- '&&' - r:VersionSpec { l=$$=nq_onVersionAnd(core->this, l, r); }) |
+                 (- '||' - r:VersionSpec { l=$$=nq_onVersionOr (core->this, l, r); }))*
+               
+VersionCore = (VersionNegation | VersionName)
+
+VersionName = - i:IDENT { $$=nq_onVersionName(core->this, i); }
+VersionNegation = - '!' - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec); }
         
 Include = INCLUDE_KW
           - < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
@@ -564,7 +584,10 @@ FuncType  = ("Func" { tokenPos; }
             )?
             ) { $$=nq_onFuncTypeNew(core->this); }
 
-Stmt    = (
+Stmt     = (WS VERSION_KW - OPEN_PAREN - VersionSpec - CLOS_PAREN - OPEN_BRACK WS StmtCore* WS CLOS_BRACK)
+         | StmtCore
+
+StmtCore = (
           ( # some statements need an EOL after them...
               ( WS r:Return
               | WS v:VariableDecl
@@ -807,6 +830,7 @@ CASE_KW      = "case"
 AS_KW        = "as"
 IN_KW        = "in"
 INTO_KW      = "into"
+VERSION_KW   = "version"
 
 OPERATOR_KW  = "operator"
 CONST_KW     = "const"
