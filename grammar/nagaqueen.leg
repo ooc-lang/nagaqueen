@@ -601,7 +601,7 @@ Type    = t:TypeBase
           (- LESSTHAN - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); }
           (- COMMA    - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); })*
           - MORETHAN)?
-          - (STAR { t=$$=nq_onTypePointer(core->this, $$); }
+          - (STAR { t=$$=nq_onTypePointer(core->this, t); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
           )*
           - { $$=t; }
