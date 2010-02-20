@@ -121,6 +121,7 @@ void nq_onInterfaceEnd(void *this);
 void nq_onVarDeclStart(void *this);
 void nq_onVarDeclName(void *this, char *name);
 void nq_onVarDeclExtern(void *this, char *externName);
+void nq_onVarDeclUnmangled(void *this, char *unmangledName);
 void nq_onVarDeclExpr(void *this, void *expr);
 void nq_onVarDeclType(void *this, void *type);
 void nq_onVarDeclStatic(void *this);
@@ -137,6 +138,7 @@ void nq_onOperatorEnd(void *this);
 
 void nq_onFunctionStart(void *this, char *name);
 void nq_onFunctionExtern(void *this, char *externName);
+void nq_onFunctionUnmangled(void *this, char *unmangledName);
 void nq_onFunctionAbstract(void *this);
 void nq_onFunctionArgsStart(void *this);
 void nq_onFunctionArgsEnd(void *this);
@@ -368,6 +370,7 @@ FunctionDecl =
             
             # modifiers
             (-  ( externName:ExternName  { nq_onFunctionExtern(core->this, externName); }
+                | unmangledName:UnmangledName { nq_onFunctionUnmangled(core->this, unmangledName); }
                 | ABSTRACT_KW { nq_onFunctionAbstract(core->this); }
                 | STATIC_KW   { nq_onFunctionStatic(core->this); }
                 | INLINE_KW   { nq_onFunctionInline(core->this); }
@@ -541,6 +544,13 @@ ExternName = EXTERN_KW { $$="" }
               - CLOS_PAREN
               )?
 
+UnmangledName = UNMANGLED_KW { $$="" }
+             (
+             - OPEN_PAREN
+             - IDENT { $$=yytext } # is that correct? should it be $$=$$? what's happening?
+             - CLOS_PAREN
+             )?           
+
 VarDeclFromExpr = ( l:VariableAccess { l=nq_onVarAccess(core->this, NULL, l); }
                   - ASS_DECL       { tokenPos; }
                   - c:ConstKeyword
@@ -566,6 +576,7 @@ ConventionalVarDecl =
             (
               (- STATIC_KW { nq_onVarDeclStatic(core->this); })
             | (- externName:ExternName { nq_onVarDeclExtern(core->this, externName); })
+            | (- unmangledName:UnmangledName { nq_onVarDeclUnmangled(core->this, unmangledName); })
             )*
             - Type { nq_onVarDeclType(core->this, $$); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
@@ -858,6 +869,7 @@ STATIC_KW    = "static"
 INLINE_KW    = "inline"
 EXTENDS_KW   = "extends"
 EXTERN_KW    = "extern"
+UNMANGLED_KW = "unmangled"
 IMPLEMENTS_KW= "implements"
 IMPLEMENT_KW = "implement"
 
@@ -887,7 +899,7 @@ NULL_KW      = "null"
              # a few keywords voluntarily left out
 KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
              | COVER_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
-             | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW
+             | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW | UNMANGLED_KW
              | IMPORT_KW | INCLUDE_KW | IF_KW | ELSE_KW | FOR_KW
              | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | TRUE_KW
              | FALSE_KW | NULL_KW | MATCH_KW | CASE_KW
