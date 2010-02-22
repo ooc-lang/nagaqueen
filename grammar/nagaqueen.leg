@@ -274,7 +274,7 @@ ModuleCore = (WS VERSION_KW { tokenPos; }
           | WS Import WS
           | WS Use WS
           | WS Decl WS
-          | WS Stmt WS)
+          | WS stmt:Stmt WS { nq_onStatement(core->this, stmt); })
           
 VersionSpec = ((- OPEN_PAREN - l:VersionSpec - CLOS_PAREN) | (l:VersionCore))
                 ((- '&&' { tokenPos; } - r:VersionSpec { l=$$=nq_onVersionAnd(core->this, l, r); }) |
@@ -988,8 +988,8 @@ IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
 
-STRING_LIT   = ["] < (!'"' ('\\\"' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))* > ["]       -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
-CHAR_LIT     = ['] < (!'"' ("\\\'" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']       -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
+STRING_LIT   = ["] < (!'"' ('\\\"' | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))* > ["]       -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
+CHAR_LIT     = ['] < (!'"' ("\\\'" | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']       -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
 BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
 
 %%
