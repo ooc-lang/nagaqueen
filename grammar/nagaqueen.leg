@@ -552,14 +552,14 @@ UnmangledName = UNMANGLED_KW { $$="" }
              - CLOS_PAREN
              )?           
 
-VarDeclFromExpr = ( l:VariableAccess { l=nq_onVarAccess(core->this, NULL, l); }
+VarDeclFromExpr = ( i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); }
                   - ASS_DECL       { tokenPos; }
                   (
                     (- STATIC_KW { nq_onVarDeclStatic(core->this); })
                   | (- CONST_KW  { nq_onVarDeclConst (core->this); })
                   )*
-                  - r:Expr
-                  - { $$=nq_onVarDeclAssign(core->this, l, r); }
+                  - r:Expr { nq_onVarDeclExpr(core->this, r); }
+                  - { $$=nq_onVarDeclEnd(core->this); }
                   )
 
 ConventionalVarDecl =
@@ -723,10 +723,8 @@ Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
         | (RETURN_KW { tokenPos; }          { $$=nq_onReturn(core->this, NULL); })
 
 
-#Expr     = (OPEN_PAREN { tokenPos; } - i:Expr - CLOS_PAREN { $$=nq_onParenthesis(core->this, i); } -)
-#         | (b:BinaryOperation -)
-
-Expr     = BinaryOperation -
+Expr     =   vd:VariableDecl { nq_onStatement(core->this, vd); $$=vd; } -
+           | BinaryOperation -
 
 #operators
 
