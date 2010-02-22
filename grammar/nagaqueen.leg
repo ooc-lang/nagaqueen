@@ -464,6 +464,7 @@ ClassDecl   = (
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
                     | fd:FunctionDecl
+                    | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
                     ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
                 WS)*
                 
