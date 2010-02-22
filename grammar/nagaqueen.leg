@@ -126,7 +126,7 @@ void nq_onVarDeclExpr(void *this, void *expr);
 void nq_onVarDeclType(void *this, void *type);
 void nq_onVarDeclStatic(void *this);
 void *nq_onVarDeclEnd(void *this);
-void *nq_onVarDeclAssign(void *this, void *access, bool isConst, void *expr);
+void *nq_onVarDeclAssign(void *this, void *access, void *expr);
 
 void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
@@ -143,6 +143,7 @@ void nq_onFunctionAbstract(void *this);
 void nq_onFunctionArgsStart(void *this);
 void nq_onFunctionArgsEnd(void *this);
 void nq_onFunctionReturnType(void *this, void *type);
+void nq_onFunctionConst(void *this);
 void nq_onFunctionStatic(void *this);
 void nq_onFunctionInline(void *this);
 void nq_onFunctionFinal(void *this);
@@ -553,9 +554,12 @@ UnmangledName = UNMANGLED_KW { $$="" }
 
 VarDeclFromExpr = ( l:VariableAccess { l=nq_onVarAccess(core->this, NULL, l); }
                   - ASS_DECL       { tokenPos; }
-                  - c:ConstKeyword
+                  (
+                    (- STATIC_KW { nq_onVarDeclStatic(core->this); })
+                  | (- CONST_KW  { nq_onVarDeclConst (core->this); })
+                  )*
                   - r:Expr
-                  - { $$=nq_onVarDeclAssign(core->this, l, c, r); }
+                  - { $$=nq_onVarDeclAssign(core->this, l, r); }
                   )
 
 ConventionalVarDecl =
@@ -575,6 +579,7 @@ ConventionalVarDecl =
             - COLON
             (
               (- STATIC_KW { nq_onVarDeclStatic(core->this); })
+            | (- CONST_KW  { nq_onVarDeclConst (core->this); })
             | (- externName:ExternName { nq_onVarDeclExtern(core->this, externName); })
             | (- unmangledName:UnmangledName { nq_onVarDeclUnmangled(core->this, unmangledName); })
             )*
@@ -726,8 +731,6 @@ Expr     = BinaryOperation -
 #operators
 
 BinaryOperation = Assignment
-
-ConstKeyword = - (!CONST_KW { $$=(void*) false } | CONST_KW { $$=(void*) true })
 
 Assignment = l: Ternary
                 ( ASS            { tokenPos; }  WS   r: Ternary              { $$=l=nq_onAssign(core->this, l, r); }
