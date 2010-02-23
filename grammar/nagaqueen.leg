@@ -725,7 +725,7 @@ Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
         | (RETURN_KW { tokenPos; }          { $$=nq_onReturn(core->this, NULL); })
 
 
-Expr     =   vd:VariableDecl { nq_onStatement(core->this, vd); $$=vd; } -
+Expr     =   VariableDecl -
            | BinaryOperation -
 
 #operators
