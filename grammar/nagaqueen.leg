@@ -173,6 +173,9 @@ void *nq_onVarAccess(void *this, void *expr, char *name);
 void *nq_onArrayAccess(void *this, void *array, void *index);
 void *nq_onCast(void *this, void *expr, void *type);
 
+void nq_onBlockStart(void *this);
+void *nq_onBlockend(void *this);
+
 void nq_onIfStart(void *this, void *condition);
 void *nq_onIfEnd(void *this);
 void nq_onElseStart(void *this);
@@ -650,6 +653,7 @@ StmtCore = (
            )
           | # ...but block don't
           ( WS c:Conditional
+          | WS b:Block
           | WS f:FlowControl
           | WS m:Match
           )
@@ -660,6 +664,12 @@ EoledStatement =  ( WS Return
                   )
           
 Conditional = (If | Else)
+
+Block   = (
+           OPEN_BRACK { tokenPos; nq_onBlockStart(core->this); }
+          (WS s:Stmt { tokenPos; nq_onStatement(core->this, s) } WS)*
+           WS CLOS_BRACK { $$=nq_onBlockEnd(core->this); }
+          )
 
 If      = (
           IF_KW { tokenPos; }
@@ -717,7 +727,7 @@ While = WHILE_KW { tokenPos; }
 Body =  (
         OPEN_BRACK
         (WS s:Stmt { tokenPos; nq_onStatement(core->this, s) } WS)*
-        WS CLOS_BRACK
+        WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset); exit(1) }
         ) | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
           
 Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
@@ -990,8 +1000,8 @@ IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
 
-STRING_LIT   = ["] < (!'"' ('\\\"' | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | . | '\n'))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
-CHAR_LIT     = ['] < (!'"' ("\\\'" | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']         -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
+STRING_LIT   = ["] < (!["] ('\\\"' | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | . | '\n'))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
+CHAR_LIT     = ['] < (!['] ("\\\'" | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .)) > [']         -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
 BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
 
 %%
