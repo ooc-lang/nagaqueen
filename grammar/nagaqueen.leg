@@ -721,7 +721,7 @@ Body =  (
         ) | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
           
 Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
-        | (RETURN_KW { tokenPos; }          { $$=nq_onReturn(core->this, NULL); })
+        | (RETURN_KW { tokenPos; } -        { $$=nq_onReturn(core->this, NULL); })
 
 
 Expr     =   VariableDecl -
