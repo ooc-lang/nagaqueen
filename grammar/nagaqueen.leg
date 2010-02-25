@@ -457,7 +457,6 @@ ClassDecl   = (
             
             { nq_onClassBody(core->this); }
             
-            # body is optional (for abstract classes)
             (
                 - OPEN_BRACK WS
                 
@@ -470,7 +469,7 @@ ClassDecl   = (
                 WS)*
                 
                 WS CLOS_BRACK
-            )?
+            )
             ) { nq_onClassEnd(core->this) }
             
 CoverDecl   = (
@@ -625,7 +624,7 @@ Type    = t:TypeBase
           )*
           - { $$=t; }
           
-FuncType  = ("Func" { tokenPos; }
+FuncType  = ("Func" &[^A-Za-z0-9_] { tokenPos; }
             (
             - OPEN_PAREN
             (- Argument)?
@@ -991,8 +990,8 @@ IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
 
-STRING_LIT   = ["] < (!'"' ('\\\"' | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))* > ["]       -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
-CHAR_LIT     = ['] < (!'"' ("\\\'" | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']       -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
+STRING_LIT   = ["] < (!'"' ('\\\"' | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | . | '\n'))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
+CHAR_LIT     = ['] < (!'"' ("\\\'" | "\\\\" | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .))  > [']         -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
 BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
 
 %%
