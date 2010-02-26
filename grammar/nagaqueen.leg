@@ -844,7 +844,7 @@ FunctionCall = (
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
                )*
                )?
-               - CLOS_PAREN
+               WS CLOS_PAREN
                ) { $$=nq_onFunctionCallEnd(core->this); }
 
 VariableAccess = i:IDENT
@@ -1004,7 +1004,7 @@ IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
                
-STRING_LIT   = ["] < (!["] ("\\\"" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | . | '\n'))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
+STRING_LIT   = ["] < (!["] ("\\\"" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | EOL | .))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
 CHAR_LIT     = ['] < (!['] ("\\\'" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .)) > [']         -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
 BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
 
