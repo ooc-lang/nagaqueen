@@ -580,14 +580,14 @@ ConventionalVarDecl =
             -
             )*
             
-            - COLON
+            WS COLON WS
             (
               (- STATIC_KW { nq_onVarDeclStatic(core->this); })
             | (- CONST_KW  { nq_onVarDeclConst (core->this); })
             | (- externName:ExternName { nq_onVarDeclExtern(core->this, externName); })
             | (- unmangledName:UnmangledName { nq_onVarDeclUnmangled(core->this, unmangledName); })
             )*
-            - Type { nq_onVarDeclType(core->this, $$); }
+            WS Type { nq_onVarDeclType(core->this, $$); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             )  { $$=nq_onVarDeclEnd(core->this); }
 
