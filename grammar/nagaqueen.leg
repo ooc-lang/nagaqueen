@@ -649,12 +649,12 @@ Stmt     = (
 StmtCore = (
               # some statements need an EOL after them...
               e:EoledStatement (- '.' { tokenPos; } WS call:FunctionCall { nq_onStatement(core->this, e); nq_onFunctionCallChain(core->this, call, e); $$=e=call; })*
-              (Terminator | (&CLOS_BRACK) | (&CommentLine))
+              (Terminator+ | (&CLOS_BRACK) | (&CommentLine))
            )
           | # ...but block don't
           ( WS c:Conditional
           | WS b:Block
-          | WS f:FlowControl
+          | WS f:FlowControl (Terminator*)
           | WS m:Match
           )
           
@@ -850,7 +850,7 @@ FunctionCall = (
 VariableAccess = i:IDENT
 
 Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
-        | (OPEN_PAREN { tokenPos; } - inner:Expr - CLOS_PAREN - { $$=nq_onParenthesis(core->this, inner); })
+        | (OPEN_PAREN { tokenPos; } WS inner:Expr WS CLOS_PAREN - { $$=nq_onParenthesis(core->this, inner); })
         | ValueCore
 
           
@@ -988,8 +988,9 @@ AT         = '@'
 TILDE      = '~'   -
 -          = [ \t]*
 EOL        = ('\n' | '\r\n' | '\r')  { core->yylineno++; }
-Terminator = CommentLine
+Terminator = (CommentLine
            | CommentMultiLine? (EOL | ';')
+             )
 WS         = ([ \t] | Comment | EOL)*
 
 Comment = (CommentLine | CommentMultiLine)
