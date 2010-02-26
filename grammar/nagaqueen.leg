@@ -130,7 +130,7 @@ void *nq_onVarDeclAssign(void *this, void *access, void *expr);
 
 void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
-void nq_onTypeGenericArgument(void *this, void *type, char *name);
+void nq_onTypeGenericArgument(void *this, void *type, void *innerType);
 void *nq_onFuncTypeNew(void *this);
 
 void nq_onOperatorStart(void *this, char *symbol);
@@ -610,8 +610,8 @@ TypeBase = FuncType |
 # it's used when we have to decide between a Type and a VariableAccess
 GenericType
         = t:TypeBase
-           - LESSTHAN - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); }
-          (- COMMA    - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); })*
+           - LESSTHAN - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
+          (- COMMA    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
            - MORETHAN
            - (STAR { t=$$=nq_onTypePointer(core->this, $$); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
@@ -619,8 +619,8 @@ GenericType
           - { $$=t; }
             
 Type    = t:TypeBase
-          (- LESSTHAN - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); }
-          (- COMMA    - ident:IDENT { nq_onTypeGenericArgument(core->this, t, ident); })*
+          (- LESSTHAN - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
+          (- COMMA    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
           - MORETHAN)?
           - (STAR { t=$$=nq_onTypePointer(core->this, t); }
           | "[" { printf("["); } - Expr? "]" { printf("]"); }
