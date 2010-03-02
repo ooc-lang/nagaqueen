@@ -130,6 +130,7 @@ void *nq_onVarDeclAssign(void *this, void *access, void *expr);
 
 void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
+void *nq_onTypeBrackets(void *this, void *type, void *inner); // $$=nq_onTypeBrackets($$, inner)
 void nq_onTypeGenericArgument(void *this, void *type, void *innerType);
 void *nq_onFuncTypeNew(void *this);
 
@@ -613,8 +614,8 @@ GenericType
            - LESSTHAN - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
           (- COMMA    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
            - MORETHAN
-           - (STAR { t=$$=nq_onTypePointer(core->this, $$); }
-          | "[" { printf("["); } - Expr? "]" { printf("]"); }
+           - (STAR { t=$$=nq_onTypePointer(core->this, t); }
+          | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
           - { $$=t; }
             
@@ -623,7 +624,7 @@ Type    = t:TypeBase
           (- COMMA    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
           - MORETHAN)?
           - (STAR { t=$$=nq_onTypePointer(core->this, t); }
-          | "[" { printf("["); } - Expr? "]" { printf("]"); }
+          | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
           - { $$=t; }
           
