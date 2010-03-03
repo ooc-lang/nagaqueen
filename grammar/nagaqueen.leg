@@ -419,7 +419,7 @@ FunctionDeclBody = (
             
             # body is optional (for abstract/extern-named functions)
             (
-                - OPEN_BRACK WS
+                WS OPEN_BRACK WS
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
@@ -465,7 +465,7 @@ ClassDecl   = (
             { nq_onClassBody(core->this); }
             
             (
-                - OPEN_BRACK WS
+                WS OPEN_BRACK WS
                 
                 # classdecl contents
                 (WS
@@ -507,7 +507,7 @@ CoverDecl   = (
 
             # body is optional for covers
             (
-                - OPEN_BRACK WS
+                WS OPEN_BRACK WS
                 
                 # coverdecl content
                 (WS
@@ -534,7 +534,7 @@ InterfaceDecl = (
             
             # body is required for interfaces
             (
-                - OPEN_BRACK WS
+                WS OPEN_BRACK WS
                 
                 # interface content
                 (WS
