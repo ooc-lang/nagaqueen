@@ -164,6 +164,9 @@ void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
 void nq_onFunctionCallChain(void *this, void *call, void *expr);
 
+void nq_onArrayLiteralStart(void *this);
+void *nq_onArrayLiteralEnd(void *this);
+
 void *nq_onStringLiteral(void *this, char *text);
 void *nq_onCharLiteral(void *this, char *value);
 
@@ -857,6 +860,10 @@ Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, 
         | (OPEN_PAREN { tokenPos; } WS inner:Expr WS CLOS_PAREN - { $$=nq_onParenthesis(core->this, inner); })
         | ValueCore
 
+ArrayLiteral = OPEN_SQUAR { tokenPos; } WS { nq_onArrayLiteralStart(core->this); }
+                            e:Expr { nq_onStatement(core->this, e); }
+               (WS COMMA WS e:Expr { nq_onStatement(core->this, e); })*
+               WS CLOS_SQUAR { $$=nq_onArrayLiteralEnd(core->this); }
           
 ValueCore =
         ( o:OCT_LIT -                                      { tokenPos; $$=nq_onOctLiteral(core->this, yytext); }
@@ -868,6 +875,7 @@ ValueCore =
         | b:BOOL_LIT  -                                    { tokenPos; $$=nq_onBoolLiteral(core->this, $$); }
         | m:Match                                          { $$=m; }
         | NULL_KW -                                        { tokenPos; $$=nq_onNull(core->this); }
+        | ArrayLiteral
         | FunctionCall
         | t:GenericType                                    { $$=t; }
         | VariableAccess                                   { tokenPos; $$=nq_onVarAccess(core->this, NULL, yytext); }
