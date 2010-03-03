@@ -700,7 +700,7 @@ Case    = CASE_KW  { tokenPos; nq_onCaseStart(core->this); }
           
 Match   = MATCH_KW { tokenPos; nq_onMatchStart(core->this); }
             (- v: Value { nq_onMatchExpr(core->this, v); })?
-          - OPEN_BRACK
+          WS OPEN_BRACK
           (WS Case WS)*
           WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset); exit(1) }
           { $$=nq_onMatchEnd(core->this); }
