@@ -42,17 +42,35 @@ void GC_free(void *);
 //#define YY_DEBUG 1
 
 /* Send input to yyparse from codebuf instead of stdin */
-#define YY_INPUT(buf, result, max_size) {        \
-    result = fread(buf, 1, max_size, core->stream);    \
-    static int doneNewlineHack = 0;              \
-    if(result == 0 && doneNewlineHack == 0) {    \
-        doneNewlineHack = 1;                     \
-        char last = buf[strlen(buf) - 1];        \
-        if(last != '\n') {                       \
-            (*buf) = '\n';                       \
-            result = 1;                          \
-        }                                        \
-    }                                            \
+#define YY_INPUT(buf, result, max_size) {            \
+    result = fread(buf, 1, max_size, core->stream);  \
+    static int doneNewlineHack = 0;                  \
+    int buflen = strlen(buf);                        \
+    if(result == 0 && doneNewlineHack == 0) {        \
+        doneNewlineHack = 1;                         \
+        char last = buf[buflen - 1];                 \
+        if(last != '\n') {                           \
+            (*buf) = '\n';                           \
+            result = 1;                              \
+        }                                            \
+    }                                                \
+    for(int i = 0; i < buflen - 1; i++) {            \
+        if(buf[i] == '\\') {                         \
+            if(buf[i+1] == '\r') {                   \
+                buf[i] = ' ';                        \
+                buf[i+1] = ' ';                      \
+                if(buf[i+2] == '\n') {               \
+                    buf[i+2] == ' ';                 \
+                    i += 2; continue;                \
+                }                                    \
+                i += 1; continue;                    \
+            } else if(buf[i+1] == '\n') {            \
+                buf[i] = ' ';                        \
+                buf[i+1] = ' ';                      \
+                i += 1; continue;                    \
+            }                                        \
+        }                                            \
+    }                                                \
 }
 
 ///////////////////// main struct, for the sake of being re-entrant ////////////////////////
@@ -845,7 +863,7 @@ FunctionCall = (
                OPEN_PAREN WS
                (
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
-               (-
+               (WS
                COMMA
                WS
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
