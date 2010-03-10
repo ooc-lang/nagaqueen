@@ -311,7 +311,7 @@ VersionSpec = ((- OPEN_PAREN - l:VersionSpec - CLOS_PAREN) | (l:VersionCore))
                
 VersionCore = (VersionNegation | VersionName)
 
-VersionName = - i:IDENT { tokenPos; $$=nq_onVersionName(core->this, i); }
+VersionName = - < [a-zA-Z0-9_]+ > { tokenPos; $$=nq_onVersionName(core->this, yytext); }
 VersionNegation = - '!' { tokenPos; } - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec); }
 
 Use = USE_KW
@@ -490,7 +490,7 @@ ClassDecl   = (
                 
                 # classdecl contents
                 (WS
-                    ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
+                    ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | fd:FunctionDecl
                     | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
                     ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
@@ -532,7 +532,7 @@ CoverDecl   = (
                 
                 # coverdecl content
                 (WS
-                    ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); }
+                    ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | fd:FunctionDecl
                     ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
                 WS)*
@@ -1022,6 +1022,7 @@ Terminator = (CommentLine
            | CommentMultiLine? (EOL | ';')
              )
 WS         = ([ \t] | Comment | EOL)*
+WSandTerm  = ([ \t] | Comment | EOL | Terminator)*
 
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" (!EOL .)* EOL
