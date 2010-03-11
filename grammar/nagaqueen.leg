@@ -756,8 +756,8 @@ Body =  (
         WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset); exit(1) }
         ) | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
           
-Return  = (RETURN_KW { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
-        | (RETURN_KW { tokenPos; } -        { $$=nq_onReturn(core->this, NULL); })
+Return  = (RETURN_KW &([^A-Za-z_]) { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
+        | (RETURN_KW &([^A-Za-z_]) { tokenPos; } -        { $$=nq_onReturn(core->this, NULL); })
 
 
 Expr     =   VariableDecl -
