@@ -150,7 +150,10 @@ void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type); // $$=nq_onTypePointer($$)
 void *nq_onTypeBrackets(void *this, void *type, void *inner); // $$=nq_onTypeBrackets($$, inner)
 void nq_onTypeGenericArgument(void *this, void *type, void *innerType);
+
 void *nq_onFuncTypeNew(void *this);
+void nq_onFuncTypeArgument(void *this, void *funcType, void *argType);
+void nq_onFuncTypeReturnType(void *this, void *funcType, void *returnType);
 
 void nq_onOperatorStart(void *this, char *symbol);
 void nq_onOperatorEnd(void *this);
@@ -644,22 +647,31 @@ GenericType
           - { $$=t; }
             
 Type    = t:TypeBase
-          (- LESSTHAN - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
-          (- COMMA    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
+          (- LESSTHAN - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); }
+          (- COMMA    - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); })*
           - MORETHAN)?
           - (STAR { t=$$=nq_onTypePointer(core->this, t); }
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
           - { $$=t; }
           
-FuncType  = ("Func" &[^A-Za-z0-9_] { tokenPos; }
+FuncTypeCore = "Func" &[^A-Za-z0-9_] { tokenPos; $$=nq_onFuncTypeNew(core->this); }          
+          
+FuncType  = funcType:FuncTypeCore
+            (- LESSTHAN - genType:Type { nq_onTypeGenericArgument(core->this, funcType, genType); }
+            (- COMMA    - genType:Type { nq_onTypeGenericArgument(core->this, funcType, genType); })*
+            - MORETHAN)?
             (
             - OPEN_PAREN
-            (- Argument)?
-            (COMMA - Argument)*
+            (      - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); }
+            (COMMA - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); })*
+            )?
             - CLOS_PAREN
             )?
-            ) { $$=nq_onFuncTypeNew(core->this); }
+            (- R_ARROW
+             - returnType:Type { nq_onFuncTypeReturnType(core->this, funcType, returnType); }
+            )?
+            { $$=funcType; }
 
 Stmt     = (
                 WS VERSION_KW { tokenPos; }
