@@ -413,6 +413,8 @@ FunctionDecl =
             )*
             
             FunctionDeclCore
+
+AnonymousFunctionDecl = { nq_onFunctionStart(core->this, ""); } FunctionDeclCore
                                     
 FunctionDeclCore =
             - FUNC_KW
@@ -778,7 +780,7 @@ Return  = (RETURN_KW &([^A-Za-z_]) { tokenPos; } - e:Expr { $$=nq_onReturn(core-
 
 Expr     =   VariableDecl -
            | BinaryOperation -
-           | FunctionDeclCore
+           | AnonymousFunctionDecl
 
 #operators
 
