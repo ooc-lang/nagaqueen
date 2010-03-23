@@ -911,7 +911,7 @@ ValueCore =
         | c:CHAR_LIT -
         | b:BOOL_LIT  -                                    { tokenPos; $$=nq_onBoolLiteral(core->this, $$); }
         | m:Match                                          { $$=m; }
-        | NULL_KW -                                        { tokenPos; $$=nq_onNull(core->this); }
+        | NULL_KW &[^A-Za-z_] -                            { tokenPos; $$=nq_onNull(core->this); }
         | ArrayLiteral
         | FunctionCall
         | t:GenericType                                    { $$=t; }
@@ -1057,7 +1057,7 @@ IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                
 STRING_LIT   = ["] < (!["] ("\\\"" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | EOL | .))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
 CHAR_LIT     = ['] < (!['] ("\\\'" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .)) > [']         -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
-BOOL_LIT     = (TRUE_KW { $$=true; } | FALSE_KW { $$=false; }) - 
+BOOL_LIT     = (TRUE_KW &[^A-Za-z_] { $$=true; } | FALSE_KW &[^A-Za-z_] { $$=false; }) - 
 
 %%
 
