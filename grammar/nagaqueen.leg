@@ -41,38 +41,6 @@ void GC_free(void *);
 
 //#define YY_DEBUG 1
 
-/* Send input to yyparse from codebuf instead of stdin */
-#define YY_INPUT(buf, result, max_size) {            \
-    result = fread(buf, 1, max_size, core->stream);  \
-    static int doneNewlineHack = 0;                  \
-    int buflen = strlen(buf);                        \
-    if(result == 0 && doneNewlineHack == 0) {        \
-        doneNewlineHack = 1;                         \
-        char last = buf[buflen - 1];                 \
-        if(last != '\n') {                           \
-            (*buf) = '\n';                           \
-            result = 1;                              \
-        }                                            \
-    }                                                \
-    for(int i = 0; i < buflen - 1; i++) {            \
-        if(buf[i] == '\\') {                         \
-            if(buf[i+1] == '\r') {                   \
-                buf[i] = ' ';                        \
-                buf[i+1] = ' ';                      \
-                if(buf[i+2] == '\n') {               \
-                    buf[i+2] == ' ';                 \
-                    i += 2; continue;                \
-                }                                    \
-                i += 1; continue;                    \
-            } else if(buf[i+1] == '\n') {            \
-                buf[i] = ' ';                        \
-                buf[i+1] = ' ';                      \
-                i += 1; continue;                    \
-            }                                        \
-        }                                            \
-    }                                                \
-}
-
 ///////////////////// main struct, for the sake of being re-entrant ////////////////////////
 
 struct _NagaQueenCore {
@@ -96,6 +64,37 @@ typedef struct _NagaQueenCore NagaQueenCore;
 
 #define YY_XTYPE NagaQueenCore *
 #define YY_XVAR core
+
+/* Send input to yyparse from codebuf instead of stdin */
+#define YY_INPUT(buf, result, max_size) yyInput(buf, &result, max_size, core)
+
+void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {            
+    (*result) = fread(buf, 1, max_size, core->stream);  
+    static int doneNewlineHack = 0;                  
+    if((*result) == 0 && doneNewlineHack == 0) {        
+        doneNewlineHack = 1;                         
+        (*buf) = '\n';                           
+        (*result) = 1;                              
+        return;
+    }                                             
+    for(int i = 0; i < (*result) - 1; i++) {            
+        if(buf[i] == '\\') {                         
+            if(buf[i+1] == '\r') {                   
+                buf[i] = ' ';                        
+                buf[i+1] = ' ';                      
+                if(buf[i+2] == '\n') {               
+                    buf[i+2] == ' ';                 
+                    i += 2; continue;                
+                }                                    
+                i += 1; continue;                    
+            } else if(buf[i+1] == '\n') {            
+                buf[i] = ' ';                        
+                buf[i+1] = ' ';                      
+                i += 1; continue;                    
+            }                                        
+        }                                            
+    }                                                
+}
 
 ///////////////////// callbacks def start, you may want to skip this ////////////////////////
 
@@ -864,12 +863,12 @@ Sum     = l:Product
 
 Product = (ProductLogicalNot | ProductBinaryNot | ProductCore)
           
-ProductLogicalNot = L_NOT { tokenPos; } - (inner:Product) - { $$=nq_onLogicalNot(core->this, inner); }
-ProductBinaryNot  = B_NOT { tokenPos; } - (inner:Product) - { $$=nq_onBinaryNot (core->this, inner); }
+ProductLogicalNot = L_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onLogicalNot(core->this, inner); }
+ProductBinaryNot  = B_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onBinaryNot (core->this, inner); }
           
 ProductCore = l:Access
-                    ( STAR        { tokenPos; }  WS r:Access              { $$=nq_onMul(core->this, l, r); }
-                    | SLASH       { tokenPos; }  WS r:Access              { $$=nq_onDiv(core->this, l, r); }
+                    ( STAR        { tokenPos; }  WS r:Access              { $$=l=nq_onMul(core->this, l, r); }
+                    | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
                     )*
                 
 Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
@@ -1068,6 +1067,7 @@ BOOL_LIT     = (TRUE_KW &[^A-Za-z_] { $$=(void*) true; } | FALSE_KW &[^A-Za-z_] 
 int nq_parse(void *this, char *path) {
     
     GREG *G = YY_ALLOC(sizeof(GREG), 0);
+    G->buflen = 0;
     
     NagaQueenCore *core = YY_ALLOC(sizeof(NagaQueenCore), 0);
     core->yylineno = 0;
