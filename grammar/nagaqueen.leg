@@ -162,6 +162,7 @@ void nq_onFunctionStart(void *this, char *name);
 void nq_onFunctionExtern(void *this, char *externName);
 void nq_onFunctionUnmangled(void *this, char *unmangledName);
 void nq_onFunctionAbstract(void *this);
+void nq_onFunctionThisRef(void *this);
 void nq_onFunctionArgsStart(void *this);
 void nq_onFunctionArgsEnd(void *this);
 void nq_onFunctionReturnType(void *this, void *type);
@@ -418,6 +419,7 @@ AnonymousFunctionDecl = { nq_onFunctionStart(core->this, ""); } FunctionDeclCore
                                     
 FunctionDeclCore =
             - FUNC_KW
+            (AT { nq_onFunctionThisRef(core->this); })?
             
             # optional suffix
             (
@@ -647,7 +649,8 @@ GenericType
            - LESSTHAN - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
           (- COMMA    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
            - MORETHAN
-           - (STAR { t=$$=nq_onTypePointer(core->this, t); }
+           - (STAR { t=$$=nq_onTypePointer  (core->this, t); }
+          |   AT   { t=$$=nq_onTypeReference(core->this, t); }
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
           - { $$=t; }
@@ -656,7 +659,8 @@ Type    = t:TypeBase
           (- LESSTHAN - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); }
           (- COMMA    - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); })*
           - MORETHAN)?
-          - (STAR { t=$$=nq_onTypePointer(core->this, t); }
+          - (STAR { t=$$=nq_onTypePointer  (core->this, t); }
+          |  AT   { t=$$=nq_onTypeReference(core->this, t); }
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
           - { $$=t; }
