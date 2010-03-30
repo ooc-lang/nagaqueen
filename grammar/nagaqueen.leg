@@ -123,6 +123,11 @@ void nq_onCoverExtends(void *this, void *type);
 void nq_onCoverImplements(void *this, void *type);
 void nq_onCoverEnd(void *this);
 
+void nq_onEnumStart(void *this, char *name);
+void nq_onEnumStartElement(void *this, char *name);
+void nq_onEnumElementValue(void *this, void *value);
+void nq_onEnumEnd(void *this);
+
 void nq_onClassStart(void *this, char *name);
 void nq_onClassAbstract(void *this);
 void nq_onClassFinal(void *this);
@@ -289,6 +294,7 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 #define NQE_EXP_CASE_IN_MATCH                               3
 #define NQE_EXP_VAR_OR_FUNC_DECL                            4
 #define NQE_EXP_RET_TYPE                                    5
+#define NQE_EXP_ENUM_ELEMENT                                6
 
 /////////////////////                  error IDs end                 ////////////////////////
 
@@ -369,6 +375,7 @@ ImportName = < [A-Za-z_0-9]+ >                { $$=nq_StringClone(yytext); }
 
 Decl    = ( ClassDecl
           | CoverDecl
+          | EnumDecl
           | InterfaceDecl
           | OperatorDecl
           | FunctionDecl
@@ -511,6 +518,29 @@ ClassDecl   = (
                 WS CLOS_BRACK
             )
             ) { nq_onClassEnd(core->this) }
+
+EnumDecl    = (
+            IDENT { tokenPos; nq_onEnumStart(core->this, yytext) }
+            - COLON
+            - ENUM_KW
+
+            (
+                WS OPEN_BRACK WS
+
+                # Enum contents
+                (WS
+                    ( i:IDENT { nq_onEnumStartElement(core->this, i); }
+                    - ASS
+                    - v:DEC_LIT { nq_onEnumElementValue(core->this, v); }
+                    - COMMA?
+                    - Terminator+
+                    ) ~{ nq_error(core->this, NQE_EXP_ENUM_ELEMENT, "Expected an enum element\n", core->token[0]); }
+                WS)*
+
+                WS CLOS_BRACK
+            )
+
+            ) { nq_onEnumEnd(core->this) }
             
 CoverDecl   = (
             IDENT { tokenPos; nq_onCoverStart(core->this, yytext) }
@@ -930,6 +960,7 @@ RETURN_KW    = "return"
 FUNC_KW      = "func"
 CLASS_KW     = "class"
 COVER_KW     = "cover"
+ENUM_KW      = "enum"
 INTERFACE_KW = "interface"
 FROM_KW      = "from"
 ABSTRACT_KW  = "abstract"
@@ -966,7 +997,7 @@ NULL_KW      = "null"
 
              # a few keywords voluntarily left out
 KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
-             | COVER_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
+             | COVER_KW | ENUM_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
              | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW | UNMANGLED_KW
              | IMPORT_KW | INCLUDE_KW | IF_KW | ELSE_KW | FOR_KW
              | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | TRUE_KW
