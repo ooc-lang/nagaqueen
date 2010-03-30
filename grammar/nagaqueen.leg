@@ -536,7 +536,7 @@ EnumDecl    = (
 
 EnumElement = (
                 i:IDENT { nq_onEnumElement(core->this, i); }
-                (ASS v:DEC_LIT { nq_onEnumElementValue(core->this, v); })?
+                (ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); })?
             )
             
 CoverDecl   = (
@@ -933,6 +933,12 @@ ArrayLiteral = OPEN_SQUAR { tokenPos; } WS { nq_onArrayLiteralStart(core->this);
                             e:Expr { nq_onStatement(core->this, e); }
                (WS COMMA WS e:Expr { nq_onStatement(core->this, e); })*
                WS CLOS_SQUAR { $$=nq_onArrayLiteralEnd(core->this); }
+
+IntLiteral =
+        ( o:OCT_LIT -                                      { tokenPos; $$=nq_onOctLiteral(core->this, yytext); }
+        | h:HEX_LIT -                                      { tokenPos; $$=nq_onHexLiteral(core->this, yytext); }
+        | d:DEC_LIT -                                      { tokenPos; $$=nq_onDecLiteral(core->this, yytext); }
+        )
           
 ValueCore =
         ( o:OCT_LIT -                                      { tokenPos; $$=nq_onOctLiteral(core->this, yytext); }
