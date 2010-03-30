@@ -294,7 +294,6 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 #define NQE_EXP_CASE_IN_MATCH                               3
 #define NQE_EXP_VAR_OR_FUNC_DECL                            4
 #define NQE_EXP_RET_TYPE                                    5
-#define NQE_EXP_ENUM_ELEMENT                                6
 
 /////////////////////                  error IDs end                 ////////////////////////
 
@@ -529,12 +528,9 @@ EnumDecl    = (
 
                 # Enum contents
                 (WS
-                    ( i:IDENT { nq_onEnumStartElement(core->this, i); }
-                    - ASS
-                    - v:DEC_LIT { nq_onEnumElementValue(core->this, v); }
-                    - COMMA?
-                    - Terminator+
-                    ) ~{ nq_error(core->this, NQE_EXP_ENUM_ELEMENT, "Expected an enum element\n", core->token[0]); }
+                    i:IDENT { nq_onEnumStartElement(core->this, i); }
+                    (ASS v:DEC_LIT { nq_onEnumElementValue(core->this, v); })?
+                    (COMMA | Terminator+)
                 WS)*
 
                 WS CLOS_BRACK
