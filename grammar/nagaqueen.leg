@@ -135,6 +135,17 @@ void nq_onInterfaceStart(void *this, char *name);
 void nq_onInterfaceExtends(void *this, void *type);
 void nq_onInterfaceEnd(void *this);
 
+void nq_onPropertyDeclStart(void *this, char *name);
+void nq_onPropertyDeclType(void *this, void *type);
+void *nq_onPropertyDeclEnd(void *this);
+
+void nq_onPropertyDeclGetterStart(void *this);
+void *nq_onPropertyDeclGetterEnd(void *this);
+
+void nq_onPropertyDeclSetterStart(void *this);
+void nq_onPropertyDeclSetterArgument(void *this, char *name, _Bool conventional);
+void *nq_onPropertyDeclSetterEnd(void *this);
+
 void nq_onVarDeclStart(void *this);
 void nq_onVarDeclName(void *this, char *name);
 void nq_onVarDeclExtern(void *this, char *externName);
@@ -372,6 +383,7 @@ Decl    = ( ClassDecl
           | InterfaceDecl
           | OperatorDecl
           | FunctionDecl
+          | PropertyDecl
           | vd:VariableDecl { nq_onStatement(core->this, vd); }
           )
 
@@ -503,6 +515,7 @@ ClassDecl   = (
                 # classdecl contents
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
+                    | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     | fd:FunctionDecl
                     | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
                     ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
@@ -631,6 +644,47 @@ ConventionalVarDecl =
 VariableDecl = (v:VarDeclFromExpr     { $$=v })
              | (v:ConventionalVarDecl { $$=v })
             
+PropertyDecl = 
+           (
+           IDENT { tokenPos; nq_onPropertyDeclStart(core->this, yytext); }
+           
+           WS COLON WS
+           Type { nq_onPropertyDeclType(core->this, $$); }
+           
+           WS OPEN_BRACK WS
+           PropertyDeclCore
+           WS CLOS_BRACK WS
+
+           ) { $$=nq_onPropertyDeclEnd(core->this); }
+
+PropertyDeclCore =
+           (
+               PropertyDeclGetter
+             | PropertyDeclSetter
+           )*
+
+PropertyDeclGetter =
+           { nq_onPropertyDeclGetterStart(core->this); }
+           GET_KW WS OPEN_BRACK
+                (WS
+                (s:Stmt  { nq_onStatement(core->this, s) })
+                WS)*
+           CLOS_BRACK
+           { $$=nq_onPropertyDeclGetterEnd(core->this); }
+
+PropertyDeclSetter =
+           { nq_onPropertyDeclSetterStart(core->this); }
+           SET_KW WS
+           OPEN_PAREN WS
+                (IDENT { nq_onPropertyDeclSetterArgument(core->this, $$, 1); })
+           CLOS_PAREN WS
+           OPEN_BRACK
+                (WS
+                (s:Stmt  { nq_onStatement(core->this, s) })
+                WS)*
+           CLOS_BRACK
+           { $$=nq_onPropertyDeclSetterEnd(core->this); }
+
 TypeBase = FuncType |
           (< { tokenPos; core->typeBuffer[0]='\0'; } (CONST_KW -)?
             (
@@ -956,6 +1010,9 @@ INTO_KW      = "into"
 VERSION_KW   = "version"
 PROTO_KW     = "proto"
 
+SET_KW       = "set"
+GET_KW       = "get"
+   
 OPERATOR_KW  = "operator"
 CONST_KW     = "const"
 
