@@ -439,8 +439,8 @@ FunctionDeclBody = (
             # arguments are optional
             (
                 - OPEN_PAREN { nq_onFunctionArgsStart(core->this); }
-                (WS Argument WS
-                    (COMMA WS Argument)*
+                (          WS Argument WS
+                    (COMMA WS Argument WS)*
                 )?
                 - CLOS_PAREN { nq_onFunctionArgsEnd(core->this); }
             )?
