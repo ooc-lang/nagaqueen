@@ -507,10 +507,10 @@ ClassDecl   = (
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | fd:FunctionDecl
                     | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
-                    ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
+                    )
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )
             ) { nq_onClassEnd(core->this) }
             
@@ -548,10 +548,10 @@ CoverDecl   = (
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | fd:FunctionDecl
-                    ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
+                    )
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )?
             )
             { nq_onCoverEnd(core->this); }
@@ -573,10 +573,10 @@ InterfaceDecl = (
                 
                 # interface content
                 (WS
-                    (fd:FunctionDecl | " ") ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", core->token[0]); }
+                    (fd:FunctionDecl | " ")
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", G->pos + G->offset); }
             )
             )
             { nq_onInterfaceEnd(core->this); }
