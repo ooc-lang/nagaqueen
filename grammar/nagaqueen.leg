@@ -32,6 +32,7 @@ void GC_free(void *);
 #endif
 
 #define tokenPos { core->token[0] = thunk->begin + G->offset; core->token[1] = (thunk->end - thunk->begin); }
+#define tokenPosPlusOne { core->token[0] = thunk->begin + G->offset + 1; core->token[1] = (thunk->end - thunk->begin); }
 
 #define YYSTYPE void*
 
@@ -165,6 +166,7 @@ void nq_onTypeGenericArgument(void *this, void *type, void *innerType);
 
 void *nq_onFuncTypeNew(void *this);
 void nq_onFuncTypeArgument(void *this, void *funcType, void *argType);
+void nq_onFuncTypeVarArg(void *this, void *funcType);
 void nq_onFuncTypeReturnType(void *this, void *funcType, void *returnType);
 
 void nq_onOperatorStart(void *this, char *symbol);
@@ -364,12 +366,12 @@ Import  = IMPORT_KW
           )*
           
 ImportAtom = path:ImportPath
-            ((name:ImportName { tokenPos; }             { nq_onImport(core->this, (char*) path, (char*) name); }
+            ((name:ImportName { tokenPosPlusOne; }             { nq_onImport(core->this, (char*) path, (char*) name); }
              (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, 1); })?
              ) | (
             OPEN_SQUAR { core->importQuantity = 0; }
-            (name:ImportName { tokenPos; } - COMMA WS   { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })*
-            (name:ImportName { tokenPos; }              { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })
+            (name:ImportName { tokenPosPlusOne; } - COMMA WS   { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })*
+            (name:ImportName { tokenPosPlusOne; }              { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })
             CLOS_SQUAR
              (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, core->importQuantity); })?
             ))
@@ -449,8 +451,8 @@ FunctionDeclBody = (
             # arguments are optional
             (
                 - OPEN_PAREN { nq_onFunctionArgsStart(core->this); }
-                (WS Argument WS
-                    (COMMA WS Argument)*
+                (          WS Argument WS
+                    (COMMA WS Argument WS)*
                 )?
                 - CLOS_PAREN { nq_onFunctionArgsEnd(core->this); }
             )?
@@ -518,10 +520,10 @@ ClassDecl   = (
                     | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     | fd:FunctionDecl
                     | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
-                    ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
+                    )
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )
             ) { nq_onClassEnd(core->this) }
             
@@ -559,10 +561,10 @@ CoverDecl   = (
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | fd:FunctionDecl
-                    ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
+                    )
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )?
             )
             { nq_onCoverEnd(core->this); }
@@ -584,10 +586,10 @@ InterfaceDecl = (
                 
                 # interface content
                 (WS
-                    (fd:FunctionDecl | " ") ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", core->token[0]); }
+                    (fd:FunctionDecl | " ")
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", G->pos + G->offset); }
             )
             )
             { nq_onInterfaceEnd(core->this); }
@@ -731,6 +733,7 @@ FuncType  = funcType:FuncTypeCore
             (      - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); }
             (COMMA - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); })*
             )?
+            ("..." - { nq_onFuncTypeVarArg(core->this, funcType); })?
             - CLOS_PAREN
             )?
             (- R_ARROW
@@ -775,7 +778,7 @@ Block   = (
 
 If      = (
           IF_KW { tokenPos; }
-          - OPEN_PAREN
+          - OPEN_PAREN WS
           - e:Expr       { nq_onIfStart(core->this, e); }
           - CLOS_PAREN
           - Body
@@ -812,7 +815,7 @@ ImplicitDecl = (v:VariableDecl { $$=v })
              | (i:IDENT        { $$=nq_onVarAccess(core->this, NULL, yytext); })
           
 Foreach = FOR_KW { tokenPos; }
-          - OPEN_PAREN
+          - OPEN_PAREN WS
           - decl:ImplicitDecl
           - IN_KW
           - collec:Expr
@@ -821,7 +824,7 @@ Foreach = FOR_KW { tokenPos; }
           -            { $$=nq_onForeachEnd(core->this); }
           
 While = WHILE_KW { tokenPos; }
-        - OPEN_PAREN
+        - OPEN_PAREN WS
         - condition:Expr
         - CLOS_PAREN { nq_onWhileStart(core->this, condition); }
         - Body
