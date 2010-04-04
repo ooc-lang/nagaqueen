@@ -40,7 +40,7 @@ void GC_free(void *);
 // for a non-trivial grammar like ooc's
 #define YY_STACK_SIZE 1024
 
-//#define YY_DEBUG 1
+//#define YY_DEBUG
 
 ///////////////////// main struct, for the sake of being re-entrant ////////////////////////
 
@@ -874,15 +874,15 @@ ProductCore = l:Access
                     | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
                     )*
                 
-Access =  ((ident:IDENT_CORE !ASS_B_AND '&' - { $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
+Access =  ((ident:IDENT_CORE '&' ![&=] - { $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value)
                 ( - OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
-                | - call:FunctionCall -              { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
-                | !(IN_KW ![A-Za-z0-9_]) r:IDENT   { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); } -
-                | - AS_KW { tokenPos; } - r:Type     { $$=l=nq_onCast(core->this, l, r); }
-                | !ASS_B_AND '&' &[ \t\r\n;] - { $$=l=nq_onAddressOf(core->this, l); }
-                | - AT                             { $$=l=nq_onDereference(core->this, l); }
-                )*
+                | - call:FunctionCall                   { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
+                | - !(IN_KW ![A-Za-z0-9_]) r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); } -
+                | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
+                | '&' ![&=] &[ \t\r\n;] -               { $$=l=nq_onAddressOf(core->this, l); }
+                | AT                                    { $$=l=nq_onDereference(core->this, l); }
+                )* -
                 
 FunctionCall = (
                IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
@@ -899,7 +899,7 @@ FunctionCall = (
                WS CLOS_PAREN
                ) { $$=nq_onFunctionCallEnd(core->this); }
 
-VariableAccess = i:IDENT
+VariableAccess = i:IDENT_CORE
 
 Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
         | (OPEN_PAREN { tokenPos; } WS inner:Expr WS CLOS_PAREN - { $$=nq_onParenthesis(core->this, inner); })
@@ -972,8 +972,7 @@ KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
              | COVER_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
              | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW | UNMANGLED_KW
              | IMPORT_KW | INCLUDE_KW | IF_KW | ELSE_KW | FOR_KW
-             | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | TRUE_KW
-             | FALSE_KW | NULL_KW | MATCH_KW | CASE_KW
+             | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | NULL_KW | MATCH_KW | CASE_KW
 
 COMMA        = ','
 DOT          = !DOUBLE_DOT '.'
