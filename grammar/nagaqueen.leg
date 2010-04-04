@@ -880,7 +880,7 @@ Access =  ((ident:IDENT_CORE '&' ![&=] - { $$=l=nq_onAddressOf(core->this, nq_on
                 | - call:FunctionCall                   { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
                 | - !(IN_KW ![A-Za-z0-9_]) r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); }
                 | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
-                | '&' ![&=] -                           { $$=l=nq_onAddressOf(core->this, l); }
+                | '&' ![&=] - !IDENT_CORE               { $$=l=nq_onAddressOf(core->this, l); }
                 | AT                                    { $$=l=nq_onDereference(core->this, l); }
                 )* -
                 
