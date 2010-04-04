@@ -874,14 +874,14 @@ ProductCore = l:Access
                     | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
                     )*
                 
-Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
-          | l:Value
-                ( OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
-                | call:FunctionCall -            { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
-                | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); } -
-                | AS_KW { tokenPos; } - r:Type   { $$=l=nq_onCast(core->this, l, r); }
-                | !ASS_B_AND B_AND - ![0-9A-Za-z_]             { $$=l=nq_onAddressOf(core->this, l); }
-                | AT -                           { $$=l=nq_onDereference(core->this, l); }
+Access =  ((ident:IDENT_CORE !ASS_B_AND '&' - { $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
+          | l:Value)
+                ( - OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
+                | - call:FunctionCall -              { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
+                | !(IN_KW ![A-Za-z0-9_]) r:IDENT   { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); } -
+                | - AS_KW { tokenPos; } - r:Type     { $$=l=nq_onCast(core->this, l, r); }
+                | !ASS_B_AND '&' &[ \t\r\n;] - { $$=l=nq_onAddressOf(core->this, l); }
+                | - AT                             { $$=l=nq_onDereference(core->this, l); }
                 )*
                 
 FunctionCall = (
