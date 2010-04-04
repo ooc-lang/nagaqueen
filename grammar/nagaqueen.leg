@@ -66,7 +66,6 @@ typedef struct _NagaQueenCore NagaQueenCore;
 #define YY_XTYPE NagaQueenCore *
 #define YY_XVAR core
 
-/* Send input to yyparse from codebuf instead of stdin */
 #define YY_INPUT(buf, result, max_size) yyInput(buf, &result, max_size, core)
 
 void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {            
@@ -565,6 +564,13 @@ InterfaceDecl = (
             # extending another interface
             (
             - EXTENDS_KW - t:Type { nq_onInterfaceExtends(core->this, t) }
+            )?
+            
+            # interface subclassing
+            (
+            - IMPLEMENTS_KW
+                     - t:Type { nq_onClassImplements(core->this, t) }
+            (- COMMA - t:Type { nq_onClassImplements(core->this, t) })*
             )?
             
             # body is required for interfaces
