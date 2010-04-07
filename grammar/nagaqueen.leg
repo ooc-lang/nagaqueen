@@ -228,6 +228,7 @@ void *nq_onLessThanOrEqual(void *this, void *left, void *right);
 void *nq_onMoreThanOrEqual(void *this, void *left, void *right);
 
 void *nq_onDecLiteral(void *this, char *value);
+void *nq_onBinLiteral(void *this, char *value);
 void *nq_onOctLiteral(void *this, char *value);
 void *nq_onHexLiteral(void *this, char *value);
 void *nq_onFloatLiteral(void *this, char *value);
@@ -926,6 +927,7 @@ ArrayLiteral = OPEN_SQUAR { tokenPos; } WS { nq_onArrayLiteralStart(core->this);
 ValueCore =
         ( o:OCT_LIT -                                      { tokenPos; $$=nq_onOctLiteral(core->this, yytext); }
         | h:HEX_LIT -                                      { tokenPos; $$=nq_onHexLiteral(core->this, yytext); }
+        | b:BIN_LIT -                                      { tokenPos; $$=nq_onBinLiteral(core->this, yytext); }
         | f:FLOAT_LIT -                                    { tokenPos; $$=nq_onFloatLiteral(core->this, yytext); }
         | d:DEC_LIT -                                      { tokenPos; $$=nq_onDecLiteral(core->this, yytext); }
         | s:STRING_LIT -
@@ -1066,9 +1068,11 @@ CommentLine = "//" (!EOL .)* EOL
 CommentMultiLine = "/*" (!"*/" (EOL | .))* "*/"
 
 OCT_LIT      = < "0c" [0-8] [0-8_]* >
+BIN_LIT      = < "0b" [01] [01_]* >
 HEX_LIT      = < "0x" [0-9a-fA-F] [0-9a-fA-F_]* >
 FLOAT_LIT    = < "-"? [0-9_]+ DOT [0-9_]* >        -
 DEC_LIT      = < "-"? [0-9] [0-9_]* >                   -
+
 IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
