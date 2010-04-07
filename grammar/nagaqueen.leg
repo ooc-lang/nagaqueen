@@ -143,6 +143,7 @@ void nq_onVarDeclExpr(void *this, void *expr);
 void nq_onVarDeclType(void *this, void *type);
 void nq_onVarDeclStatic(void *this);
 void nq_onVarDeclConst(void *this);
+void nq_onVarDeclProto(void *this);
 void *nq_onVarDeclEnd(void *this);
 void *nq_onVarDeclAssign(void *this, void *access, void *expr);
 
@@ -336,7 +337,7 @@ Include = INCLUDE_KW
           - IncludeCore
           )*
           
-IncludeCore = < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+IncludeCore = < [A-Za-z/._]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           (- '|'
            - OPEN_PAREN
            - def:IDENT  { nq_onIncludeDefine(core->this, def, ""); }
@@ -603,9 +604,12 @@ UnmangledName = UNMANGLED_KW { $$="" }
 
 VarDeclFromExpr = ( i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); }
                   - ASS_DECL       { tokenPos; }
-                  (
-                    (- STATIC_KW { nq_onVarDeclStatic(core->this); })
-                  | (- CONST_KW  { nq_onVarDeclConst (core->this); })
+                  (-
+                    (
+                        STATIC_KW { nq_onVarDeclStatic(core->this); }
+                      | CONST_KW  { nq_onVarDeclConst (core->this); }
+                      | PROTO_KW  { nq_onVarDeclProto (core->this); }
+                    )
                   )*
                   - r:Expr { nq_onVarDeclExpr(core->this, r); }
                   - { $$=nq_onVarDeclEnd(core->this); }
@@ -626,11 +630,14 @@ ConventionalVarDecl =
             )*
             
             WS COLON WS
-            (
-              (- STATIC_KW { nq_onVarDeclStatic(core->this); })
-            | (- CONST_KW  { nq_onVarDeclConst (core->this); })
-            | (- externName:ExternName { nq_onVarDeclExtern(core->this, externName); })
-            | (- unmangledName:UnmangledName { nq_onVarDeclUnmangled(core->this, unmangledName); })
+            (-
+              (
+                  STATIC_KW { nq_onVarDeclStatic(core->this); }
+                | CONST_KW  { nq_onVarDeclConst (core->this); }
+                | PROTO_KW  { nq_onVarDeclProto (core->this); }
+                | externName:ExternName { nq_onVarDeclExtern(core->this, externName); }
+                | unmangledName:UnmangledName { nq_onVarDeclUnmangled(core->this, unmangledName); }
+              )
             )*
             WS Type { nq_onVarDeclType(core->this, $$); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
