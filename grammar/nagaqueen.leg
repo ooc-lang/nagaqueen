@@ -32,6 +32,7 @@ void GC_free(void *);
 #endif
 
 #define tokenPos { core->token[0] = thunk->begin + G->offset; core->token[1] = (thunk->end - thunk->begin); }
+#define tokenPosPlusOne { core->token[0] = thunk->begin + G->offset + 1; core->token[1] = (thunk->end - thunk->begin); }
 
 #define YYSTYPE void*
 
@@ -39,7 +40,7 @@ void GC_free(void *);
 // for a non-trivial grammar like ooc's
 #define YY_STACK_SIZE 1024
 
-//#define YY_DEBUG 1
+//#define YY_DEBUG
 
 ///////////////////// main struct, for the sake of being re-entrant ////////////////////////
 
@@ -65,7 +66,6 @@ typedef struct _NagaQueenCore NagaQueenCore;
 #define YY_XTYPE NagaQueenCore *
 #define YY_XVAR core
 
-/* Send input to yyparse from codebuf instead of stdin */
 #define YY_INPUT(buf, result, max_size) yyInput(buf, &result, max_size, core)
 
 void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {            
@@ -149,6 +149,7 @@ void nq_onVarDeclExpr(void *this, void *expr);
 void nq_onVarDeclType(void *this, void *type);
 void nq_onVarDeclStatic(void *this);
 void nq_onVarDeclConst(void *this);
+void nq_onVarDeclProto(void *this);
 void *nq_onVarDeclEnd(void *this);
 void *nq_onVarDeclAssign(void *this, void *access, void *expr);
 
@@ -160,6 +161,7 @@ void nq_onTypeGenericArgument(void *this, void *type, void *innerType);
 
 void *nq_onFuncTypeNew(void *this);
 void nq_onFuncTypeArgument(void *this, void *funcType, void *argType);
+void nq_onFuncTypeVarArg(void *this, void *funcType);
 void nq_onFuncTypeReturnType(void *this, void *funcType, void *returnType);
 
 void nq_onOperatorStart(void *this, char *symbol);
@@ -232,6 +234,7 @@ void *nq_onLessThanOrEqual(void *this, void *left, void *right);
 void *nq_onMoreThanOrEqual(void *this, void *left, void *right);
 
 void *nq_onDecLiteral(void *this, char *value);
+void *nq_onBinLiteral(void *this, char *value);
 void *nq_onOctLiteral(void *this, char *value);
 void *nq_onHexLiteral(void *this, char *value);
 void *nq_onFloatLiteral(void *this, char *value);
@@ -341,7 +344,7 @@ Include = INCLUDE_KW
           - IncludeCore
           )*
           
-IncludeCore = < [A-Za-z/.]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+IncludeCore = < [A-Za-z/._]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
           (- '|'
            - OPEN_PAREN
            - def:IDENT  { nq_onIncludeDefine(core->this, def, ""); }
@@ -359,12 +362,12 @@ Import  = IMPORT_KW
           )*
           
 ImportAtom = path:ImportPath
-            ((name:ImportName { tokenPos; }             { nq_onImport(core->this, (char*) path, (char*) name); }
+            ((name:ImportName { tokenPosPlusOne; }             { nq_onImport(core->this, (char*) path, (char*) name); }
              (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, 1); })?
              ) | (
             OPEN_SQUAR { core->importQuantity = 0; }
-            (name:ImportName { tokenPos; } - COMMA WS   { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })*
-            (name:ImportName { tokenPos; }              { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })
+            (name:ImportName { tokenPosPlusOne; } - COMMA WS   { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })*
+            (name:ImportName { tokenPosPlusOne; }              { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })
             CLOS_SQUAR
              (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, core->importQuantity); })?
             ))
@@ -444,8 +447,8 @@ FunctionDeclBody = (
             # arguments are optional
             (
                 - OPEN_PAREN { nq_onFunctionArgsStart(core->this); }
-                (WS Argument WS
-                    (COMMA WS Argument)*
+                (          WS Argument WS
+                    (COMMA WS Argument WS)*
                 )?
                 - CLOS_PAREN { nq_onFunctionArgsEnd(core->this); }
             )?
@@ -512,10 +515,10 @@ ClassDecl   = (
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | fd:FunctionDecl
                     | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
-                    ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
+                    )
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )
             ) { nq_onClassEnd(core->this) }
 
@@ -574,10 +577,10 @@ CoverDecl   = (
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | fd:FunctionDecl
-                    ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", core->token[0]); }
+                    )
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )?
             )
             { nq_onCoverEnd(core->this); }
@@ -593,16 +596,23 @@ InterfaceDecl = (
             - EXTENDS_KW - t:Type { nq_onInterfaceExtends(core->this, t) }
             )?
             
+            # interface subclassing
+            (
+            - IMPLEMENTS_KW
+                     - t:Type { nq_onClassImplements(core->this, t) }
+            (- COMMA - t:Type { nq_onClassImplements(core->this, t) })*
+            )?
+            
             # body is required for interfaces
             (
                 WS OPEN_BRACK WS
                 
                 # interface content
                 (WS
-                    (fd:FunctionDecl | " ") ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", core->token[0]); }
+                    (fd:FunctionDecl | " ")
                 WS)*
                 
-                WS CLOS_BRACK
+                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", G->pos + G->offset); }
             )
             )
             { nq_onInterfaceEnd(core->this); }
@@ -623,9 +633,12 @@ UnmangledName = UNMANGLED_KW { $$="" }
 
 VarDeclFromExpr = ( i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); }
                   - ASS_DECL       { tokenPos; }
-                  (
-                    (- STATIC_KW { nq_onVarDeclStatic(core->this); })
-                  | (- CONST_KW  { nq_onVarDeclConst (core->this); })
+                  (-
+                    (
+                        STATIC_KW { nq_onVarDeclStatic(core->this); }
+                      | CONST_KW  { nq_onVarDeclConst (core->this); }
+                      | PROTO_KW  { nq_onVarDeclProto (core->this); }
+                    )
                   )*
                   - r:Expr { nq_onVarDeclExpr(core->this, r); }
                   - { $$=nq_onVarDeclEnd(core->this); }
@@ -646,11 +659,14 @@ ConventionalVarDecl =
             )*
             
             WS COLON WS
-            (
-              (- STATIC_KW { nq_onVarDeclStatic(core->this); })
-            | (- CONST_KW  { nq_onVarDeclConst (core->this); })
-            | (- externName:ExternName { nq_onVarDeclExtern(core->this, externName); })
-            | (- unmangledName:UnmangledName { nq_onVarDeclUnmangled(core->this, unmangledName); })
+            (-
+              (
+                  STATIC_KW { nq_onVarDeclStatic(core->this); }
+                | CONST_KW  { nq_onVarDeclConst (core->this); }
+                | PROTO_KW  { nq_onVarDeclProto (core->this); }
+                | externName:ExternName { nq_onVarDeclExtern(core->this, externName); }
+                | unmangledName:UnmangledName { nq_onVarDeclUnmangled(core->this, unmangledName); }
+              )
             )*
             WS Type { nq_onVarDeclType(core->this, $$); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
@@ -705,6 +721,7 @@ FuncType  = funcType:FuncTypeCore
             (      - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); }
             (COMMA - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); })*
             )?
+            ("..." - { nq_onFuncTypeVarArg(core->this, funcType); })?
             - CLOS_PAREN
             )?
             (- R_ARROW
@@ -749,7 +766,7 @@ Block   = (
 
 If      = (
           IF_KW { tokenPos; }
-          - OPEN_PAREN
+          - OPEN_PAREN WS
           - e:Expr       { nq_onIfStart(core->this, e); }
           - CLOS_PAREN
           - Body
@@ -786,7 +803,7 @@ ImplicitDecl = (v:VariableDecl { $$=v })
              | (i:IDENT        { $$=nq_onVarAccess(core->this, NULL, yytext); })
           
 Foreach = FOR_KW { tokenPos; }
-          - OPEN_PAREN
+          - OPEN_PAREN WS
           - decl:ImplicitDecl
           - IN_KW
           - collec:Expr
@@ -795,7 +812,7 @@ Foreach = FOR_KW { tokenPos; }
           -            { $$=nq_onForeachEnd(core->this); }
           
 While = WHILE_KW { tokenPos; }
-        - OPEN_PAREN
+        - OPEN_PAREN WS
         - condition:Expr
         - CLOS_PAREN { nq_onWhileStart(core->this, condition); }
         - Body
@@ -899,15 +916,15 @@ ProductCore = l:Access
                     | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
                     )*
                 
-Access =  (IDENT_CORE !ASS_B_AND B_AND { $$=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, $$)); }) # special case: blah& is always a reference. blah & blih is a binary and.
-          | l:Value
-                ( OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
-                | call:FunctionCall -            { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
-                | !(IN_KW ![A-Za-z0-9_]) r:IDENT { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); } -
-                | AS_KW { tokenPos; } - r:Type   { $$=l=nq_onCast(core->this, l, r); }
-                | !ASS_B_AND B_AND - ![0-9A-Za-z_]             { $$=l=nq_onAddressOf(core->this, l); }
-                | AT -                           { $$=l=nq_onDereference(core->this, l); }
-                )*
+Access =  ((ident:IDENT_CORE '&' ![&=] - { $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
+          | l:Value)
+                ( - OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
+                | - call:FunctionCall                   { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
+                | - !(IN_KW ![A-Za-z0-9_]) r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); }
+                | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
+                | '&' ![&=] - &([ \t\r\n;,)}] | ']')               { $$=l=nq_onAddressOf(core->this, l); }
+                | AT                                    { $$=l=nq_onDereference(core->this, l); }
+                )* -
                 
 FunctionCall = (
                IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
@@ -924,7 +941,7 @@ FunctionCall = (
                WS CLOS_PAREN
                ) { $$=nq_onFunctionCallEnd(core->this); }
 
-VariableAccess = i:IDENT
+VariableAccess = i:IDENT_CORE
 
 Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
         | (OPEN_PAREN { tokenPos; } WS inner:Expr WS CLOS_PAREN - { $$=nq_onParenthesis(core->this, inner); })
@@ -944,6 +961,7 @@ IntLiteral =
 ValueCore =
         ( o:OCT_LIT -                                      { tokenPos; $$=nq_onOctLiteral(core->this, yytext); }
         | h:HEX_LIT -                                      { tokenPos; $$=nq_onHexLiteral(core->this, yytext); }
+        | b:BIN_LIT -                                      { tokenPos; $$=nq_onBinLiteral(core->this, yytext); }
         | f:FLOAT_LIT -                                    { tokenPos; $$=nq_onFloatLiteral(core->this, yytext); }
         | d:DEC_LIT -                                      { tokenPos; $$=nq_onDecLiteral(core->this, yytext); }
         | s:STRING_LIT -
@@ -1004,8 +1022,7 @@ KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
              | COVER_KW | ENUM_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
              | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW | UNMANGLED_KW
              | IMPORT_KW | INCLUDE_KW | IF_KW | ELSE_KW | FOR_KW
-             | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | TRUE_KW
-             | FALSE_KW | NULL_KW | MATCH_KW | CASE_KW
+             | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | NULL_KW | MATCH_KW | CASE_KW
 
 COMMA        = ','
 DOT          = !DOUBLE_DOT '.'
@@ -1086,9 +1103,11 @@ CommentLine = "//" (!EOL .)* EOL
 CommentMultiLine = "/*" (!"*/" (EOL | .))* "*/"
 
 OCT_LIT      = < "0c" [0-8] [0-8_]* >
+BIN_LIT      = < "0b" [01] [01_]* >
 HEX_LIT      = < "0x" [0-9a-fA-F] [0-9a-fA-F_]* >
 FLOAT_LIT    = < "-"? [0-9_]+ DOT [0-9_]* >        -
 DEC_LIT      = < "-"? [0-9] [0-9_]* >                   -
+
 IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
                < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
