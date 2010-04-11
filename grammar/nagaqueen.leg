@@ -124,9 +124,9 @@ void nq_onCoverImplements(void *this, void *type);
 void nq_onCoverEnd(void *this);
 
 void nq_onEnumStart(void *this, char *name);
+void nq_onEnumIncrementExpr(void *this, char oper, void *step);
 void nq_onEnumElementStart(void *this, char *name);
 void nq_onEnumElementValue(void *this, void *value);
-void nq_onEnumIncrementExpr(void *this, char *oper, void *step);
 void nq_onEnumElementEnd(void *this);
 void nq_onEnumEnd(void *this);
 
@@ -551,8 +551,8 @@ EnumElement = (
                 (ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); })?
             ) { nq_onEnumElementEnd(core->this) }
 
-EnumIncrementOper =  ( STAR { $$="*"; }
-                     | PLUS { $$="+"; }
+EnumIncrementOper =  ( STAR { $$='*'; }
+                     | PLUS { $$='+'; }
                      )
             
 CoverDecl   = (
