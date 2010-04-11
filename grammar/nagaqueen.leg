@@ -742,7 +742,7 @@ Stmt     = (
 StmtCore = (
               # some statements need an EOL after them...
               e:EoledStatement (- '.' { tokenPos; } WS call:FunctionCall { nq_onStatement(core->this, e); nq_onFunctionCallChain(core->this, call, e); $$=e=call; })*
-              (Terminator+ | (&CLOS_BRACK) | (&CommentLine))
+              (Terminator+ | (WS &CLOS_BRACK) | (&CommentLine))
            )
           | # ...but block don't
           ( WS c:Conditional
