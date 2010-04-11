@@ -126,6 +126,7 @@ void nq_onCoverEnd(void *this);
 void nq_onEnumStart(void *this, char *name);
 void nq_onEnumElementStart(void *this, char *name);
 void nq_onEnumElementValue(void *this, void *value);
+void nq_onEnumIncrementExpr(void *this, char *oper, void *step);
 void nq_onEnumElementEnd(void *this);
 void nq_onEnumEnd(void *this);
 
@@ -527,6 +528,13 @@ EnumDecl    = (
             - COLON
             - ENUM_KW
 
+            # Element value increment expression
+            (
+            - OPEN_PAREN
+            - op:EnumIncrementOper WS step:IntLiteral { nq_onEnumIncrementExpr(core->this, op, step); }
+            - CLOS_PAREN
+            )?
+
             (
                 WS OPEN_BRACK WS
 
@@ -542,6 +550,10 @@ EnumElement = (
                 i:IDENT { tokenPos; nq_onEnumElementStart(core->this, i); }
                 (ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); })?
             ) { nq_onEnumElementEnd(core->this) }
+
+EnumIncrementOper =  ( STAR { $$="*"; }
+                     | PLUS { $$="+"; }
+                     )
             
 CoverDecl   = (
             IDENT { tokenPos; nq_onCoverStart(core->this, yytext) }
