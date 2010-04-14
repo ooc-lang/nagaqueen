@@ -124,8 +124,11 @@ void nq_onCoverImplements(void *this, void *type);
 void nq_onCoverEnd(void *this);
 
 void nq_onEnumStart(void *this, char *name);
+void nq_onEnumExtern(void *this, char *externName);
+void nq_onEnumIncrementExpr(void *this, char oper, void *step);
 void nq_onEnumElementStart(void *this, char *name);
 void nq_onEnumElementValue(void *this, void *value);
+void nq_onEnumElementExtern(void *this, char *externName);
 void nq_onEnumElementEnd(void *this);
 void nq_onEnumEnd(void *this);
 
@@ -525,12 +528,23 @@ ClassDecl   = (
 EnumDecl    = (
             IDENT { tokenPos; nq_onEnumStart(core->this, yytext) }
             - COLON
+
+            # modifiers (extern)
+            (- externName:ExternName { nq_onEnumExtern(core->this, externName); })?
+
             - ENUM_KW
+
+            # increment expression (ex: *2 or +1)
+            (
+            - OPEN_PAREN
+            - op:EnumIncrementOper WS step:IntLiteral { nq_onEnumIncrementExpr(core->this, op, step); }
+            - CLOS_PAREN
+            )?
 
             (
                 WS OPEN_BRACK WS
 
-                # Enum elements
+                # enumeration elements
                 EnumElement ((COMMA | Terminator+) WS EnumElement)*
 
                 WS CLOS_BRACK
@@ -540,8 +554,14 @@ EnumDecl    = (
 
 EnumElement = (
                 i:IDENT { tokenPos; nq_onEnumElementStart(core->this, i); }
-                (ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); })?
+                - ( ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); }
+                  | externName:ExternName { nq_onEnumElementExtern(core->this, externName); }
+                  )?
             ) { nq_onEnumElementEnd(core->this) }
+
+EnumIncrementOper =  ( STAR { $$='*'; }
+                     | PLUS { $$='+'; }
+                     )
             
 CoverDecl   = (
             IDENT { tokenPos; nq_onCoverStart(core->this, yytext) }
