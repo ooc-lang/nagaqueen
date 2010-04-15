@@ -103,7 +103,7 @@ void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 char *nq_StringClone(char *string);
 
 void nq_onUse(void *this, char *name);
-void nq_onInclude(void *this, char *path, char *name);
+void nq_onInclude(void *this, char *path);
 void nq_onIncludeDefine(void *this, char *name, char *value);
 void nq_onImport (void *this, char *path, char *name);
 void nq_onImportNamespace(void *this, char *namespace, int quantity);
@@ -347,7 +347,7 @@ Include = INCLUDE_KW
           - IncludeCore
           )*
           
-IncludeCore = < [A-Za-z/._]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+IncludeCore = < [A-Za-z/._]* >  { tokenPos; nq_onInclude(core->this, nq_StringClone(yytext)) }
           (- '|'
            - OPEN_PAREN
            - def:IDENT  { nq_onIncludeDefine(core->this, def, ""); }
