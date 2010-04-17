@@ -103,7 +103,7 @@ void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 char *nq_StringClone(char *string);
 
 void nq_onUse(void *this, char *name);
-void nq_onInclude(void *this, char *path, char *name);
+void nq_onInclude(void *this, char *path);
 void nq_onIncludeDefine(void *this, char *name, char *value);
 void nq_onImport (void *this, char *path, char *name);
 void nq_onImportNamespace(void *this, char *namespace, int quantity);
@@ -358,7 +358,7 @@ Include = INCLUDE_KW
           - IncludeCore
           )*
           
-IncludeCore = < [A-Za-z/._]* >  { tokenPos; nq_onInclude(core->this, "", nq_StringClone(yytext)) }
+IncludeCore = < [A-Za-z/._]* >  { tokenPos; nq_onInclude(core->this, nq_StringClone(yytext)) }
           (- '|'
            - OPEN_PAREN
            - def:IDENT  { nq_onIncludeDefine(core->this, def, ""); }
@@ -990,13 +990,13 @@ ProductCore = l:Access
                     | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
                     )*
                 
-Access =  ((ident:IDENT_CORE '&' ![&=] - { $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
+Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value)
                 ( - OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
                 | - call:FunctionCall                   { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
                 | - !(IN_KW ![A-Za-z0-9_]) r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); }
                 | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
-                | '&' ![&=] - &([ \t\r\n;,)}] | ']')               { $$=l=nq_onAddressOf(core->this, l); }
+                | '&' ![&=] - &([ \t\r\n;,)}] | ']')    { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, l); }
                 | AT                                    { $$=l=nq_onDereference(core->this, l); }
                 )* -
                 
