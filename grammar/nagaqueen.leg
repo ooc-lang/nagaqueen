@@ -729,24 +729,24 @@ PropertyDeclCore =
 
 PropertyDeclGetter =
            { nq_onPropertyDeclGetterStart(core->this); }
-           GET_KW WS OPEN_BRACK
+           WS GET_KW WS (OPEN_BRACK
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-           CLOS_BRACK
+           CLOS_BRACK)?
            { $$=nq_onPropertyDeclGetterEnd(core->this); }
 
 PropertyDeclSetter =
            { nq_onPropertyDeclSetterStart(core->this); }
-           SET_KW WS
-           OPEN_PAREN WS
+           WS SET_KW WS
+           (OPEN_PAREN WS
                 (IDENT { nq_onPropertyDeclSetterArgument(core->this, $$, 1); })
            CLOS_PAREN WS
            OPEN_BRACK
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-           CLOS_BRACK
+           CLOS_BRACK)?
            { $$=nq_onPropertyDeclSetterEnd(core->this); }
 
 TypeBase = FuncType |
