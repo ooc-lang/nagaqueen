@@ -957,9 +957,23 @@ FunctionCall = (
                WS
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
                )*
+               | a:ACS { tokenPos; nq_onFunctionCallArg(core->this, a); }
                )?
                WS CLOS_PAREN
                ) { $$=nq_onFunctionCallEnd(core->this); }
+
+ACS = (
+        { tokenPos; nq_onFunctionStart(core->this, ""); }
+        B_OR WS
+        ( i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  } )
+        ( WS COMMA WS
+        i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  }
+        )*
+        WS B_OR WS
+        (s:Stmt { nq_onStatement(core->this, s); })
+        { tokenPos; $$=nq_onFunctionEnd(core->this); }
+)          
+        
 
 VariableAccess = i:IDENT_CORE
 
