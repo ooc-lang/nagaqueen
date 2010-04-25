@@ -731,9 +731,13 @@ PropertyDeclCore =
 
 PropertyDeclGetter =
            { nq_onPropertyDeclGetterStart(core->this); }
-           WS
-           (externName:ExternName { nq_onFunctionExtern(core->this, externName); })?
-           WS GET_KW WS (OPEN_BRACK
+           WS GET_KW WS
+           ( 
+             COLON
+             WS
+             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+           )?
+           (OPEN_BRACK
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
@@ -742,9 +746,12 @@ PropertyDeclGetter =
 
 PropertyDeclSetter =
            { nq_onPropertyDeclSetterStart(core->this); }
-           WS
-           ( externName:ExternName  { nq_onFunctionExtern(core->this, externName); })?
            WS SET_KW WS
+           ( 
+             COLON
+             WS
+             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+           )?
            (OPEN_PAREN WS
                 (IDENT { nq_onPropertyDeclSetterArgument(core->this, $$, 1); })
            CLOS_PAREN WS
