@@ -754,7 +754,10 @@ PropertyDeclSetter =
              externName:ExternName { nq_onFunctionExtern(core->this, externName); }
            )?
            (OPEN_PAREN WS
-                (IDENT { nq_onPropertyDeclSetterArgument(core->this, $$, 1); })
+                (
+                    (IDENT { nq_onPropertyDeclSetterArgument(core->this, $$, 1); })
+                    | (ASS IDENT - { nq_onPropertyDeclSetterArgument(core->this, $$, 0); })
+                )
            CLOS_PAREN WS
            OPEN_BRACK
                 (WS
