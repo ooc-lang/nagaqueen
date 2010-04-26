@@ -611,6 +611,7 @@ CoverDecl   = (
                 # coverdecl content
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
+                    | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     | fd:FunctionDecl
                     )
                 WS)*
