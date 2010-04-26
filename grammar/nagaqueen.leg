@@ -145,6 +145,7 @@ void nq_onInterfaceExtends(void *this, void *type);
 void nq_onInterfaceEnd(void *this);
 
 void nq_onPropertyDeclStart(void *this, char *name);
+void nq_onPropertyDeclStatic(void *this);
 void nq_onPropertyDeclType(void *this, void *type);
 void *nq_onPropertyDeclEnd(void *this);
 
@@ -716,6 +717,10 @@ PropertyDecl =
            IDENT { tokenPos; nq_onPropertyDeclStart(core->this, yytext); }
            
            WS COLON WS
+
+           (STATIC_KW { nq_onPropertyDeclStatic(core->this); })?
+           WS
+
            Type { nq_onPropertyDeclType(core->this, $$); }
            
            WS OPEN_BRACK WS
