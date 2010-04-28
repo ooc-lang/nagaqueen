@@ -144,6 +144,18 @@ void nq_onInterfaceStart(void *this, char *name);
 void nq_onInterfaceExtends(void *this, void *type);
 void nq_onInterfaceEnd(void *this);
 
+void nq_onPropertyDeclStart(void *this, char *name);
+void nq_onPropertyDeclStatic(void *this);
+void nq_onPropertyDeclType(void *this, void *type);
+void *nq_onPropertyDeclEnd(void *this);
+
+void nq_onPropertyDeclGetterStart(void *this);
+void *nq_onPropertyDeclGetterEnd(void *this);
+
+void nq_onPropertyDeclSetterStart(void *this);
+void nq_onPropertyDeclSetterArgument(void *this, char *name, _Bool conventional);
+void *nq_onPropertyDeclSetterEnd(void *this);
+
 void nq_onVarDeclStart(void *this);
 void nq_onVarDeclName(void *this, char *name);
 void nq_onVarDeclExtern(void *this, char *externName);
@@ -155,6 +167,8 @@ void nq_onVarDeclConst(void *this);
 void nq_onVarDeclProto(void *this);
 void *nq_onVarDeclEnd(void *this);
 void *nq_onVarDeclAssign(void *this, void *access, void *expr);
+
+void *nq_onTypeAccess(void *this, void *type);
 
 void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type);   // $$=nq_onTypePointer($$)
@@ -385,6 +399,7 @@ Decl    = ( ClassDecl
           | InterfaceDecl
           | OperatorDecl
           | FunctionDecl
+          | PropertyDecl
           | vd:VariableDecl { nq_onStatement(core->this, vd); }
           )
 
@@ -516,6 +531,7 @@ ClassDecl   = (
                 # classdecl contents
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
+                    | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     | fd:FunctionDecl
                     | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
                     )
@@ -596,6 +612,7 @@ CoverDecl   = (
                 # coverdecl content
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
+                    | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     | fd:FunctionDecl
                     )
                 WS)*
@@ -695,6 +712,65 @@ ConventionalVarDecl =
 VariableDecl = (v:VarDeclFromExpr     { $$=v })
              | (v:ConventionalVarDecl { $$=v })
             
+PropertyDecl = 
+           (
+           IDENT { tokenPos; nq_onPropertyDeclStart(core->this, yytext); }
+           
+           WS COLON WS
+
+           (STATIC_KW { nq_onPropertyDeclStatic(core->this); })?
+           WS
+
+           Type { nq_onPropertyDeclType(core->this, $$); }
+           
+           WS OPEN_BRACK WS
+           PropertyDeclCore
+           WS CLOS_BRACK WS
+
+           ) { $$=nq_onPropertyDeclEnd(core->this); }
+
+PropertyDeclCore =
+           (
+               PropertyDeclGetter
+             | PropertyDeclSetter
+           )*
+
+PropertyDeclGetter =
+           { nq_onPropertyDeclGetterStart(core->this); }
+           WS GET_KW WS
+           ( 
+             COLON
+             WS
+             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+           )?
+           (OPEN_BRACK
+                (WS
+                (s:Stmt  { nq_onStatement(core->this, s) })
+                WS)*
+           CLOS_BRACK)?
+           { $$=nq_onPropertyDeclGetterEnd(core->this); }
+
+PropertyDeclSetter =
+           { nq_onPropertyDeclSetterStart(core->this); }
+           WS SET_KW WS
+           ( 
+             COLON
+             WS
+             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+           )?
+           (OPEN_PAREN WS
+                (
+                    (IDENT { nq_onPropertyDeclSetterArgument(core->this, $$, 1); })
+                    | (ASS IDENT - { nq_onPropertyDeclSetterArgument(core->this, $$, 0); })
+                )
+           CLOS_PAREN WS
+           OPEN_BRACK
+                (WS
+                (s:Stmt  { nq_onStatement(core->this, s) })
+                WS)*
+           CLOS_BRACK)?
+           { $$=nq_onPropertyDeclSetterEnd(core->this); }
+
 TypeBase = FuncType |
           (< { tokenPos; core->typeBuffer[0]='\0'; } (CONST_KW -)?
             (
@@ -1005,7 +1081,7 @@ ValueCore =
         | NULL_KW &[^A-Za-z_] -                            { tokenPos; $$=nq_onNull(core->this); }
         | ArrayLiteral
         | FunctionCall
-        | t:GenericType                                    { $$=t; }
+        | t:GenericType                                    { $$=nq_onTypeAccess(core->this, t); }
         | VariableAccess                                   { tokenPos; $$=nq_onVarAccess(core->this, NULL, yytext); }
         )
 
@@ -1043,6 +1119,9 @@ INTO_KW      = "into"
 VERSION_KW   = "version"
 PROTO_KW     = "proto"
 
+SET_KW       = "set"
+GET_KW       = "get"
+   
 OPERATOR_KW  = "operator"
 CONST_KW     = "const"
 
