@@ -211,6 +211,7 @@ void nq_onFunctionCallArg(void *this, void *expr);
 void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
 void nq_onFunctionCallChain(void *this, void *call, void *expr);
+void nq_onFunctionCallCombo(void *this, void *call, void *expr);
 
 void nq_onArrayLiteralStart(void *this);
 void *nq_onArrayLiteralEnd(void *this);
@@ -1020,11 +1021,13 @@ Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$
                 | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
                 | '&' ![&=] - &([ \t\r\n;,)}] | ']')    { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, l); }
                 | AT                                    { $$=l=nq_onDereference(core->this, l); }
+                | - call:FunctionCallNoname             { nq_onFunctionCallCombo(core->this, call, l); $$=l=call; }
                 )* -
                 
-FunctionCall = (
-               IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
-               (B_NOT - IDENT { nq_onFunctionCallSuffix(core->this, yytext); })?
+FunctionCall = IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
+               FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
+               
+FunctionCallCore = (B_NOT - IDENT { nq_onFunctionCallSuffix(core->this, yytext); })?
                OPEN_PAREN WS
                (
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
@@ -1036,7 +1039,9 @@ FunctionCall = (
                | a:ACS { tokenPos; nq_onFunctionCallArg(core->this, a); }
                )?
                WS CLOS_PAREN
-               ) { $$=nq_onFunctionCallEnd(core->this); }
+               
+FunctionCallNoname = { tokenPos; nq_onFunctionCallStart(core->this, ""); }
+               FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
 
 ACS = (
         { tokenPos; nq_onFunctionStart(core->this, ""); }
