@@ -400,7 +400,7 @@ Decl    = ( ClassDecl
           | OperatorDecl
           | FunctionDecl
           | PropertyDecl
-          | vd:VariableDecl { nq_onStatement(core->this, vd); }
+          | vd:VariableDecl Terminator+ { nq_onStatement(core->this, vd); }
           )
 
 GenericArguments = 
