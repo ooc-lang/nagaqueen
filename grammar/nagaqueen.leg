@@ -658,7 +658,7 @@ InterfaceDecl = (
 ExternName = EXTERN_KW { $$="" }
               (
               - OPEN_PAREN
-              - IDENT { $$=yytext } # is that correct? should it be $$=$$? what's happening?
+              - < [A-Za-z_] [A-Za-z0-9_]* > { $$=yytext } # is that correct? should it be $$=$$? what's happening?
               - CLOS_PAREN
               )?
 
