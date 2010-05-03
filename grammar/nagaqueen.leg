@@ -101,6 +101,8 @@ void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {
 void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 
 char *nq_StringClone(char *string);
+char *nq_trailingQuest(char *string);
+char *nq_trailingBang (char *string);
 
 void nq_onUse(void *this, char *name);
 void nq_onInclude(void *this, char *path);
@@ -407,10 +409,10 @@ Decl    = ( ClassDecl
 GenericArguments = 
             (
             - LESSTHAN
-            - IDENT         { nq_onGenericArgument(core->this, yytext); }
+            - name:IDENT         { nq_onGenericArgument(core->this, name); }
             (
             - COMMA
-            - IDENT         { nq_onGenericArgument(core->this, yytext); }
+            - name:IDENT         { nq_onGenericArgument(core->this, name); }
             )*
             MORETHAN -
             )
@@ -429,7 +431,7 @@ OperatorDecl =
             
 
 FunctionDecl =
-            IDENT { tokenPos; nq_onFunctionStart(core->this, yytext); }
+            name:IDENT { tokenPos; nq_onFunctionStart(core->this, name); }
             - COLON
             
             # modifiers
@@ -454,7 +456,7 @@ FunctionDeclCore =
             # optional suffix
             (
             - TILDE
-            - IDENT { nq_onFunctionSuffix(core->this, yytext); }
+            - suffix:IDENT { nq_onFunctionSuffix(core->this, suffix); }
             )?
             
             FunctionDeclBody
@@ -489,8 +491,8 @@ FunctionDeclBody = (
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
-Argument    = ( (DOT IDENT -)    { tokenPos; nq_onDotArg(core->this, yytext); }
-              | (ASS IDENT -)    { tokenPos; nq_onAssArg(core->this, yytext); }
+Argument    = ( (DOT dotName:IDENT -)    { tokenPos; nq_onDotArg(core->this, dotName); }
+              | (ASS assName:IDENT -)    { tokenPos; nq_onAssArg(core->this, assName); }
               | vd:VariableDecl  { tokenPos; nq_onStatement(core->this, vd); }
               | type:Type        { tokenPos; nq_onTypeArg(core->this, type); }
               | "..."            { tokenPos; nq_onVarArg(core->this); }
@@ -498,7 +500,7 @@ Argument    = ( (DOT IDENT -)    { tokenPos; nq_onDotArg(core->this, yytext); }
             
             
 ClassDecl   = (
-            IDENT { tokenPos; nq_onClassStart(core->this, yytext); }
+            className:IDENT { tokenPos; nq_onClassStart(core->this, className); }
             - COLON
             
             # modifiers
@@ -543,7 +545,7 @@ ClassDecl   = (
             ) { nq_onClassEnd(core->this) }
 
 EnumDecl    = (
-            IDENT { tokenPos; nq_onEnumStart(core->this, yytext) }
+            enumName:IDENT { tokenPos; nq_onEnumStart(core->this, enumName) }
             - COLON
 
             # modifiers (extern)
@@ -581,7 +583,7 @@ EnumIncrementOper =  ( STAR { $$='*'; }
                      )
             
 CoverDecl   = (
-            IDENT { tokenPos; nq_onCoverStart(core->this, yytext) }
+            coverName:IDENT { tokenPos; nq_onCoverStart(core->this, coverName) }
             - COLON
             
             # modifiers
@@ -624,7 +626,7 @@ CoverDecl   = (
             { nq_onCoverEnd(core->this); }
             
 InterfaceDecl = (
-            IDENT { tokenPos; nq_onInterfaceStart(core->this, yytext) }
+            interfaceName:IDENT { tokenPos; nq_onInterfaceStart(core->this, interfaceName) }
             - COLON
             
             - INTERFACE_KW
@@ -665,7 +667,7 @@ ExternName = EXTERN_KW { $$="" }
 UnmangledName = UNMANGLED_KW { $$="" }
              (
              - OPEN_PAREN
-             - IDENT { $$=yytext } # is that correct? should it be $$=$$? what's happening?
+             - unmangledName:IDENT { $$=unmangledName }
              - CLOS_PAREN
              )?           
 
@@ -685,13 +687,13 @@ VarDeclFromExpr = ( i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(co
 ConventionalVarDecl =
             { nq_onVarDeclStart(core->this); }
             (
-            IDENT { tokenPos; nq_onVarDeclName(core->this, yytext); }
+            varDeclName:IDENT { tokenPos; nq_onVarDeclName(core->this, varDeclName); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             
             # multi-decls
             (
             - COMMA
-            WS IDENT { nq_onVarDeclName(core->this, yytext); }
+            WS nextDeclName:IDENT { nq_onVarDeclName(core->this, nextDeclName); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             -
             )*
@@ -715,7 +717,7 @@ VariableDecl = (v:VarDeclFromExpr     { $$=v })
             
 PropertyDecl = 
            (
-           IDENT { tokenPos; nq_onPropertyDeclStart(core->this, yytext); }
+           propertyName:IDENT { tokenPos; nq_onPropertyDeclStart(core->this, propertyName); }
            
            WS COLON WS
 
@@ -761,8 +763,8 @@ PropertyDeclSetter =
            )?
            (OPEN_PAREN WS
                 (
-                    (IDENT { nq_onPropertyDeclSetterArgument(core->this, $$, 1); })
-                    | (ASS IDENT - { nq_onPropertyDeclSetterArgument(core->this, $$, 0); })
+                      (argName:IDENT       { nq_onPropertyDeclSetterArgument(core->this, argName, 1); })
+                    | (ASS assName:IDENT - { nq_onPropertyDeclSetterArgument(core->this, assName, 0); })
                 )
            CLOS_PAREN WS
            OPEN_BRACK
@@ -781,7 +783,7 @@ TypeBase = FuncType |
                 | "struct"			                          { strcat(core->typeBuffer, "struct "); } -
                 )
             - )*
-            IDENT { strcat(core->typeBuffer, $$); }
+            rest:IDENT { strcat(core->typeBuffer, rest); }
           > { $$=nq_onTypeNew(core->this, core->typeBuffer); })
 
 # a GenericType is just like a Type but with non-optional generic type arguments
@@ -1024,10 +1026,10 @@ Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$
                 | - call:FunctionCallNoname             { nq_onFunctionCallCombo(core->this, call, l); $$=l=call; }
                 )* -
                 
-FunctionCall = IDENT { tokenPos; nq_onFunctionCallStart(core->this, yytext); }
+FunctionCall = callName:IDENT { tokenPos; nq_onFunctionCallStart(core->this, callName); }
                FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
                
-FunctionCallCore = (B_NOT - IDENT { nq_onFunctionCallSuffix(core->this, yytext); })?
+FunctionCallCore = (B_NOT - callSuffix:IDENT { nq_onFunctionCallSuffix(core->this, callSuffix); })?
                OPEN_PAREN WS
                (
                e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
@@ -1228,7 +1230,9 @@ DEC_LIT      = < "-"? [0-9] [0-9_]* >                   -
 
 IDENT        = IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
-               < [a-zA-Z_][0-9a-zA-Z_]*  > { $$=yytext; }
+               < [a-zA-Z_][0-9a-zA-Z_]* > { $$=yytext; }
+               ( '?' { $$=nq_trailingQuest($$); }
+               | '!' { $$=nq_trailingBang($$); })?
                
 STRING_LIT   = ["] < (!["] ("\\\"" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | EOL | .))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
 CHAR_LIT     = ['] < (!['] ("\\\'" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .)) > [']         -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
