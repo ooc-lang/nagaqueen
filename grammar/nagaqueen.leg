@@ -572,7 +572,8 @@ EnumDecl    = (
 EnumElement = (
                 i:IDENT { tokenPos; nq_onEnumElementStart(core->this, i); }
                 - ( ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); }
-                  | externName:ExternName { nq_onEnumElementExtern(core->this, externName); }
+                  | COLON
+                    - externName:ExternName { nq_onEnumElementExtern(core->this, externName); }
                   )?
             ) { nq_onEnumElementEnd(core->this) }
 
