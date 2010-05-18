@@ -900,7 +900,7 @@ Break    = BREAK_KW    { tokenPos; $$=nq_onBreak(core->this); }
 Continue = CONTINUE_KW { tokenPos; $$=nq_onContinue(core->this); }
           
 ImplicitDecl = (v:VariableDecl { $$=v })
-             | (i:IDENT        { $$=nq_onVarAccess(core->this, NULL, yytext); })
+             | (i:IDENT        { $$=nq_onVarAccess(core->this, NULL, i); })
           
 Foreach = FOR_KW { tokenPos; }
           - OPEN_PAREN WS
@@ -1090,7 +1090,7 @@ ValueCore =
         | ArrayLiteral
         | FunctionCall
         | t:GenericType                                    { $$=nq_onTypeAccess(core->this, t); }
-        | VariableAccess                                   { tokenPos; $$=nq_onVarAccess(core->this, NULL, yytext); }
+        | v:VariableAccess                                 { tokenPos; $$=nq_onVarAccess(core->this, NULL, v); }
         )
 
 BREAK_KW     = "break"
