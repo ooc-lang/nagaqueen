@@ -782,6 +782,7 @@ TypeBase = FuncType |
                 | "signed"                                    { strcat(core->typeBuffer, "signed "); } - 
                 | "long" &(- ("long" | "double" | "int"))     { strcat(core->typeBuffer, "long "); } - 
                 | "struct"			                          { strcat(core->typeBuffer, "struct "); } -
+                | "union"			                          { strcat(core->typeBuffer, "union "); } -
                 )
             - )*
             rest:IDENT { strcat(core->typeBuffer, rest); }
