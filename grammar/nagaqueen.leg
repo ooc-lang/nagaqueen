@@ -679,7 +679,7 @@ VarDeclFromExpr = ( i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(co
                         STATIC_KW { nq_onVarDeclStatic(core->this); }
                       | CONST_KW  { nq_onVarDeclConst (core->this); }
                       | PROTO_KW  { nq_onVarDeclProto (core->this); }
-                    )
+                    ) &[^A-Za-z_0-9]
                   )*
                   - r:Expr { nq_onVarDeclExpr(core->this, r); }
                   - { $$=nq_onVarDeclEnd(core->this); }
