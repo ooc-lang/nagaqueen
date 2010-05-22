@@ -33,6 +33,7 @@ void GC_free(void *);
 
 #define tokenPos { core->token[0] = thunk->begin + G->offset; core->token[1] = (thunk->end - thunk->begin); }
 #define tokenPosPlusOne { core->token[0] = thunk->begin + G->offset + 1; core->token[1] = (thunk->end - thunk->begin); }
+#define rewindWhiteSpace { char *c = G->buf + G->pos - 1; while((G->pos > 0) && ((*c) == ' ' || (*c) == '\t' || (*c) == '\n' || (*c) == '\r')) { c--; G->pos--; } }
 
 #define YYSTYPE void*
 
@@ -318,6 +319,8 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 #define NQE_EXP_CASE_IN_MATCH                               3
 #define NQE_EXP_VAR_OR_FUNC_DECL                            4
 #define NQE_EXP_RET_TYPE                                    5
+#define NQE_EXP_CLOSING_PAREN                               6
+#define NQE_EXP_CLOSING_SQUAR                               7
 
 /////////////////////                  error IDs end                 ////////////////////////
 
@@ -487,7 +490,7 @@ FunctionDeclBody = (
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-                WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset); exit(1) }
+                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket to finish the function", G->pos + G->offset); exit(1) }
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
@@ -1041,7 +1044,7 @@ FunctionCallCore = (B_NOT - callSuffix:IDENT { nq_onFunctionCallSuffix(core->thi
                )*
                | a:ACS { tokenPos; nq_onFunctionCallArg(core->this, a); }
                )?
-               WS CLOS_PAREN
+               WS CLOS_PAREN ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_CLOSING_PAREN, "Expected closing parenthesis to finish the function call!\n", G->pos + G->offset); exit(1) }
                
 FunctionCallNoname = { tokenPos; nq_onFunctionCallStart(core->this, ""); }
                FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
@@ -1068,7 +1071,8 @@ Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, 
 ArrayLiteral = OPEN_SQUAR { tokenPos; } WS { nq_onArrayLiteralStart(core->this); }
                             e:Expr { nq_onStatement(core->this, e); }
                (WS COMMA WS e:Expr { nq_onStatement(core->this, e); })*
-               WS CLOS_SQUAR { $$=nq_onArrayLiteralEnd(core->this); }
+               WS CLOS_SQUAR ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Expected closing square bracket!\n", G->pos + G->offset); exit(1) }
+                              { $$=nq_onArrayLiteralEnd(core->this); }
 
 IntLiteral =
         ( o:OCT_LIT -                                      { tokenPos; $$=nq_onOctLiteral(core->this, yytext); }
