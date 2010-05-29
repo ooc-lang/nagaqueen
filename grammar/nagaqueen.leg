@@ -1049,12 +1049,11 @@ FunctionCallNoname = { tokenPos; nq_onFunctionCallStart(core->this, ""); }
 
 ACS = (
         { tokenPos; nq_onFunctionStart(core->this, ""); nq_onFunctionArgsStart(core->this); }
-        B_OR WS
-        ( i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  } )
-        ( WS COMMA WS
-        i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  }
+        B_OR WS 
+        ( i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  }
+          (WS COMMA WS)?
         )*
-        WS B_OR WS { nq_onFunctionArgsEnd(core->this); }
+        B_OR WS { nq_onFunctionArgsEnd(core->this); }
         (s:Stmt { nq_onStatement(core->this, s); })
         { tokenPos; $$=nq_onFunctionEnd(core->this); }
 )          
