@@ -1057,7 +1057,7 @@ ACS = (
           (WS COMMA WS)?
         )*
         '|' WS { nq_onFunctionArgsEnd(core->this); }
-        (s:Stmt { nq_onStatement(core->this, s); })
+        (s:Stmt { nq_onStatement(core->this, s); })*
         { tokenPos; $$=nq_onFunctionEnd(core->this); }
 )          
         
