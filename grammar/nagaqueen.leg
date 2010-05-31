@@ -200,6 +200,7 @@ void nq_onFunctionStatic(void *this);
 void nq_onFunctionInline(void *this);
 void nq_onFunctionFinal(void *this);
 void nq_onFunctionProto(void *this);
+void nq_onFunctionSuper(void *this);
 void nq_onFunctionSuffix(void *this, char *name);
 void *nq_onFunctionEnd(void *this);
 
@@ -431,9 +432,19 @@ OperatorDecl =
             { nq_onOperatorStart(core->this, yytext); } -
             FunctionDeclBody
             { nq_onOperatorEnd(core->this); }
-            
 
-FunctionDecl =
+FunctionDecl = SuperFunctionDecl | RegularFunctionDecl
+
+SuperFunctionDecl = name:IDENT - COLON - 'super' - FUNC_KW -
+            { tokenPos; nq_onFunctionStart(core->this, name); nq_onFunctionSuper(core->this); }
+            # optional suffix
+            (
+            - TILDE
+            - suffix:IDENT { nq_onFunctionSuffix(core->this, suffix); }
+            )?
+            { $$=nq_onFunctionEnd(core->this); }
+
+RegularFunctionDecl =
             name:IDENT { tokenPos; nq_onFunctionStart(core->this, name); }
             - COLON
             
