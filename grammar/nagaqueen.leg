@@ -359,7 +359,7 @@ Use = USE_KW
       - UseCore
       )*
       
-UseCore = < [A-Za-z0-9/._]+ > { tokenPos; nq_onUse(core->this, nq_StringClone(yytext)) }
+UseCore = < ([A-Za-z0-9/._] | '-')+ > { tokenPos; nq_onUse(core->this, nq_StringClone(yytext)) }
         
 Include = INCLUDE_KW
           - IncludeCore
@@ -368,7 +368,7 @@ Include = INCLUDE_KW
           - IncludeCore
           )*
           
-IncludeCore = < [A-Za-z0-9/._]+ >  { tokenPos; nq_onInclude(core->this, nq_StringClone(yytext)) }
+IncludeCore = < ([A-Za-z0-9/._] | '-')+ >  { tokenPos; nq_onInclude(core->this, nq_StringClone(yytext)) }
           (- '|'
            - OPEN_PAREN
            - def:IDENT  { nq_onIncludeDefine(core->this, def, ""); }
