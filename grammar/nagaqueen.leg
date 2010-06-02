@@ -1047,14 +1047,15 @@ FunctionCall = callName:IDENT { tokenPos; nq_onFunctionCallStart(core->this, cal
                
 FunctionCallCore = (B_NOT - callSuffix:IDENT { nq_onFunctionCallSuffix(core->this, callSuffix); })?
                OPEN_PAREN WS
-               (
-               e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
+	       (
+                ( e:Expr { tokenPos; nq_onFunctionCallArg(core->this, e); }
+                | a:ACS  { tokenPos; nq_onFunctionCallArg(core->this, a); })
                (WS
                COMMA
                WS
-               e:Expr    { tokenPos; nq_onFunctionCallArg(core->this, e); }
+                ( e:Expr { tokenPos; nq_onFunctionCallArg(core->this, e); }
+                | a:ACS  { tokenPos; nq_onFunctionCallArg(core->this, a); })
                )*
-               | a:ACS { tokenPos; nq_onFunctionCallArg(core->this, a); }
                )?
                WS CLOS_PAREN ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_CLOSING_PAREN, "Expected closing parenthesis to finish the function call!\n", G->pos + G->offset); exit(1) }
                
