@@ -214,7 +214,7 @@ void nq_onFunctionCallSuffix(void *this, char *yytext);
 void nq_onFunctionCallArg(void *this, void *expr);
 void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
-void nq_onFunctionCallChain(void *this, void *call, void *expr);
+void *nq_onFunctionCallChain(void *this, void *expr, void *call);
 void nq_onFunctionCallCombo(void *this, void *call, void *expr);
 
 void nq_onArrayLiteralStart(void *this);
@@ -856,7 +856,7 @@ Stmt     = (
 
 StmtCore = (
               # some statements need an EOL after them...
-              e:EoledStatement (- '.' { tokenPos; } WS call:FunctionCall { nq_onStatement(core->this, e); nq_onFunctionCallChain(core->this, call, e); $$=e=call; })*
+              e:EoledStatement
               (Terminator+ | (WS &CLOS_BRACK) | (WS &CLOS_PAREN) | (&CommentLine))
            )
           | # ...but block don't
@@ -943,8 +943,8 @@ Return  = (RETURN_KW &([^A-Za-z_]) { tokenPos; } - e:Expr { $$=nq_onReturn(core-
         | (RETURN_KW &([^A-Za-z_]) { tokenPos; } -        { $$=nq_onReturn(core->this, NULL); })
 
 
-Expr     =   VariableDecl -
-           | BinaryOperation -
+Expr     =   v:VariableDecl -
+           | b:BinaryOperation - (- '.' { tokenPos; } WS call:FunctionCall { $$=b=nq_onFunctionCallChain(core->this, b, call); })*
            | AnonymousFunctionDecl
 
 #operators
