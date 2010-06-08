@@ -967,9 +967,9 @@ Assignment = l: Ternary
 Ternary =   cond:LogicalOr
             (
           - QUEST { tokenPos; }
-          - ifTrue:LogicalOr
+          WS ifTrue:LogicalOr
           - COLON
-          - ifFalse:LogicalOr
+          WS ifFalse:LogicalOr
             { $$=nq_onTernary(core->this, cond, ifTrue, ifFalse); }
             )?
 
