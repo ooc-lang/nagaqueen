@@ -352,7 +352,7 @@ VersionCore = (VersionNegation | VersionName)
 VersionName = - < [a-zA-Z0-9_]+ > { tokenPos; $$=nq_onVersionName(core->this, yytext); }
 VersionNegation = - '!' { tokenPos; } - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec); }
 
-Use = USE_KW
+Use = USE_KW [ \t]
       - UseCore
       (
       - COMMA
@@ -361,7 +361,7 @@ Use = USE_KW
       
 UseCore = < ([A-Za-z0-9/._] | '-')+ > { tokenPos; nq_onUse(core->this, nq_StringClone(yytext)) }
         
-Include = INCLUDE_KW
+Include = INCLUDE_KW [ \t]
           - IncludeCore
           (
           - COMMA
@@ -378,7 +378,7 @@ IncludeCore = < ([A-Za-z0-9/._] | '-')+ >  { tokenPos; nq_onInclude(core->this, 
            - CLOS_PAREN
           )?
           
-Import  = IMPORT_KW
+Import  = IMPORT_KW [ \t]
           - ImportAtom
           (
           COMMA WS
