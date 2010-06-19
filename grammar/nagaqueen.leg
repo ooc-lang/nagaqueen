@@ -615,6 +615,8 @@ CoverDecl   = (
             
             - COVER_KW
             
+            GenericArguments?
+            
             # covering another type
             (
             - FROM_KW - t:Type { nq_onCoverFromType(core->this, t) }
