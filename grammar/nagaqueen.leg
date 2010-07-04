@@ -122,23 +122,23 @@ void *nq_onVersionOr(void *this, void *specLeft, void *specRight);
 void nq_onVersionStart(void *this, void *spec);
 void *nq_onVersionEnd(void *this);
 
-void nq_onCoverStart(void *this, char *name);
+void nq_onCoverStart(void *this, char *name, char *doc);
 void nq_onCoverExtern(void *this, char *externName);
 void nq_onCoverFromType(void *this, void *type);
 void nq_onCoverExtends(void *this, void *type);
 void nq_onCoverImplements(void *this, void *type);
 void nq_onCoverEnd(void *this);
 
-void nq_onEnumStart(void *this, char *name);
+void nq_onEnumStart(void *this, char *name, char *doc);
 void nq_onEnumExtern(void *this, char *externName);
 void nq_onEnumIncrementExpr(void *this, char oper, void *step);
-void nq_onEnumElementStart(void *this, char *name);
+void nq_onEnumElementStart(void *this, char *name, char *doc);
 void nq_onEnumElementValue(void *this, void *value);
 void nq_onEnumElementExtern(void *this, char *externName);
 void nq_onEnumElementEnd(void *this);
 void nq_onEnumEnd(void *this);
 
-void nq_onClassStart(void *this, char *name);
+void nq_onClassStart(void *this, char *name, char *doc);
 void nq_onClassAbstract(void *this);
 void nq_onClassFinal(void *this);
 void nq_onClassExtends(void *this, void *type);
@@ -146,24 +146,24 @@ void nq_onClassImplements(void *this, void *type);
 void nq_onClassBody(void *this);
 void nq_onClassEnd(void *this);
 
-void nq_onInterfaceStart(void *this, char *name);
+void nq_onInterfaceStart(void *this, char *name, char *doc);
 void nq_onInterfaceExtends(void *this, void *type);
 void nq_onInterfaceEnd(void *this);
 
-void nq_onPropertyDeclStart(void *this, char *name);
+void nq_onPropertyDeclStart(void *this, char *name, char *doc);
 void nq_onPropertyDeclStatic(void *this);
 void nq_onPropertyDeclType(void *this, void *type);
 void *nq_onPropertyDeclEnd(void *this);
 
-void nq_onPropertyDeclGetterStart(void *this);
+void nq_onPropertyDeclGetterStart(void *this, char *doc);
 void *nq_onPropertyDeclGetterEnd(void *this);
 
-void nq_onPropertyDeclSetterStart(void *this);
+void nq_onPropertyDeclSetterStart(void *this, char *doc);
 void nq_onPropertyDeclSetterArgument(void *this, char *name, _Bool conventional);
 void *nq_onPropertyDeclSetterEnd(void *this);
 
 void nq_onVarDeclStart(void *this);
-void nq_onVarDeclName(void *this, char *name);
+void nq_onVarDeclName(void *this, char *name, char *doc);
 void nq_onVarDeclExtern(void *this, char *externName);
 void nq_onVarDeclUnmangled(void *this, char *unmangledName);
 void nq_onVarDeclExpr(void *this, void *expr);
@@ -190,7 +190,7 @@ void nq_onFuncTypeReturnType(void *this, void *funcType, void *returnType);
 void nq_onOperatorStart(void *this, char *symbol);
 void nq_onOperatorEnd(void *this);
 
-void nq_onFunctionStart(void *this, char *name);
+void nq_onFunctionStart(void *this, char *name, char *doc);
 void nq_onFunctionExtern(void *this, char *externName);
 void nq_onFunctionUnmangled(void *this, char *unmangledName);
 void nq_onFunctionAbstract(void *this);
@@ -325,6 +325,7 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 #define NQE_EXP_RET_TYPE                                    5
 #define NQE_EXP_CLOSING_PAREN                               6
 #define NQE_EXP_CLOSING_SQUAR                               7
+#define NQE_MISPLACED_OOCDOC                                8
 
 /////////////////////                  error IDs end                 ////////////////////////
 
@@ -344,7 +345,8 @@ ModuleCore = (WS VERSION_KW { tokenPos; }
           | WS Import WS
           | WS Use WS
           | WS Decl WS
-          | WS stmt:Stmt WS { nq_onStatement(core->this, stmt); })
+          | WS stmt:Stmt WS { nq_onStatement(core->this, stmt); }
+          | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 3); })
           
 VersionSpec = ((- OPEN_PAREN - l:VersionSpec - CLOS_PAREN) | (l:VersionCore))
                 ((- '&&' { tokenPos; } - r:VersionSpec { l=$$=nq_onVersionAnd(core->this, l, r); }) |
@@ -443,7 +445,7 @@ OperatorDecl =
 FunctionDecl = SuperFunctionDecl | RegularFunctionDecl
 
 SuperFunctionDecl = name:IDENT - COLON - 'super' - FUNC_KW -
-            { tokenPos; nq_onFunctionStart(core->this, name); nq_onFunctionSuper(core->this); }
+            { tokenPos; nq_onFunctionStart(core->this, name, ""); nq_onFunctionSuper(core->this); }
             # optional suffix
             (
             - TILDE
@@ -452,7 +454,9 @@ SuperFunctionDecl = name:IDENT - COLON - 'super' - FUNC_KW -
             { $$=nq_onFunctionEnd(core->this); }
 
 RegularFunctionDecl =
-            name:IDENT { tokenPos; nq_onFunctionStart(core->this, name); }
+            doc: OocDoc
+
+            name:IDENT { tokenPos; nq_onFunctionStart(core->this, name, doc); }
             - COLON
             
             # modifiers
@@ -468,7 +472,7 @@ RegularFunctionDecl =
             
             FunctionDeclCore
 
-AnonymousFunctionDecl = { nq_onFunctionStart(core->this, ""); } FunctionDeclCore
+AnonymousFunctionDecl = { nq_onFunctionStart(core->this, "", ""); } FunctionDeclCore
                                     
 FunctionDeclCore =
             - FUNC_KW
@@ -508,7 +512,7 @@ FunctionDeclBody = (
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket to finish the function", G->pos + G->offset); exit(1) }
+                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket to finish the function\n", G->pos + G->offset); exit(1) }
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
             
@@ -521,7 +525,9 @@ Argument    = ( (DOT dotName:IDENT -)    { tokenPos; nq_onDotArg(core->this, dot
             
             
 ClassDecl   = (
-            className:IDENT { tokenPos; nq_onClassStart(core->this, className); }
+            doc: OocDoc
+            
+            className:IDENT { tokenPos; nq_onClassStart(core->this, className, doc); }
             - COLON
             
             # modifiers
@@ -561,12 +567,17 @@ ClassDecl   = (
                     )
                 WS)*
                 
-                WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
+                WS
+                ( CLOS_BRACK
+                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
+                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )
             ) { nq_onClassEnd(core->this) }
 
 EnumDecl    = (
-            enumName:IDENT { tokenPos; nq_onEnumStart(core->this, enumName) }
+            doc: OocDoc
+
+            enumName:IDENT { tokenPos; nq_onEnumStart(core->this, enumName, doc); }
             - COLON
 
             # modifiers (extern)
@@ -587,13 +598,18 @@ EnumDecl    = (
                 # enumeration elements
                 EnumElement ((COMMA | Terminator+) WS EnumElement)*
 
-                WS CLOS_BRACK
+                WS
+                ( CLOS_BRACK
+                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
+                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected enum element!\n", G->pos + G->offset); }
             )
 
             ) { tokenPos; nq_onEnumEnd(core->this) }
 
 EnumElement = (
-                i:IDENT { tokenPos; nq_onEnumElementStart(core->this, i); }
+                doc: OocDoc
+
+                i:IDENT { tokenPos; nq_onEnumElementStart(core->this, i, doc); }
                 - ( ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); }
                   | COLON
                     - externName:ExternName { nq_onEnumElementExtern(core->this, externName); }
@@ -605,7 +621,9 @@ EnumIncrementOper =  ( STAR { $$='*'; }
                      )
             
 CoverDecl   = (
-            coverName:IDENT { tokenPos; nq_onCoverStart(core->this, coverName) }
+            doc: OocDoc
+
+            coverName:IDENT { tokenPos; nq_onCoverStart(core->this, coverName, doc); }
             - COLON
             
             # modifiers
@@ -644,13 +662,18 @@ CoverDecl   = (
                     )
                 WS)*
                 
-                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
+                WS
+                ( CLOS_BRACK
+                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
+                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )?
             )
             { nq_onCoverEnd(core->this); }
             
 InterfaceDecl = (
-            interfaceName:IDENT { tokenPos; nq_onInterfaceStart(core->this, interfaceName) }
+            doc: OocDoc
+
+            interfaceName:IDENT { tokenPos; nq_onInterfaceStart(core->this, interfaceName, doc); }
             - COLON
             
             - INTERFACE_KW
@@ -676,7 +699,10 @@ InterfaceDecl = (
                     (fd:FunctionDecl | " ")
                 WS)*
                 
-                WS CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", G->pos + G->offset); }
+                WS
+                ( CLOS_BRACK
+                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///", G->pos + G->offset - 4); }
+                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", G->pos + G->offset); }
             )
             )
             { nq_onInterfaceEnd(core->this); }
@@ -695,7 +721,9 @@ UnmangledName = UNMANGLED_KW { $$="" }
              - CLOS_PAREN
              )?           
 
-VarDeclFromExpr = ( i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); }
+VarDeclFromExpr = ( doc: OocDoc
+
+                    i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i, doc); }
                   - ASS_DECL       { tokenPos; }
                   (-
                     (
@@ -710,14 +738,17 @@ VarDeclFromExpr = ( i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(co
 
 ConventionalVarDecl =
             { nq_onVarDeclStart(core->this); }
+            
             (
-            varDeclName:IDENT { tokenPos; nq_onVarDeclName(core->this, varDeclName); }
+            doc: OocDoc
+            varDeclName:IDENT { tokenPos; nq_onVarDeclName(core->this, varDeclName, doc); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             
             # multi-decls
             (
             - COMMA
-            WS nextDeclName:IDENT { nq_onVarDeclName(core->this, nextDeclName); }
+            doc: OocDoc
+            WS nextDeclName:IDENT { nq_onVarDeclName(core->this, nextDeclName, doc); }
             (- ASS - Expr { nq_onVarDeclExpr(core->this, $$); })?
             -
             )*
@@ -741,7 +772,8 @@ VariableDecl = (v:VarDeclFromExpr     { $$=v })
             
 PropertyDecl = 
            (
-           propertyName:IDENT { tokenPos; nq_onPropertyDeclStart(core->this, propertyName); }
+           doc: OocDoc
+           propertyName:IDENT { tokenPos; nq_onPropertyDeclStart(core->this, propertyName, doc); }
            
            WS COLON WS
 
@@ -763,7 +795,9 @@ PropertyDeclCore =
            )*
 
 PropertyDeclGetter =
-           { nq_onPropertyDeclGetterStart(core->this); }
+           doc: OocDoc
+
+           { nq_onPropertyDeclGetterStart(core->this, doc); }
            WS GET_KW WS
            ( 
              COLON
@@ -778,7 +812,9 @@ PropertyDeclGetter =
            { $$=nq_onPropertyDeclGetterEnd(core->this); }
 
 PropertyDeclSetter =
-           { nq_onPropertyDeclSetterStart(core->this); }
+           doc: OocDoc
+
+           { nq_onPropertyDeclSetterStart(core->this, doc); }
            WS SET_KW WS
            ( 
              COLON
@@ -1074,9 +1110,9 @@ FunctionCallNoname = { tokenPos; nq_onFunctionCallStart(core->this, ""); }
                FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
 
 ACS = (
-        { tokenPos; nq_onFunctionStart(core->this, ""); nq_onFunctionArgsStart(core->this); }
+        { tokenPos; nq_onFunctionStart(core->this, "", ""); nq_onFunctionArgsStart(core->this); }
         '|' WS? 
-        ( i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  }
+        ( i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i, ""); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  }
           (WS COMMA WS)?
         )*
         '|' WS { nq_onFunctionArgsEnd(core->this); }
@@ -1246,9 +1282,12 @@ Terminator = (CommentLine
              )
 WS         = ([ \t] | Comment | EOL)*
 
+OocDoc = "/**" < (!"*/" (EOL | .))* > "*/" { $$=nq_StringClone(yytext) } WS
+       | "///" < (!EOL .)*          > EOL  { $$=nq_StringClone(yytext) } WS
+       | { $$="" }
 Comment = (CommentLine | CommentMultiLine)
-CommentLine = "//" (!EOL .)* EOL
-CommentMultiLine = "/*" (!"*/" (EOL | .))* "*/"
+CommentLine = "//" !'/' (!EOL .)* EOL
+CommentMultiLine = "/*" !'*' (!"*/" (EOL | .))* "*/"
 
 OCT_LIT      = < "0c" [0-8] [0-8_]* >
 BIN_LIT      = < "0b" [01] [01_]* >
