@@ -8,14 +8,12 @@
 #define _OBRACK "{"
 #define _CBRACK "}"
 
-// TODO: not everyone wants to use nagaqueen with the gc, make that
-// more modular
+#ifdef __OOC_USE_GC__
+
 void *GC_malloc(size_t);
 void *GC_calloc(size_t, size_t);
 void *GC_realloc(void *, size_t);
 void GC_free(void *);
-
-#ifdef __OOC_USE_GC__
 
 #define YY_ALLOC(N, D)      GC_malloc(N)
 #define YY_CALLOC(N, S, D)  GC_malloc((N) * (S))
