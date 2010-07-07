@@ -164,6 +164,7 @@ void *nq_onPropertyDeclSetterEnd(void *this);
 
 void nq_onVarDeclStart(void *this);
 void nq_onVarDeclName(void *this, char *name, char *doc);
+void nq_onVarDeclTuple(void *this, void *tuple);
 void nq_onVarDeclExtern(void *this, char *externName);
 void nq_onVarDeclUnmangled(void *this, char *unmangledName);
 void nq_onVarDeclExpr(void *this, void *expr);
@@ -224,6 +225,9 @@ void nq_onFunctionCallCombo(void *this, void *call, void *expr);
 
 void nq_onArrayLiteralStart(void *this);
 void *nq_onArrayLiteralEnd(void *this);
+
+void nq_onTupleStart(void *this);
+void *nq_onTupleEnd(void *this);
 
 void *nq_onStringLiteral(void *this, char *text);
 void *nq_onCharLiteral(void *this, char *value);
@@ -725,7 +729,8 @@ UnmangledName = UNMANGLED_KW { $$="" }
 
 VarDeclFromExpr = ( doc: OocDoc
 
-                    i:IDENT { nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i, doc); }
+                    ( i:IDENT   { nq_onVarDeclStart(core->this); nq_onVarDeclName (core->this, i,   doc); }
+                    | tup:Tuple { nq_onVarDeclStart(core->this); nq_onVarDeclTuple(core->this, tup); })
                   - ASS_DECL       { tokenPos; }
                   (-
                     (
@@ -1140,8 +1145,14 @@ Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, 
 ArrayLiteral = OPEN_SQUAR { tokenPos; } WS { nq_onArrayLiteralStart(core->this); } (
                             e:Expr { nq_onStatement(core->this, e); }
                ((WS COMMA | EOL) WS e:Expr { nq_onStatement(core->this, e); })*
-               )? WS CLOS_SQUAR ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Expected closing square bracket!\n", G->pos + G->offset); exit(1) }
+               )? WS CLOS_SQUAR ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Expected closing square bracket!\n", G->pos + G->offset); }
                               { $$=nq_onArrayLiteralEnd(core->this); }
+
+Tuple        = OPEN_PAREN { tokenPos; } WS { nq_onTupleStart(core->this); } (
+                            e:Expr { nq_onStatement(core->this, e); }
+               ((WS COMMA | EOL) WS e:Expr { nq_onStatement(core->this, e); })*
+               )? WS CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Expected closing parenthesis!\n", G->pos + G->offset); }
+                              { $$=nq_onTupleEnd(core->this); }
 
 IntLiteral =
         ( o:OCT_LIT -                                      { tokenPos; $$=nq_onOctLiteral(core->this, yytext); }
@@ -1161,6 +1172,7 @@ ValueCore =
         | m:Match                                          { $$=m; }
         | NULL_KW &[^A-Za-z_] -                            { tokenPos; $$=nq_onNull(core->this); }
         | ArrayLiteral
+        | Tuple
         | FunctionCall
         | t:GenericType                                    { $$=nq_onTypeAccess(core->this, t); }
         | v:VariableAccess                                 { tokenPos; $$=nq_onVarAccess(core->this, NULL, v); }
