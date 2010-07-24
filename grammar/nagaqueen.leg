@@ -236,7 +236,8 @@ void nq_onStatement(void *this, void *statement);
 void *nq_onReturn(void *this, void *expr);
 
 void *nq_onVarAccess(void *this, void *expr, char *name);
-void *nq_onArrayAccess(void *this, void *array, void *index);
+void nq_onArrayAccessStart(void *this, void *array);
+void *nq_onArrayAccessEnd(void *this);
 void *nq_onCast(void *this, void *expr, void *type);
 
 void *nq_onBreak(void *this);
@@ -1095,7 +1096,12 @@ ProductCore = l:Access
 
 Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value)
-                ( - OPEN_SQUAR { tokenPos; } - index:Expr - CLOS_SQUAR - { $$=l=nq_onArrayAccess(core->this, l, index); }
+                ((
+                    - OPEN_SQUAR - { tokenPos; nq_onArrayAccessStart(core->this, l); }
+                             index:Expr - { nq_onStatement(core->this, index); }
+                   (COMMA WS index:Expr - { nq_onStatement(core->this, index); })*
+                    - CLOS_SQUAR - { $$=l=nq_onArrayAccessEnd(core->this); }
+                 )
                 | - call:FunctionCall                   { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
                 | - !(IN_KW ![A-Za-z0-9_]) r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); }
                 | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
