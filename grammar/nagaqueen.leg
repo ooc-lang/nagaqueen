@@ -1151,6 +1151,7 @@ Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, 
 ArrayLiteral = OPEN_SQUAR { tokenPos; } WS { nq_onArrayLiteralStart(core->this); } (
                             e:Expr { nq_onStatement(core->this, e); }
                ((WS COMMA | EOL) WS e:Expr { nq_onStatement(core->this, e); })*
+               (WS COMMA WS)?
                )? WS CLOS_SQUAR ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Expected closing square bracket!\n", G->pos + G->offset); }
                               { $$=nq_onArrayLiteralEnd(core->this); }
 
