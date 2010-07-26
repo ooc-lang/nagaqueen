@@ -509,7 +509,7 @@ FunctionDeclBody = (
             # return type is optional
             (
                 - R_ARROW
-                - t:Type ~{ nq_error(core->this, NQE_EXP_RET_TYPE, "Expected return type!\n", G->pos + G->offset); exit(1) }
+                - t:Type ~{ nq_error(core->this, NQE_EXP_RET_TYPE, "Expected return type!\n", G->pos + G->offset) }
                           { nq_onFunctionReturnType(core->this, t); }
             )?
 
@@ -519,7 +519,7 @@ FunctionDeclBody = (
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket to finish the function\n", G->pos + G->offset); exit(1) }
+                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket to finish the function\n", G->pos + G->offset) }
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
 
@@ -967,7 +967,7 @@ Match   = MATCH_KW { tokenPos; nq_onMatchStart(core->this); }
             (- v: Value { nq_onMatchExpr(core->this, v); })?
           WS OPEN_BRACK
           (WS Case WS)*
-          WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset); exit(1) }
+          WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset) }
           { $$=nq_onMatchEnd(core->this); }
 
 FlowControl = (Foreach | While | Break | Continue)
@@ -997,7 +997,7 @@ While = WHILE_KW { tokenPos; }
 Body =  (
         OPEN_BRACK
         (WS s:Stmt { tokenPos; nq_onStatement(core->this, s) } WS)*
-        WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset); exit(1) }
+        WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset) }
         ) | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
 
 Return  = (RETURN_KW &([^A-Za-z_]) { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
@@ -1125,7 +1125,7 @@ FunctionCallCore = (B_NOT - callSuffix:IDENT { nq_onFunctionCallSuffix(core->thi
                 | a:ACS  { tokenPos; nq_onFunctionCallArg(core->this, a); })
                )*
                )?
-               WS CLOS_PAREN ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_CLOSING_PAREN, "Expected closing parenthesis to finish the function call!\n", G->pos + G->offset); exit(1) }
+               WS CLOS_PAREN ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_CLOSING_PAREN, "Expected closing parenthesis to finish the function call!\n", G->pos + G->offset) }
 
 FunctionCallNoname = { tokenPos; nq_onFunctionCallStart(core->this, ""); }
                FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
