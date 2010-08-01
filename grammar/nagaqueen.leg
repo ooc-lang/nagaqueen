@@ -412,8 +412,8 @@ ImportAtom = path:ImportPath
              (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, core->importQuantity); })?
             ))
 
-ImportPath = < (([A-Za-z_0-9] | ".")+ "/")* > { $$=nq_StringClone(yytext); }
-ImportName = < [A-Za-z_0-9]+ >                { $$=nq_StringClone(yytext); }
+ImportPath = < (([A-Za-z_0-9] | "." | "-")+ "/")* > { $$=nq_StringClone(yytext); }
+ImportName = < ([A-Za-z_0-9] | "-")+ >                { $$=nq_StringClone(yytext); }
 
 
 Decl    = ( ClassDecl
