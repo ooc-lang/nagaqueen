@@ -685,6 +685,8 @@ InterfaceDecl = (
 
             - INTERFACE_KW
 
+            GenericArguments?
+
             # extending another interface
             (
             - EXTENDS_KW - t:Type { nq_onInterfaceExtends(core->this, t) }
