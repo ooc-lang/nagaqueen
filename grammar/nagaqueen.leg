@@ -317,6 +317,12 @@ void nq_onCaseStart(void *this);
 void nq_onCaseExpr(void *this, void *value);
 void nq_onCaseEnd(void *this);
 
+void nq_onTryStart(void *this);
+void *nq_onTryEnd(void *this);
+void nq_onCatchStart(void *this);
+void nq_onCatchExpr(void *this, void *value);
+void nq_onCatchEnd(void *this);
+
 void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 /////////////////////                callbacks def end               ////////////////////////
@@ -927,6 +933,7 @@ StmtCore = (
           | WS b:Block
           | WS f:FlowControl (Terminator*)
           | WS m:Match
+          | WS t:Try
           )
 
 EoledStatement =  ( WS Return
@@ -971,6 +978,19 @@ Match   = MATCH_KW { tokenPos; nq_onMatchStart(core->this); }
           (WS Case WS)*
           WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset) }
           { $$=nq_onMatchEnd(core->this); }
+
+Try     = TRY_KW { tokenPos; nq_onTryStart(core->this); }
+          - Body
+          (WS Catch WS)*
+          { $$=nq_onTryEnd(core->this); }
+
+Catch   = CATCH_KW { tokenPos; nq_onCatchStart(core->this); }
+          (- v:Expr { nq_onCatchExpr(core->this, v); })?
+          (WS
+           (s:Stmt { nq_onStatement(core->this, s); })
+           WS)*
+           WS
+           { nq_onCatchEnd(core->this); }
 
 FlowControl = (Foreach | While | Break | Continue)
 
@@ -1220,6 +1240,8 @@ IN_KW        = "in"
 INTO_KW      = "into"
 VERSION_KW   = "version"
 PROTO_KW     = "proto"
+TRY_KW       = "try"
+CATCH_KW     = "catch"
 
 SET_KW       = "set"
 GET_KW       = "get"
@@ -1238,6 +1260,7 @@ KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
              | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW | UNMANGLED_KW
              | IMPORT_KW | INCLUDE_KW | IF_KW | ELSE_KW | FOR_KW
              | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | NULL_KW | MATCH_KW | CASE_KW
+             | TRY_KW | CATCH_KW
 
 COMMA        = ','
 DOT          = !DOUBLE_DOT '.'
