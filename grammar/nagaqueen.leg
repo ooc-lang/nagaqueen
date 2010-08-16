@@ -122,6 +122,9 @@ void *nq_onVersionOr(void *this, void *specLeft, void *specRight);
 void nq_onVersionStart(void *this, void *spec);
 void *nq_onVersionEnd(void *this);
 
+void nq_onExtendStart(void *this, void *type, char *doc);
+void nq_onExtendEnd(void *this);
+
 void nq_onCoverStart(void *this, char *name, char *doc);
 void nq_onCoverExtern(void *this, char *externName);
 void nq_onCoverFromType(void *this, void *type);
@@ -418,6 +421,7 @@ ImportName = < ([A-Za-z_0-9] | "-")+ >                { $$=nq_StringClone(yytext
 
 Decl    = ( ClassDecl
           | CoverDecl
+          | ExtendDecl
           | EnumDecl
           | InterfaceDecl
           | OperatorDecl
@@ -626,6 +630,31 @@ EnumElement = (
 EnumIncrementOper =  ( STAR { $$='*'; }
                      | PLUS { $$='+'; }
                      )
+
+ExtendDecl  = (
+            doc: OocDoc
+
+            "extend" WS
+            extendedType: Type { tokenPos; nq_onExtendStart(core->this, extendedType, doc); }
+
+            # body
+            (
+                WS OPEN_BRACK WS
+
+                # coverdecl content
+                (WS
+                    ( fd:FunctionDecl
+                    )
+                WS)*
+
+                WS
+                ( CLOS_BRACK
+                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
+                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected or function declaration\n", G->pos + G->offset); }
+            )
+
+            { nq_onExtendEnd(core->this); }
+            )
 
 CoverDecl   = (
             doc: OocDoc
