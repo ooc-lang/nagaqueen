@@ -211,6 +211,7 @@ void nq_onFunctionFinal(void *this);
 void nq_onFunctionProto(void *this);
 void nq_onFunctionSuper(void *this);
 void nq_onFunctionSuffix(void *this, char *name);
+void nq_onFunctionBody(void *this);
 void *nq_onFunctionEnd(void *this);
 
 void nq_onTypeArg(void *this, void *type);
@@ -519,6 +520,7 @@ FunctionDeclBody = (
 
             # body is optional (for abstract/extern-named functions)
             (
+                { nq_onFunctionBody(core->this); }
                 WS OPEN_BRACK WS
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
@@ -737,7 +739,7 @@ InterfaceDecl = (
 
                 # interface content
                 (WS
-                    (fd:FunctionDecl | " ")
+                    fd:FunctionDecl
                 WS)*
 
                 WS
