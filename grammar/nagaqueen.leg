@@ -602,6 +602,9 @@ EnumDecl    = (
 
             - ENUM_KW
 
+            # optional from-type
+            (- FROM_KW - fromType:Type { tokenPos; nq_onEnumFromType(core->this, fromType); })?
+
             # increment expression (ex: *2 or +1)
             (
             - OPEN_PAREN
@@ -613,7 +616,7 @@ EnumDecl    = (
                 WS OPEN_BRACK WS
 
                 # enumeration elements
-                EnumElement ((COMMA | Terminator+) WS EnumElement)*
+                (EnumElement ((COMMA | Terminator+) WS EnumElement)*)?
 
                 WS
                 ( CLOS_BRACK
@@ -627,7 +630,7 @@ EnumElement = (
                 doc: OocDoc
 
                 i:IDENT { tokenPos; nq_onEnumElementStart(core->this, i, doc); }
-                - ( ASS value:IntLiteral { nq_onEnumElementValue(core->this, value); }
+                - ( ASS value:Expr { nq_onEnumElementValue(core->this, value); }
                   | COLON
                     - externName:ExternName { nq_onEnumElementExtern(core->this, externName); }
                   )?
