@@ -107,6 +107,7 @@ void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 char *nq_StringClone(char *string);
 char *nq_trailingQuest(char *string);
 char *nq_trailingBang (char *string);
+char *nq_mangleIdents(char *string);
 
 void nq_onUse(void *this, char *name);
 void nq_onInclude(void *this, char *path);
@@ -176,7 +177,6 @@ void nq_onVarDeclStatic(void *this);
 void nq_onVarDeclConst(void *this);
 void nq_onVarDeclProto(void *this);
 void *nq_onVarDeclEnd(void *this);
-void *nq_onVarDeclAssign(void *this, void *access, void *expr);
 
 void *nq_onTypeAccess(void *this, void *type);
 
@@ -766,9 +766,9 @@ UnmangledName = UNMANGLED_KW { $$="" }
 
 VarDeclFromExpr = ( doc: OocDoc
 
-                    ( i:IDENT   { nq_onVarDeclStart(core->this); nq_onVarDeclName (core->this, i,   doc); }
+                    ( i:IDENT   { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName (core->this, i,   doc); }
                     | tup:Tuple { nq_onVarDeclStart(core->this); nq_onVarDeclTuple(core->this, tup); })
-                  - ASS_DECL       { tokenPos; }
+                  - ASS_DECL
                   (-
                     (
                         STATIC_KW { nq_onVarDeclStatic(core->this); }
@@ -1360,8 +1360,8 @@ HEX_LIT      = < "0x" [0-9a-fA-F] [0-9a-fA-F_]* >
 FLOAT_LIT    = < "-"? [0-9_]+ DOT [0-9_]* >        -
 DEC_LIT      = < "-"? [0-9] [0-9_]* >                   -
 
-IDENT        = IDENT_CORE -
-IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident ;)
+IDENT        = i:IDENT_CORE -
+IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident
                < [a-zA-Z_][0-9a-zA-Z_]* > { $$=yytext; }
                ( '?' { $$=nq_trailingQuest($$); }
                | '!' { $$=nq_trailingBang($$); })?
