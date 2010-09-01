@@ -1375,7 +1375,7 @@ OocDoc = "/**" < (!"*/" (EOL | .))* > "*/" { $$=nq_StringClone(yytext) } WS
        | { $$="" }
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" !'/' (!EOL .)* EOL
-CommentMultiLine = "/*" !'*' (!"*/" (EOL | .))* "*/"
+CommentMultiLine = "/*" !'*' (!"*/" (EOL | CommentMultiLine | .))* "*/"
 
 OCT_LIT      = < "0c" [0-8] [0-8_]* >
 BIN_LIT      = < "0b" [01] [01_]* >
