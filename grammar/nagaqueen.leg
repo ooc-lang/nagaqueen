@@ -335,14 +335,17 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 
 // NQE stands for 'NagaQueen Error"
 
-#define NQE_EXP_STATEMENT_OR_CLOSING_BRACKET                1
-#define NQE_EXP_INC_IMP_STMT_OR_DECL                        2
-#define NQE_EXP_CASE_IN_MATCH                               3
-#define NQE_EXP_VAR_OR_FUNC_DECL                            4
-#define NQE_EXP_RET_TYPE                                    5
-#define NQE_EXP_CLOSING_PAREN                               6
-#define NQE_EXP_CLOSING_SQUAR                               7
-#define NQE_MISPLACED_OOCDOC                                8
+enum NagaQueenError {
+    NQE_EXP_STATEMENT_OR_CLOSING_BRACKET = 1,
+    NQE_EXP_INC_IMP_STMT_OR_DECL,
+    NQE_EXP_CASE_IN_MATCH,
+    NQE_EXP_VAR_OR_FUNC_DECL,
+    NQE_EXP_RET_TYPE,
+    NQE_EXP_CLOSING_PAREN,
+    NQE_EXP_CLOSING_SQUAR,
+    NQE_MISPLACED_OOCDOC,
+    NQE_EXP_ARG,
+};
 
 /////////////////////                  error IDs end                 ////////////////////////
 
@@ -351,19 +354,19 @@ void nq_error(void *this, int errorID, char *defaultMessage, int index);
 Module  =  ModuleCore
           | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
 
-ModuleCore = (WS VERSION_KW { tokenPos; }
+ModuleCore = (WS VERSION_KW { tokenPos }
               - OPEN_PAREN
               - spec:VersionSpec
               - CLOS_PAREN
-              - OPEN_BRACK { nq_onVersionStart(core->this, spec); }
+              - OPEN_BRACK { nq_onVersionStart(core->this, spec) }
               WS ModuleCore* WS
-              - CLOS_BRACK { nq_onVersionEnd(core->this); })
+              - CLOS_BRACK { nq_onVersionEnd(core->this) })
           |(WS Include WS
           | WS Import WS
           | WS Use WS
           | WS Decl WS
-          | WS stmt:Stmt WS { nq_onStatement(core->this, stmt); }
-          | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 3); })
+          | WS stmt:Stmt WS { nq_onStatement(core->this, stmt) }
+          | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 3) })
 
 VersionSpec = ((- OPEN_PAREN - l:VersionSpec - CLOS_PAREN) | (l:VersionCore))
                 ((- '&&' { tokenPos; } - r:VersionSpec { l=$$=nq_onVersionAnd(core->this, l, r); }) |
@@ -371,8 +374,8 @@ VersionSpec = ((- OPEN_PAREN - l:VersionSpec - CLOS_PAREN) | (l:VersionCore))
 
 VersionCore = (VersionNegation | VersionName)
 
-VersionName = - < [a-zA-Z0-9_]+ > { tokenPos; $$=nq_onVersionName(core->this, yytext); }
-VersionNegation = - '!' { tokenPos; } - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec); }
+VersionName = - < [a-zA-Z0-9_]+ > { tokenPos; $$=nq_onVersionName(core->this, yytext) }
+VersionNegation = - '!' { tokenPos; } - spec:VersionSpec { $$=nq_onVersionNegation(core->this, spec) }
 
 Use = USE_KW [ \t]
       - UseCore
@@ -390,16 +393,16 @@ Include = INCLUDE_KW [ \t]
           - IncludeCore
           )*
 
-DefineName  = < ([A-Za-z0-9_/._] | '-')+ > { $$=nq_StringClone(yytext); }
-DefineValue = ('=' < ([A-Za-z0-9_/._] | '-')+ >)? { $$=nq_StringClone(yytext); }
+DefineName  = < ([A-Za-z0-9_/._] | '-')+ > { $$=nq_StringClone(yytext) }
+DefineValue = ('=' < ([A-Za-z0-9_/._] | '-')+ >)? { $$=nq_StringClone(yytext) }
             | { $$=""; }
 
 IncludeCore = < ([A-Za-z0-9/._] | '-')+ >  { tokenPos; nq_onInclude(core->this, nq_StringClone(yytext)) }
           (- '|'
            - OPEN_PAREN
-            - defineName:DefineName defineVal:DefineValue { nq_onIncludeDefine(core->this, defineName, defineVal); }
+            - defineName:DefineName defineVal:DefineValue { nq_onIncludeDefine(core->this, defineName, defineVal) }
            (- COMMA
-            - defineName:DefineName defineVal:DefineValue { nq_onIncludeDefine(core->this, defineName, defineVal); }
+            - defineName:DefineName defineVal:DefineValue { nq_onIncludeDefine(core->this, defineName, defineVal) }
            )?
            - CLOS_PAREN
           )?
@@ -412,18 +415,18 @@ Import  = IMPORT_KW [ \t]
           )*
 
 ImportAtom = path:ImportPath
-            ((name:ImportName { tokenPosPlusOne; }             { nq_onImport(core->this, (char*) path, (char*) name); }
-             (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, 1); })?
+            ((name:ImportName { tokenPosPlusOne; }             { nq_onImport(core->this, (char*) path, (char*) name) }
+             (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, 1) })?
              ) | (
             OPEN_SQUAR { core->importQuantity = 0; }
-            (name:ImportName { tokenPosPlusOne; } - COMMA WS   { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })*
-            (name:ImportName { tokenPosPlusOne; }              { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name); })
+            (name:ImportName { tokenPosPlusOne; } - COMMA WS   { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name) })*
+            (name:ImportName { tokenPosPlusOne; }              { core->importQuantity++; nq_onImport(core->this, (char*) path, (char*) name) })
             CLOS_SQUAR
-             (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, core->importQuantity); })?
+             (- INTO_KW - namespace:IDENT               { nq_onImportNamespace(core->this, (char*) namespace, core->importQuantity) })?
             ))
 
-ImportPath = < (([A-Za-z_0-9] | "." | "-")+ "/")* > { $$=nq_StringClone(yytext); }
-ImportName = < ([A-Za-z_0-9] | "-")+ >                { $$=nq_StringClone(yytext); }
+ImportPath = < (([A-Za-z_0-9] | "." | "-")+ "/")* > { $$=nq_StringClone(yytext) }
+ImportName = < ([A-Za-z_0-9] | "-")+ >                { $$=nq_StringClone(yytext) }
 
 
 Decl    = ( ClassDecl
@@ -434,16 +437,16 @@ Decl    = ( ClassDecl
           | OperatorDecl
           | FunctionDecl
           | PropertyDecl
-          | vd:VariableDecl Terminator+ { nq_onStatement(core->this, vd); }
+          | vd:VariableDecl Terminator+ { nq_onStatement(core->this, vd) }
           )
 
 GenericArguments =
             (
             - LESSTHAN
-            - name:IDENT         { nq_onGenericArgument(core->this, name); }
+            - name:IDENT         { nq_onGenericArgument(core->this, name) }
             (
             - COMMA
-            - name:IDENT         { nq_onGenericArgument(core->this, name); }
+            - name:IDENT         { nq_onGenericArgument(core->this, name) }
             )*
             MORETHAN -
             )
@@ -456,50 +459,50 @@ OperatorDecl =
                 | "[]="| "[]" | "&&" | "||" | "%" | "as" | "implicit as"
                 | "&=" | "|=" | "^=" | "&"  | "|" | "^" | "~"
                 ) >
-            { nq_onOperatorStart(core->this, yytext); } -
+            { nq_onOperatorStart(core->this, yytext) } -
             FunctionDeclBody
-            { nq_onOperatorEnd(core->this); }
+            { nq_onOperatorEnd(core->this) }
 
 FunctionDecl = SuperFunctionDecl | RegularFunctionDecl
 
 SuperFunctionDecl = name:IDENT - COLON - 'super' - FUNC_KW -
-            { tokenPos; nq_onFunctionStart(core->this, name, ""); nq_onFunctionSuper(core->this); }
+            { tokenPos; nq_onFunctionStart(core->this, name, ""); nq_onFunctionSuper(core->this) }
             # optional suffix
             (
             - TILDE
-            - suffix:IDENT { nq_onFunctionSuffix(core->this, suffix); }
+            - suffix:IDENT { nq_onFunctionSuffix(core->this, suffix) }
             )?
-            { $$=nq_onFunctionEnd(core->this); }
+            { $$=nq_onFunctionEnd(core->this) }
 
 RegularFunctionDecl =
             doc: OocDoc
 
-            name:IDENT { tokenPos; nq_onFunctionStart(core->this, name, doc); }
+            name:IDENT { tokenPos; nq_onFunctionStart(core->this, name, doc) }
             - COLON
 
             # modifiers
-            (-  ( externName:ExternName  { nq_onFunctionExtern(core->this, externName); }
-                | unmangledName:UnmangledName { nq_onFunctionUnmangled(core->this, unmangledName); }
-                | ABSTRACT_KW { nq_onFunctionAbstract(core->this); }
-                | STATIC_KW   { nq_onFunctionStatic(core->this); }
-                | INLINE_KW   { nq_onFunctionInline(core->this); }
-                | FINAL_KW    { nq_onFunctionFinal(core->this); }
-                | PROTO_KW    { nq_onFunctionProto(core->this); }
+            (-  ( externName:ExternName  { nq_onFunctionExtern(core->this, externName) }
+                | unmangledName:UnmangledName { nq_onFunctionUnmangled(core->this, unmangledName) }
+                | ABSTRACT_KW { nq_onFunctionAbstract(core->this) }
+                | STATIC_KW   { nq_onFunctionStatic(core->this) }
+                | INLINE_KW   { nq_onFunctionInline(core->this) }
+                | FINAL_KW    { nq_onFunctionFinal(core->this) }
+                | PROTO_KW    { nq_onFunctionProto(core->this) }
                 )
             )*
 
             FunctionDeclCore
 
-AnonymousFunctionDecl = { nq_onFunctionStart(core->this, "", ""); } FunctionDeclCore
+AnonymousFunctionDecl = { nq_onFunctionStart(core->this, "", "") } FunctionDeclCore
 
 FunctionDeclCore =
             - FUNC_KW
-            (AT { nq_onFunctionThisRef(core->this); })?
+            (AT { nq_onFunctionThisRef(core->this) })?
 
             # optional suffix
             (
             - TILDE
-            - suffix:IDENT { nq_onFunctionSuffix(core->this, suffix); }
+            - suffix:IDENT { nq_onFunctionSuffix(core->this, suffix) }
             )?
 
             FunctionDeclBody
@@ -510,18 +513,19 @@ FunctionDeclBody = (
 
             # arguments are optional
             (
-                - OPEN_PAREN { nq_onFunctionArgsStart(core->this); }
+                - OPEN_PAREN { nq_onFunctionArgsStart(core->this) }
                 (          WS Argument WS
                     (COMMA WS Argument WS)*
                 )?
-                - CLOS_PAREN { nq_onFunctionArgsEnd(core->this); }
+                - CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_ARG, "Malformed function argument (remember, it's `name: Type` in ooc, not `Type name`)\n", G->pos + G->offset) }
+                              { nq_onFunctionArgsEnd(core->this) }
             )?
 
             # return type is optional
             (
                 - R_ARROW
-                - t:Type ~{ nq_error(core->this, NQE_EXP_RET_TYPE, "Expected return type!\n", G->pos + G->offset) }
-                          { nq_onFunctionReturnType(core->this, t); }
+                - t:Type ~{ nq_error(core->this, NQE_EXP_RET_TYPE, "Missing return type.\n", G->pos + G->offset) }
+                          { nq_onFunctionReturnType(core->this, t) }
             )?
 
             # body is optional (for abstract/extern-named functions)
@@ -531,22 +535,22 @@ FunctionDeclBody = (
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket to finish the function\n", G->pos + G->offset) }
+                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Malformed statement or closing bracket missing\n", G->pos + G->offset) }
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
 
-Argument    = ( (DOT dotName:IDENT -)    { tokenPos; nq_onDotArg(core->this, dotName); }
-              | (ASS assName:IDENT -)    { tokenPos; nq_onAssArg(core->this, assName); }
-              | vd:VariableDecl  { tokenPos; nq_onStatement(core->this, vd); }
-              | type:Type        { tokenPos; nq_onTypeArg(core->this, type); }
-              | "..."            { tokenPos; nq_onVarArg(core->this); }
+Argument    = ( (DOT dotName:IDENT -)    { tokenPos; nq_onDotArg(core->this, dotName) }
+              | (ASS assName:IDENT -)    { tokenPos; nq_onAssArg(core->this, assName) }
+              | vd:VariableDecl  { tokenPos; nq_onStatement(core->this, vd) }
+              | type:Type        { tokenPos; nq_onTypeArg(core->this, type) }
+              | "..."            { tokenPos; nq_onVarArg(core->this) }
               )
 
 
 ClassDecl   = (
             doc: OocDoc
 
-            className:IDENT { tokenPos; nq_onClassStart(core->this, className, doc); }
+            className:IDENT { tokenPos; nq_onClassStart(core->this, className, doc) }
             - COLON
 
             # modifiers
@@ -618,7 +622,12 @@ EnumDecl    = (
                 WS OPEN_BRACK WS
 
                 # enumeration elements
-                (EnumElement ((COMMA | Terminator+) WS EnumElement)*)?
+                (EnumElement
+                (
+                    (Terminator+ WS FunctionDecl) |
+                    ((COMMA | Terminator+) WS EnumElement)
+                )*
+                )?
 
                 WS
                 ( CLOS_BRACK
