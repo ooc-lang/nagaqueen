@@ -186,7 +186,8 @@ void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
 void *nq_onTypePointer(void *this, void *type);   // $$=nq_onTypePointer($$)
 void *nq_onTypeReference(void *this, void *type); // $$=nq_onTypeReference($$)
 void *nq_onTypeBrackets(void *this, void *type, void *inner); // $$=nq_onTypeBrackets($$, inner)
-void nq_onTypeGenericArgument(void *this, void *type, void *innerType);
+void nq_onTypeGenericArgument(void *this, void *type, void *genType);
+void nq_onFuncTypeGenericArgument(void *this, void *type, char *name);
 void *nq_onTypeList(void *this);
 void *nq_onTypeListElement(void *this, void *list, void *elem);
 
@@ -958,8 +959,8 @@ TypeList = OPEN_PAREN WS list:TypeListCore
 FuncTypeCore = "Func" &[^A-Za-z0-9_] { tokenPos; $$=nq_onFuncTypeNew(core->this); }
 
 FuncType  = funcType:FuncTypeCore
-            (- LESSTHAN - genType:Type { nq_onTypeGenericArgument(core->this, funcType, genType); }
-            (- COMMA    - genType:Type { nq_onTypeGenericArgument(core->this, funcType, genType); })*
+            (- LESSTHAN - genType:IDENT { nq_onFuncTypeGenericArgument(core->this, funcType, genType); }
+            (- COMMA    - genType:IDENT { nq_onFuncTypeGenericArgument(core->this, funcType, genType); })*
             - MORETHAN)?
             (
             - OPEN_PAREN
@@ -1424,7 +1425,8 @@ OocDoc = "/**" < (!"*/" (EOL | .))* > "*/" { $$=nq_StringClone(yytext) } WS
        | { $$="" }
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" !'/' (!EOL .)* EOL
-CommentMultiLine = "/*" !'*' (!"*/" (EOL | CommentMultiLine | .))* "*/"
+CommentMultiLine = "/*" !'*' (!"*/" (EOL | CommentMultiLineWithDocs | .))* "*/"
+CommentMultiLineWithDocs = "/*" (!"*/" (EOL | CommentMultiLineWithDocs | .))* "*/"
 
 OCT_LIT      = < "0c" [0-8] [0-8_]* >
 BIN_LIT      = < "0b" [01] [01_]* >
