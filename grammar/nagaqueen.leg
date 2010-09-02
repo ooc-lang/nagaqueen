@@ -121,6 +121,8 @@ void *nq_onVersionAnd(void *this, void *specLeft, void *specRight);
 void *nq_onVersionOr(void *this, void *specLeft, void *specRight);
 
 void nq_onVersionStart(void *this, void *spec);
+void *nq_onVersionElseIfStart(void *this, void *notSpec, void *elseSpec);
+void nq_onVersionElseStart(void *this, void *notSpec);
 void *nq_onVersionEnd(void *this);
 
 void nq_onExtendStart(void *this, void *type, char *doc);
@@ -356,11 +358,27 @@ Module  =  ModuleCore
 
 ModuleCore = (WS VERSION_KW { tokenPos }
               - OPEN_PAREN
-              - spec:VersionSpec
+              - spec: VersionSpec
               - CLOS_PAREN
               - OPEN_BRACK { nq_onVersionStart(core->this, spec) }
               WS ModuleCore* WS
-              - CLOS_BRACK { nq_onVersionEnd(core->this) })
+              - CLOS_BRACK { nq_onVersionEnd(core->this) }
+              (
+                  WS ELSE_KW - VERSION_KW { tokenPos }
+                  - OPEN_PAREN
+                  - elseSpec: VersionSpec
+                  - CLOS_PAREN
+                  - OPEN_BRACK { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
+                  WS ModuleCore* WS
+                  - CLOS_BRACK { nq_onVersionEnd(core->this) }
+              )*
+              (
+                  WS ELSE_KW { tokenPos }
+                  - OPEN_BRACK { nq_onVersionElseStart(core->this, spec) }
+                  WS ModuleCore* WS
+                  - CLOS_BRACK { nq_onVersionEnd(core->this) }
+              )?
+            )
           |(WS Include WS
           | WS Import WS
           | WS Use WS
@@ -956,14 +974,36 @@ FuncType  = funcType:FuncTypeCore
             )?
             { $$=funcType; }
 
+# oh that's on naughty workaround. it's a dummy rule that's always
+# matched just to provide a variable in the context of 'Stmt' with different
+# version blocks.
+Old = { $$=NULL }
+
 Stmt     = (
+                old:Old
                 WS VERSION_KW { tokenPos; }
                 - OPEN_PAREN
                 - spec:VersionSpec
                 - CLOS_PAREN
                 - OPEN_BRACK { nq_onVersionStart(core->this, spec); }
                 WS (s:Stmt { nq_onStatement(core->this, s); })* WS
-                - CLOS_BRACK { $$=nq_onVersionEnd(core->this); })
+                - CLOS_BRACK { old=$$=nq_onVersionEnd(core->this); }
+                (
+                  WS ELSE_KW - VERSION_KW { tokenPos }
+                  - OPEN_PAREN
+                  - elseSpec: VersionSpec
+                  - CLOS_PAREN
+                  - OPEN_BRACK { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
+                  WS (s:Stmt { nq_onStatement(core->this, s); })* WS
+                  - CLOS_BRACK { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                )*
+                (
+                  WS ELSE_KW { tokenPos }
+                  - OPEN_BRACK { nq_onVersionElseStart(core->this, spec) }
+                  WS (s:Stmt { nq_onStatement(core->this, s); })* WS
+                  - CLOS_BRACK { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                )?
+            )
          | StmtCore
 
 StmtCore = (
