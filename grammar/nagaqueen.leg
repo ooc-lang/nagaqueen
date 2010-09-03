@@ -1071,11 +1071,10 @@ Try     = TRY_KW { tokenPos; nq_onTryStart(core->this); }
 
 Catch   = CATCH_KW { tokenPos; nq_onCatchStart(core->this); }
           (- v:Expr { nq_onCatchExpr(core->this, v); })?
-          (WS
-           (s:Stmt { nq_onStatement(core->this, s); })
-           WS)*
-           WS
-           { nq_onCatchEnd(core->this); }
+          WS OPEN_BRACK
+          (WS s:Stmt WS { nq_onStatement(core->this, s); })*
+          WS CLOS_BRACK
+          { nq_onCatchEnd(core->this); }
 
 FlowControl = (Foreach | While | Break | Continue)
 
