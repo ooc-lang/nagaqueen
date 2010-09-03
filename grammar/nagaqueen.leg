@@ -930,20 +930,20 @@ TypeBase = FuncType |
 # it's used when we have to decide between a Type and a VariableAccess
 GenericType
         = t:TypeBase
-           - LESSTHAN - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
-          (- COMMA    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
-           - MORETHAN
-           - (STAR { t=$$=nq_onTypePointer  (core->this, t); }
-          |   AT   { t=$$=nq_onTypeReference(core->this, t); }
+           - '<' - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
+          (- ','    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
+           - '>'
+           - ('*' { t=$$=nq_onTypePointer  (core->this, t); }
+          |   '@' { t=$$=nq_onTypeReference(core->this, t); }
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
           - { $$=t; }
 
 Type    = list:TypeList { $$=list; } | (
           t:TypeBase
-          (- LESSTHAN - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); }
-          (- COMMA    - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); })*
-          - MORETHAN)?
+          (- '<' - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); }
+          (- ','    - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); })*
+           - '>')?
           - (STAR { t=$$=nq_onTypePointer  (core->this, t); }
           |  AT   { t=$$=nq_onTypeReference(core->this, t); }
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
@@ -951,27 +951,27 @@ Type    = list:TypeList { $$=list; } | (
           - { $$=t; })
 
 TypeListCore = { $$=nq_onTypeList(core->this); }
-TypeList = OPEN_PAREN WS list:TypeListCore
-                        elem:Type { nq_onTypeListElement(core->this, list, elem) }
-           (WS COMMA WS elem:Type { nq_onTypeListElement(core->this, list, elem) })*
-           CLOS_PAREN -
+TypeList = '(' WS list:TypeListCore
+                      elem:Type { nq_onTypeListElement(core->this, list, elem) }
+           (WS ',' WS elem:Type { nq_onTypeListElement(core->this, list, elem) })*
+           ')' -
            { $$=list; }
 
 FuncTypeCore = "Func" &[^A-Za-z0-9_] { tokenPos; $$=nq_onFuncTypeNew(core->this); }
 
 FuncType  = funcType:FuncTypeCore
-            (- LESSTHAN - genType:IDENT { nq_onFuncTypeGenericArgument(core->this, funcType, genType); }
-            (- COMMA    - genType:IDENT { nq_onFuncTypeGenericArgument(core->this, funcType, genType); })*
-            - MORETHAN)?
+            (- '<' - genType:IDENT { nq_onFuncTypeGenericArgument(core->this, funcType, genType); }
+            (- ',' - genType:IDENT { nq_onFuncTypeGenericArgument(core->this, funcType, genType); })*
+            - '>')?
             (
-            - OPEN_PAREN
-            (      - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); }
-            (COMMA - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); })*
+            - '('
+            (    - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); }
+            (',' - argType:Type { nq_onFuncTypeArgument(core->this, funcType, argType); })*
             )?
             ("..." - { nq_onFuncTypeVarArg(core->this, funcType); })?
-            - CLOS_PAREN
+            - ')'
             )?
-            (- R_ARROW
+            (- '->'
              - returnType:Type { nq_onFuncTypeReturnType(core->this, funcType, returnType); }
             )?
             { $$=funcType; }
@@ -983,27 +983,27 @@ Old = { $$=NULL }
 
 Stmt     = (
                 old:Old
-                WS VERSION_KW { tokenPos; }
-                - OPEN_PAREN
+                WS 'version' { tokenPos; }
+                - '('
                 - spec:VersionSpec
-                - CLOS_PAREN
-                - OPEN_BRACK { nq_onVersionStart(core->this, spec); }
+                - ')'
+                - '{' { nq_onVersionStart(core->this, spec); }
                 WS (s:Stmt { nq_onStatement(core->this, s); })* WS
-                - CLOS_BRACK { old=$$=nq_onVersionEnd(core->this); }
+                - '}' { old=$$=nq_onVersionEnd(core->this); }
                 (
-                  WS ELSE_KW - VERSION_KW { tokenPos }
-                  - OPEN_PAREN
+                  WS 'else' - 'version' { tokenPos }
+                  - '('
                   - elseSpec: VersionSpec
-                  - CLOS_PAREN
-                  - OPEN_BRACK { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
+                  - ')'
+                  - '{' { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
                   WS (s:Stmt { nq_onStatement(core->this, s); })* WS
-                  - CLOS_BRACK { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                  - '}' { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
                 )*
                 (
-                  WS ELSE_KW { tokenPos }
-                  - OPEN_BRACK { nq_onVersionElseStart(core->this, spec) }
+                  WS 'else' { tokenPos }
+                  - '{' { nq_onVersionElseStart(core->this, spec) }
                   WS (s:Stmt { nq_onStatement(core->this, s); })* WS
-                  - CLOS_BRACK { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                  - '}' { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
                 )?
             )
          | StmtCore
@@ -1011,7 +1011,7 @@ Stmt     = (
 StmtCore = (
               # some statements need an EOL after them...
               e:EoledStatement
-              (Terminator+ | (WS &CLOS_BRACK) | (WS &CLOS_PAREN) | (WS &COMMA) | (&CommentLine))
+              (Terminator+ | (WS &'}') | (WS &')') | (WS &',') | (&CommentLine))
            )
           | # ...but block don't
           ( WS c:Conditional
