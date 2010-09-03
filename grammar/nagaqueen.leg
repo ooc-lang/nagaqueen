@@ -218,7 +218,7 @@ void nq_onFunctionBody(void *this);
 void *nq_onFunctionEnd(void *this);
 
 void nq_onTypeArg(void *this, void *type);
-void nq_onVarArg(void *this);
+void nq_onVarArg(void *this, char *name);
 void nq_onDotArg(void *this, char *name);
 void nq_onAssArg(void *this, char *name);
 
@@ -560,9 +560,10 @@ FunctionDeclBody = (
 
 Argument    = ( (DOT dotName:IDENT -)    { tokenPos; nq_onDotArg(core->this, dotName) }
               | (ASS assName:IDENT -)    { tokenPos; nq_onAssArg(core->this, assName) }
-              | vd:VariableDecl  { tokenPos; nq_onStatement(core->this, vd) }
-              | type:Type        { tokenPos; nq_onTypeArg(core->this, type) }
-              | "..."            { tokenPos; nq_onVarArg(core->this) }
+              | (vargName:IDENT - ":" - "..." -) { tokenPos; nq_onVarArg(core->this, vargName) } # ooc varargs
+              | vd:VariableDecl          { tokenPos; nq_onStatement(core->this, vd) }
+              | type:Type                { tokenPos; nq_onTypeArg(core->this, type) }
+              | "..."                    { tokenPos; nq_onVarArg(core->this, NULL) } # C varargs
               )
 
 
