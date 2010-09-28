@@ -346,8 +346,8 @@ enum NagaQueenError {
     NQE_EXP_RET_TYPE,
     NQE_EXP_CLOSING_PAREN,
     NQE_EXP_CLOSING_SQUAR,
-    NQE_MISPLACED_OOCDOC,
     NQE_EXP_ARG,
+    NQE_UNCLOSED_COMMENT,
 };
 
 /////////////////////                  error IDs end                 ////////////////////////
@@ -385,7 +385,7 @@ ModuleCore = (WS 'version' { tokenPos }
           | WS Use WS
           | WS Decl WS
           | WS stmt:Stmt WS { nq_onStatement(core->this, stmt) }
-          | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 3) })
+          )
 
 VersionSpec = ((- '(' - l:VersionSpec - ')') | (l:VersionCore))
                 ((- '&&' { tokenPos; } - r:VersionSpec { l=$$=nq_onVersionAnd(core->this, l, r); }) |
@@ -534,7 +534,7 @@ FunctionDeclBody = (
                 (          WS Argument WS
                     (',' WS Argument WS)*
                 )?
-                - ')' ~{ nq_error(core->this, NQE_EXP_ARG, "Malformed function argument (remember, it's `name: Type` in ooc, not `Type name`)\n", G->pos + G->offset) }
+                - CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_ARG, "Malformed function argument (remember, it's `name: Type` in ooc, not `Type name`)\n", G->pos + G->offset) }
                               { nq_onFunctionArgsEnd(core->this) }
             )?
 
@@ -552,14 +552,14 @@ FunctionDeclBody = (
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
                 WS)*
-                WS '}' ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Malformed statement or closing bracket missing\n", G->pos + G->offset) }
+                WS CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Malformed statement or closing bracket missing\n", G->pos + G->offset) }
             )?
             ) { $$=nq_onFunctionEnd(core->this); }
 
 Argument    = ( (DOT dotName:IDENT -)    { tokenPos; nq_onDotArg(core->this, dotName) }
               | (ASS assName:IDENT -)    { tokenPos; nq_onAssArg(core->this, assName) }
-              | (vargName:IDENT - ":" - "..." -) { tokenPos; nq_onVarArg(core->this, vargName) } # ooc varargs
               | vd:VariableDecl          { tokenPos; nq_onStatement(core->this, vd) }
+              | (vargName:IDENT - ":" - "..." -) { tokenPos; nq_onVarArg(core->this, vargName) } # ooc varargs
               | type:Type                { tokenPos; nq_onTypeArg(core->this, type) }
               | "..."                    { tokenPos; nq_onVarArg(core->this, NULL) } # C varargs
               )
@@ -609,9 +609,7 @@ ClassDecl   = (
                 WS)*
 
                 WS
-                ( '}'
-                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
-                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
+                CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )
             ) { nq_onClassEnd(core->this) }
 
@@ -648,9 +646,7 @@ EnumDecl    = (
                 )?
 
                 WS
-                ( '}'
-                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
-                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected enum element!\n", G->pos + G->offset); }
+                CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected enum element!\n", G->pos + G->offset); }
             )
 
             ) { tokenPos; nq_onEnumEnd(core->this) }
@@ -686,9 +682,7 @@ ExtendDecl  = (
                 WS)*
 
                 WS
-                ( '}'
-                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
-                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected or function declaration\n", G->pos + G->offset); }
+                CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected or function declaration\n", G->pos + G->offset); }
             )
 
             { nq_onExtendEnd(core->this); }
@@ -737,9 +731,7 @@ CoverDecl   = (
                 WS)*
 
                 WS
-                ( '}'
-                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///\n", G->pos + G->offset - 4); }
-                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
+                CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected variable declaration or function declaration\n", G->pos + G->offset); }
             )?
             )
             { nq_onCoverEnd(core->this); }
@@ -776,9 +768,7 @@ InterfaceDecl = (
                 WS)*
 
                 WS
-                ( '}'
-                | ('/**' | '///') { nq_error(core->this, NQE_MISPLACED_OOCDOC, "Misplaced oocdoc block! Use a standard comment instead, ie. /* */ or //, instead of /** */ and ///", G->pos + G->offset - 4); }
-                ) ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", G->pos + G->offset); }
+                CLOS_BRACK  ~{ nq_error(core->this, NQE_EXP_VAR_OR_FUNC_DECL, "Expected function declaration\n", G->pos + G->offset); }
             )
             )
             { nq_onInterfaceEnd(core->this); }
@@ -1059,7 +1049,7 @@ Match   = MATCH_KW { tokenPos; nq_onMatchStart(core->this); }
             (- v: Value { nq_onMatchExpr(core->this, v); })?
           WS '{'
           (WS Case WS)*
-          WS '}' ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset) }
+          WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_CASE_IN_MATCH, "Expected case in match", G->pos + G->offset) }
           { $$=nq_onMatchEnd(core->this); }
 
 Try     = TRY_KW { tokenPos; nq_onTryStart(core->this); }
@@ -1101,7 +1091,7 @@ While = WHILE_KW { tokenPos; }
 Body =  (
         '{'
         (WS s:Stmt { tokenPos; nq_onStatement(core->this, s) } WS)*
-        WS '}' ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset) }
+        WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset) }
         ) | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
 
 Return  = (RETURN_KW &([^A-Za-z_]) { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
@@ -1229,7 +1219,7 @@ FunctionCallCore = (B_NOT - callSuffix:IDENT { nq_onFunctionCallSuffix(core->thi
                 | a:ACS  { tokenPos; nq_onFunctionCallArg(core->this, a); })
                )*
                )?
-               WS ')' ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_CLOSING_PAREN, "Expected closing parenthesis to finish the function call!\n", G->pos + G->offset) }
+               WS CLOS_PAREN ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_CLOSING_PAREN, "Expected closing parenthesis to finish the function call!\n", G->pos + G->offset) }
 
 FunctionCallNoname = { tokenPos; nq_onFunctionCallStart(core->this, ""); }
                FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
@@ -1256,13 +1246,13 @@ ArrayLiteral = '[' { tokenPos; } WS { nq_onArrayLiteralStart(core->this); } (
                             e:Expr { nq_onStatement(core->this, e); }
                ((WS ',' | EOL) WS e:Expr { nq_onStatement(core->this, e); })*
                (WS ',' WS)?
-               )? WS ']' ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Expected closing square bracket!\n", G->pos + G->offset); }
+               )? WS CLOS_SQUAR ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Malformed array literal!\n", G->pos + G->offset); }
                               { $$=nq_onArrayLiteralEnd(core->this); }
 
 Tuple        = '(' { tokenPos; } WS { nq_onTupleStart(core->this); } (
                             e:Expr { nq_onStatement(core->this, e); }
                ((WS ',' | EOL) WS e:Expr { nq_onStatement(core->this, e); })*
-               )? WS ')' ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Expected closing parenthesis!\n", G->pos + G->offset); }
+               )? WS CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Malformed tuple!\n", G->pos + G->offset); }
                               { $$=nq_onTupleEnd(core->this); }
 
 IntLiteral =
@@ -1398,6 +1388,11 @@ PERCENT      = '%'   -
 STAR         = '*'   -
 SLASH        = '/' ![/*]   -
 
+CLOS_BRACK    = '}'
+CLOS_SQUAR    = ']'
+CLOS_PAREN    = ')'
+CLOS_COMMENT  = '*/'
+
 -          = [ \t]*
 EOL        = ('\n' | '\r\n' | '\r')  { core->yylineno++; }
 Terminator = (CommentLine
@@ -1410,8 +1405,8 @@ OocDoc = "/**" < (!"*/" (EOL | .))* > "*/" { $$=nq_StringClone(yytext) } WS
        | { $$="" }
 Comment = (CommentLine | CommentMultiLine)
 CommentLine = "//" !'/' (!EOL .)* EOL
-CommentMultiLine = "/*" !'*' (!"*/" (EOL | CommentMultiLineWithDocs | .))* "*/"
-CommentMultiLineWithDocs = "/*" (!"*/" (EOL | CommentMultiLineWithDocs | .))* "*/"
+CommentMultiLine =    "/*" !'*' (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ nq_error(core->this, NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n", G->pos + G->offset); }
+CommentMultiLineWithDocs = "/*" (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ nq_error(core->this, NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n", G->pos + G->offset); }
 
 OCT_LIT      = < "0c" [0-8] [0-8_]* >
 BIN_LIT      = < "0b" [01] [01_]* >
