@@ -33,6 +33,13 @@ void GC_free(void *);
 #define tokenPosPlusOne { core->token[0] = thunk->begin + G->offset + 1; core->token[1] = (thunk->end - thunk->begin); }
 #define rewindWhiteSpace { char *c = G->buf + G->pos - 1; while((G->pos > 0) && ((*c) == ' ' || (*c) == '\t' || (*c) == '\n' || (*c) == '\r')) { c--; G->pos--; } }
 
+#define missingOp(c) { \
+    rewindWhiteSpace; \
+    char message[2048]; \
+    snprintf(message, 2048, "Missing right operand for '%s' operator!\n", (c)); \
+    nq_error(core->this, NQE_MISSING_OPERAND, message, G->pos + G->offset); \
+}
+
 #define YYSTYPE void*
 
 // the default is 1024, but it causes buffers to be reallocated 4 or 5
@@ -348,6 +355,7 @@ enum NagaQueenError {
     NQE_EXP_CLOSING_SQUAR,
     NQE_EXP_ARG,
     NQE_UNCLOSED_COMMENT,
+    NQE_MISSING_OPERAND,
 };
 
 /////////////////////                  error IDs end                 ////////////////////////
@@ -1109,16 +1117,16 @@ BinaryOperation = Assignment
 Assignment = l: Ternary
                 ( ASS            { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssign(core->this, l, r); }
                 # The following line is actually the only case where AnonymousFunctionDecl makes sense at this level of precedence.
-                | ASS            { tokenPos; }  WS   r: AnonymousFunctionDecl { $$=l=nq_onAssign(core->this, l, r); }
-                | ASS_ADD        { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignAdd(core->this, l, r); }
-                | ASS_SUB        { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignSub(core->this, l, r); }
-                | ASS_MUL        { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignMul(core->this, l, r); }
-                | ASS_DIV        { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignDiv(core->this, l, r); }
-                | ASS_B_LSHIFT   { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignLeftShift(core->this, l, r); }
-                | ASS_B_RSHIFT   { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignRightShift(core->this, l, r); }
-                | ASS_B_XOR      { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignXor(core->this, l, r); }
-                | ASS_B_OR       { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignOr(core->this, l, r); }
-                | ASS_B_AND      { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssignAnd(core->this, l, r); }
+                | ASS            { tokenPos; }  WS   r: AnonymousFunctionDecl ~{  missingOp("=") }   { $$=l=nq_onAssign(core->this, l, r); }
+                | ASS_ADD        { tokenPos; }  WS   r: Ternary               ~{  missingOp("+=") }  { $$=l=nq_onAssignAdd(core->this, l, r); }
+                | ASS_SUB        { tokenPos; }  WS   r: Ternary               ~{  missingOp("-=") }  { $$=l=nq_onAssignSub(core->this, l, r); }
+                | ASS_MUL        { tokenPos; }  WS   r: Ternary               ~{  missingOp("*=") }  { $$=l=nq_onAssignMul(core->this, l, r); }
+                | ASS_DIV        { tokenPos; }  WS   r: Ternary               ~{  missingOp("/=") }  { $$=l=nq_onAssignDiv(core->this, l, r); }
+                | ASS_B_LSHIFT   { tokenPos; }  WS   r: Ternary               ~{  missingOp("<<=") } { $$=l=nq_onAssignLeftShift(core->this, l, r); }
+                | ASS_B_RSHIFT   { tokenPos; }  WS   r: Ternary               ~{  missingOp(">>=") } { $$=l=nq_onAssignRightShift(core->this, l, r); }
+                | ASS_B_XOR      { tokenPos; }  WS   r: Ternary               ~{  missingOp("^=") }  { $$=l=nq_onAssignXor(core->this, l, r); }
+                | ASS_B_OR       { tokenPos; }  WS   r: Ternary               ~{  missingOp("|=") }  { $$=l=nq_onAssignOr(core->this, l, r); }
+                | ASS_B_AND      { tokenPos; }  WS   r: Ternary               ~{  missingOp("&=") }  { $$=l=nq_onAssignAnd(core->this, l, r); }
                 )*
 
 Ternary =   cond:LogicalOr
@@ -1131,51 +1139,51 @@ Ternary =   cond:LogicalOr
             )?
 
 LogicalOr = l:LogicalAnd
-                ( L_OR        { tokenPos; } WS  r: LogicalAnd          { $$=l=nq_onLogicalOr(core->this, l, r); }
+                ( L_OR        { tokenPos; } WS  r: LogicalAnd         ~{  missingOp("||") } { $$=l=nq_onLogicalOr(core->this, l, r); }
                 )*
 
 LogicalAnd = l:BinaryOr
-                ( L_AND       { tokenPos; } WS  r: BinaryOr            { $$=l=nq_onLogicalAnd(core->this, l, r); }
+                ( L_AND       { tokenPos; } WS  r: BinaryOr           ~{  missingOp("&&") } { $$=l=nq_onLogicalAnd(core->this, l, r); }
                 )*
 
 BinaryOr = l:BinaryXor
-                ( B_OR        { tokenPos; } WS  r: BinaryXor           { $$=l=nq_onBinaryOr(core->this, l, r); }
+                ( B_OR        { tokenPos; } WS  r: BinaryXor           ~{  missingOp("|") } { $$=l=nq_onBinaryOr(core->this, l, r); }
                 )*
 
 BinaryXor = l:BinaryAnd
-                ( B_XOR       { tokenPos; } WS  r: BinaryAnd           { $$=l=nq_onBinaryXor(core->this, l, r); }
+                ( B_XOR       { tokenPos; } WS  r: BinaryAnd           ~{  missingOp("^") } { $$=l=nq_onBinaryXor(core->this, l, r); }
                 )*
 
 BinaryAnd = l:Equality
-                ( B_AND       { tokenPos; } WS  r: Equality            { $$=l=nq_onBinaryAnd(core->this, l, r); }
+                ( B_AND       { tokenPos; } WS  r: Equality            ~{  missingOp("&") } { $$=l=nq_onBinaryAnd(core->this, l, r); }
                 )*
 
 Equality = l:Inequality
-                ( EQUALS      { tokenPos; } WS  r:Inequality           { $$=l=nq_onEquals(core->this, l, r); }
-                | NOT_EQUALS  { tokenPos; } WS  r:Inequality           { $$=l=nq_onNotEquals(core->this, l, r); }
+                ( EQUALS      { tokenPos; } WS  r:Inequality          ~{  missingOp("==") } { $$=l=nq_onEquals(core->this, l, r); }
+                | NOT_EQUALS  { tokenPos; } WS  r:Inequality          ~{  missingOp("!=") } { $$=l=nq_onNotEquals(core->this, l, r); }
                 )*
 
 Inequality = l:Range
-                ( LESSTHAN    { tokenPos; } WS  r:Range                { $$=l=nq_onLessThan(core->this, l, r); }
-                | MORETHAN    { tokenPos; } WS  r:Range                { $$=l=nq_onMoreThan(core->this, l, r); }
-                | CMP         { tokenPos; } WS  r:Range                { $$=l=nq_onCmp(core->this, l, r); }
-                | LESSTHAN_EQ { tokenPos; } WS  r:Range                { $$=l=nq_onLessThanOrEqual(core->this, l, r); }
-                | MORETHAN_EQ { tokenPos; } WS  r:Range                { $$=l=nq_onMoreThanOrEqual(core->this, l, r); }
+                ( LESSTHAN    { tokenPos; } WS  r:Range                ~{  missingOp("<") } { $$=l=nq_onLessThan(core->this, l, r); }
+                | MORETHAN    { tokenPos; } WS  r:Range                ~{  missingOp(">") } { $$=l=nq_onMoreThan(core->this, l, r); }
+                | CMP         { tokenPos; } WS  r:Range              ~{  missingOp("<=>") } { $$=l=nq_onCmp(core->this, l, r); }
+                | LESSTHAN_EQ { tokenPos; } WS  r:Range               ~{  missingOp("<=") } { $$=l=nq_onLessThanOrEqual(core->this, l, r); }
+                | MORETHAN_EQ { tokenPos; } WS  r:Range               ~{  missingOp(">=") } { $$=l=nq_onMoreThanOrEqual(core->this, l, r); }
                 )*
 
 Range   = l:Shift
-                ( DOUBLE_DOT  { tokenPos; } WS  r:Shift                { $$=l=nq_onRangeLiteral(core->this, l, r); }
+                ( DOUBLE_DOT  { tokenPos; } WS  r:Shift               ~{  missingOp("..") } { $$=l=nq_onRangeLiteral(core->this, l, r); }
                 )*
 
 Shift   = l:Sum
-                ( B_LSHIFT    { tokenPos; } WS  r:Sum                  { $$=l=nq_onBinaryLeftShift(core->this, l, r) }
-                | B_RSHIFT    { tokenPos; } WS  r:Sum                  { $$=l=nq_onBinaryRightShift(core->this, l, r) }
+                ( B_LSHIFT    { tokenPos; } WS  r:Sum                 ~{  missingOp("<<") } { $$=l=nq_onBinaryLeftShift(core->this, l, r) }
+                | B_RSHIFT    { tokenPos; } WS  r:Sum                 ~{  missingOp(">>") } { $$=l=nq_onBinaryRightShift(core->this, l, r) }
                 )*
 
 Sum     = l:Product
-                ( PLUS        { tokenPos; } WS  r:Product              { $$=l=nq_onAdd(core->this, l, r); }
-                | MINUS       { tokenPos; } WS  r:Product              { $$=l=nq_onSub(core->this, l, r); }
-                | PERCENT     { tokenPos; } WS  r:Product              { $$=l=nq_onMod(core->this, l, r); }
+                ( PLUS        { tokenPos; } WS  r:Product              ~{  missingOp("+") } { $$=l=nq_onAdd(core->this, l, r); }
+                | MINUS       { tokenPos; } WS  r:Product              ~{  missingOp("-") } { $$=l=nq_onSub(core->this, l, r); }
+                | PERCENT     { tokenPos; } WS  r:Product              ~{  missingOp("%") } { $$=l=nq_onMod(core->this, l, r); }
                 )*
 
 Product = (ProductLogicalNot | ProductBinaryNot | ProductCore)
@@ -1359,34 +1367,34 @@ L_OR         = '||'  -
 
 L_AND        = '&&'  -
 
-B_OR         = !L_OR '|'   -
+B_OR         = !L_OR '|' !'='   -
 
-B_XOR        = '^'   -
+B_XOR        = '^' !'='   -
 
-B_AND        = !L_AND '&'   -
+B_AND        = !L_AND '&' !'='  -
 
 EQUALS       = '=='  -
 NOT_EQUALS   = '!='  -
 
-LESSTHAN     = '<'   -
-MORETHAN     = '>'   -
+LESSTHAN     = '<'  !'=' -
+MORETHAN     = '>'  !'=' -
 CMP          = '<=>' -
 LESSTHAN_EQ  = '<='  -
 MORETHAN_EQ  = '>='  -
 
-B_LSHIFT     = '<<'  -
-B_RSHIFT     = '>>'  -
+B_LSHIFT     = '<<' !'=' -
+B_RSHIFT     = '>>' !'=' -
 
 DOUBLE_DOT   = '..'  -
 
-L_NOT        = '!'   -
-B_NOT        = '~'   -
-PLUS         = '+'   -
-MINUS        = '-'   -
+L_NOT        = '!' !'='  -
+B_NOT        = '~' !'='  -
+PLUS         = '+' !'='   -
+MINUS        = '-' !'='  -
 
-PERCENT      = '%'   -
-STAR         = '*'   -
-SLASH        = '/' ![/*]   -
+PERCENT      = '%' !'='  -
+STAR         = '*' !'='  -
+SLASH        = '/' !'=' ![/*]   -
 
 CLOS_BRACK    = '}'
 CLOS_SQUAR    = ']'
