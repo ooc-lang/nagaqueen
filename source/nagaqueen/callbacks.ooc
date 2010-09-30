@@ -231,6 +231,25 @@ nq_onForeachEnd:     unmangled func (l: OocListener) -> Object { l onForeachEnd(
 nq_onWhileStart:   unmangled func (l: OocListener, condition: Object) { l onWhileStart() }
 nq_onWhileEnd:     unmangled func (l: OocListener) -> Object { l onWhileEnd() }
 
+/* Match */
+
+nq_onMatchStart:   unmangled func (l: OocListener) { l onMatchStart() }
+nq_onMatchExpr:    unmangled func (l: OocListener, value: Object) { l onMatchExpr(value) }
+nq_onMatchEnd:     unmangled func (l: OocListener) -> Object { l onMatchEnd() }
+
+nq_onCaseStart:   unmangled func (l: OocListener) { l onCaseStart() }
+nq_onCaseExpr:    unmangled func (l: OocListener, value: Object) { l onCaseExpr(value) }
+nq_onCaseEnd:     unmangled func (l: OocListener) { l onCaseEnd() }
+
+/* Try-catch */
+
+nq_onTryStart:   unmangled func (l: OocListener) { l onTryStart() }
+nq_onTryEnd:     unmangled func (l: OocListener) -> Object { l onTryEnd() }
+
+nq_onCatchStart:   unmangled func (l: OocListener) { l onCatchStart() }
+nq_onCatchExpr:    unmangled func (l: OocListener, value: Object) { l onCatchExpr(value) }
+nq_onCatchEnd:     unmangled func (l: OocListener) { l onCatchEnd() }
+
 /* Various operators */
 
 UnOpType: enum {
@@ -297,30 +316,19 @@ nq_onBinLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l
 nq_onOctLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat oct, value) }
 nq_onHexLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat hex, value) }
 
-void *nq_onFloatLiteral(void *this, char *value);
-void *nq_onBoolLiteral(void *this, bool value);
-void *nq_onNull(void *this);
+nq_onFloatLiteral:  unmangled func (l: OocListener, value: CString) -> Object { l onFloatLiteral(value) }
+nq_onBoolLiteral:   unmangled func (l: OocListener, value: Bool) -> Object { l onBoolLiteral(value) }
+nq_onNullLiteral:   unmangled func (l: OocListener) -> Object { l onNullLiteral(value) }
 
-void *nq_onParenthesis(void *this, void *inner);
+nq_onParenthesis:   unmangled func (l: OocListener, inner: Object) -> Object { l onParenthesis(inner) }
 
-void nq_onGenericArgument(void *this, char *name);
+nq_onGenericArgument: unmangled func (l: OocListener, name: CString) { l onGenericArgument(name) }
 
-void *nq_onAddressOf  (void *this, void *inner);
-void *nq_onDereference(void *this, void *inner);
-
-void nq_onMatchStart(void *this);
-void nq_onMatchExpr(void *this, void *value);
-void *nq_onMatchEnd(void *this);
-void nq_onCaseStart(void *this);
-void nq_onCaseExpr(void *this, void *value);
-void nq_onCaseEnd(void *this);
-
-void nq_onTryStart(void *this);
-void *nq_onTryEnd(void *this);
-void nq_onCatchStart(void *this);
-void nq_onCatchExpr(void *this, void *value);
-void nq_onCatchEnd(void *this);
-
-void nq_error(void *this, int errorID, char *defaultMessage, int index)
+nq_onAddressOf:     unmangled func (l: OocListener, inner: Object) -> Object { l onAddressOf(inner) }
+nq_onDereference:   unmangled func (l: OocListener, inner: Object) -> Object { l onDereference(inner) }
 
 nq_onStatement:   unmangled func (l: OocListener, statement: Object) { l onStatement(statement) }
+
+/* Error handling */
+
+nq_error: unmangled func (l: OocListener, errorID: Int, defaultMessage: String, index: Int) { l onError(errorID, defaultMessage, index) }
