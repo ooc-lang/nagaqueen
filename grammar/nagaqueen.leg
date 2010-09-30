@@ -114,7 +114,6 @@ void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 char *nq_StringClone(char *string);
 char *nq_trailingQuest(char *string);
 char *nq_trailingBang (char *string);
-char *nq_mangleIdents(char *string);
 
 void nq_onUse(void *this, char *name);
 void nq_onInclude(void *this, char *path);
