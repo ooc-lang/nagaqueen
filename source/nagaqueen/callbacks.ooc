@@ -63,10 +63,6 @@ TypeAttribute: enum {
     _abstract, _final, _extends, _implements, _fromType
 }
 
-FieldAttributes: enum {
-    _abstract, _final, _const, _static, _unmangled,  _proto, _extern
-}
-
 nq_onClassStart:      unmangled func (l: OocListener, name, doc: CString) { l onClassStart(name, doc) }
 nq_onClassBody:       unmangled func (l: OocListener) { l onClassBody() }
 nq_onClassEnd:        unmangled func (l: OocListener) { l onClassEnd() }
@@ -82,6 +78,10 @@ nq_onInterfaceStart:   unmangled func (l: OocListener) { l onInterfaceStart() }
 nq_onInterfaceEnd:     unmangled func (l: OocListener) { l onInterfaceEnd() }
 
 nq_onInterfaceExtends: unmangled func (l: OocListener, type: Type) { l onInterfaceAttribute(TypeAttribute _extends, type) }
+
+FieldAttributes: enum {
+    _abstract, _final, _const, _static, _unmangled,  _proto, _extern
+}
 
 /* Properties */
 
@@ -115,137 +115,191 @@ nq_onVarDeclUnmangled: unmangled func (l: OocListener, unmangledName: CString) {
 
 /* Types */
 
-void *nq_onTypeAccess(void *this, void *type);
+nq_onTypeAccess: unmangled func (l: OocListener, type: Object) -> Object { l onTypeAccess() }
 
-void *nq_onTypeNew(void *this, char *name);     // $$=nq_onTypeNew(yytext)
-void *nq_onTypePointer(void *this, void *type);   // $$=nq_onTypePointer($$)
-void *nq_onTypeReference(void *this, void *type); // $$=nq_onTypeReference($$)
-void *nq_onTypeBrackets(void *this, void *type, void *inner); // $$=nq_onTypeBrackets($$, inner)
-void nq_onTypeGenericArgument(void *this, void *type, void *genType);
-void nq_onFuncTypeGenericArgument(void *this, void *type, char *name);
-void *nq_onTypeList(void *this);
-void *nq_onTypeListElement(void *this, void *list, void *elem);
+nq_onTypeNew: unmangled func (l: OocListener, name: CString) -> Object {  l onTypeNew(name) }
 
-void *nq_onFuncTypeNew(void *this);
-void nq_onFuncTypeArgument(void *this, void *funcType, void *argType);
-void nq_onFuncTypeVarArg(void *this, void *funcType);
-void nq_onFuncTypeReturnType(void *this, void *funcType, void *returnType);
+nq_onTypePointer:         unmangled func (l: OocListener, type: Object) -> Object {  l onTypePointer(type) }
+nq_onTypeReference:       unmangled func (l: OocListener, type: Object) -> Object {  l onTypeReference(type) }
+nq_onTypeBrackets:        unmangled func (l: OocListener, type, inner: Object) -> Object {  l onTypeBrackets(type, inner) }
+nq_onTypeGenericArgument: unmangled func (l: OocListener, type: Object, genType: Object) { l onTypeGenericArgument(type, genType) }
+
+nq_onTypeList:        unmangled func (l: OocListener) -> Object { l onTypeList() }
+nq_onTypeListElement: unmangled func (l: OocListener, list, elem: Object) -> Object { l onTypeListElement(list, elem) }
+
+// FuncType
+
+nq_onFuncTypeNew:        unmangled func (l: OocListener) -> Object { l onFuncTypeNew() }
+nq_onFuncTypeGenericArgument: unmangled func (l: OocListener, type: Object, name: CString) { l onFuncTypeGenericArgument(type, name) }
+nq_onFuncTypeArgument:   unmangled func (l: OocListener, funcType, argType: Object) { l onFuncTypeArgument(funcType, argType) }
+nq_onFuncTypeVarArg:     unmangled func (l: OocListener, funcType) { l onFuncTypeVarArg(funcType) }
+nq_onFuncTypeReturnType: unmangled func (l: OocListener, funcType, returnType: Object) { l onFuncTypeArgument(funcType, returnType) }
 
 /* Operators (minimal because function-related callbacks are re-used for operators) */
 
-void nq_onOperatorStart(void *this, char *symbol);
-void nq_onOperatorEnd(void *this);
+nq_onOperatorStart: unmangled func (l: OocListener, symbol: CString) { l onOperatorStart() }
+nq_onOperatorEnd:   unmangled func (l: OocListener) { l onOperatorEnd() }
 
-void nq_onFunctionStart(void *this, char *name, char *doc);
-void nq_onFunctionExtern(void *this, char *externName);
-void nq_onFunctionUnmangled(void *this, char *unmangledName);
-void nq_onFunctionAbstract(void *this);
-void nq_onFunctionThisRef(void *this);
-void nq_onFunctionArgsStart(void *this);
-void nq_onFunctionArgsEnd(void *this);
-void nq_onFunctionReturnType(void *this, void *type);
-void nq_onFunctionConst(void *this);
-void nq_onFunctionStatic(void *this);
-void nq_onFunctionInline(void *this);
-void nq_onFunctionFinal(void *this);
-void nq_onFunctionProto(void *this);
-void nq_onFunctionSuper(void *this);
-void nq_onFunctionSuffix(void *this, char *name);
-void nq_onFunctionBody(void *this);
-void *nq_onFunctionEnd(void *this);
+/* Functions */
 
-void nq_onTypeArg(void *this, void *type);
-void nq_onVarArg(void *this, char *name);
-void nq_onDotArg(void *this, char *name);
-void nq_onAssArg(void *this, char *name);
+FuncAttributes: enum {
+    _extern, _unmangled, _suffix, _abstract, _thisRef, _const, _static, _inline, _final, _proto, _super
+}
 
-void nq_onFunctionCallStart(void *this, char *yytext);
-void nq_onFunctionCallSuffix(void *this, char *yytext);
-void nq_onFunctionCallArg(void *this, void *expr);
-void *nq_onFunctionCallEnd(void *this);
-void nq_onFunctionCallExpr(void *this, void *call, void *expr);
-void *nq_onFunctionCallChain(void *this, void *expr, void *call);
-void nq_onFunctionCallCombo(void *this, void *call, void *expr);
+FuncArgType: enum {
+    varArg, dotArg, assArg
+}
 
-void nq_onArrayLiteralStart(void *this);
-void *nq_onArrayLiteralEnd(void *this);
+nq_onFunctionStart: unmangled func (l: OocListener, name, doc: CString) { l onFunctionStart(name, doc) }
+nq_onFunctionEnd:   unmangled func (l: OocListener) { l onFunctionEnd() }
+nq_onFunctionBody:  unmangled func (l: OocListener) { l onFunctionBody() }
 
-void nq_onTupleStart(void *this);
-void *nq_onTupleEnd(void *this);
+nq_onFunctionArgsStart: unmangled func (l: OocListener) { l onFunctionArgsStart() }
+nq_onFunctionArgsEnd: unmangled func (l: OocListener) { l onFunctionArgsEnd() }
 
-void *nq_onStringLiteral(void *this, char *text);
-void *nq_onCharLiteral(void *this, char *value);
+nq_onTypeArg: unmangled func (l: OocListener, type: Object) { l onTypeArg(type) }
+nq_onVarArg: unmangled func (l: OocListener, name: CString) { l onArg(name, FuncArgType varArg) }
+nq_onDotArg: unmangled func (l: OocListener, name: CString) { l onArg(name, FuncArgType dotArg) }
+nq_onAssArg: unmangled func (l: OocListener, name: CString) { l onArg(name, FuncArgType assArg) }
 
-void nq_onStatement(void *this, void *statement);
-void *nq_onReturn(void *this, void *expr);
+nq_onFunctionReturnType: unmangled func (l: OocListener, returnType: Type)       { l onFunctionAttr(FuncAttributes _returnType, returnType) }
+nq_onFunctionExtern:     unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _extern, externName) }
+nq_onFunctionUnmangled:  unmangled func (l: OocListener, unmangledName: CString) { l onFunctionAttr(FuncAttributes _unmangled, unmangledName) }
+nq_onFunctionExtern:     unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _suffix, externName) }
+nq_onFunctionThisRef:   unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _thisRef) }
 
-void *nq_onVarAccess(void *this, void *expr, char *name);
-void nq_onArrayAccessStart(void *this, void *array);
-void *nq_onArrayAccessEnd(void *this);
-void *nq_onCast(void *this, void *expr, void *type);
+nq_onFunctionAbstact:   unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _abstract) }
+nq_onFunctionConst:     unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _const) }
+nq_onFunctionStatic:    unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _static) }
+nq_onFunctionInline:    unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _inline) }
+nq_onFunctionFinal:     unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _final) }
+nq_onFunctionProto:     unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _proto) }
+nq_onFunctionSuper:     unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _super) }
 
-void *nq_onBreak(void *this);
-void *nq_onContinue(void *this);
+/* Function calls */
 
-void nq_onBlockStart(void *this);
-void *nq_onBlockEnd(void *this);
+nq_onFunctionCallStart: unmangled func (l: OocListener, name: CString) {  l onFunctionCallStart(name) }
+nq_onFunctionCallEnd:   unmangled func (l: OocListener) {  l onFunctionCallEnd() }
 
-void nq_onIfStart(void *this, void *condition);
-void *nq_onIfEnd(void *this);
-void nq_onElseStart(void *this);
-void *nq_onElseEnd(void *this);
+nq_onFunctionCallSuffix: unmangled func (l: OocListener, suffix: CString) {  l onFunctionCallSuffix(suffix) }
+nq_onFunctionCallArg:    unmangled func (l: OocListener, arg: Object)     {  l onFunctionCallArg(arg) }
+nq_onFunctionCallChain:  unamngled func (l: OocListener, expr, call: Object) -> Object { l onFunctionCallChain(expr, call) }
+nq_onFunctionCallCombo:  unamngled func (l: OocListener, call, expr: Object) { l onFunctionCallCombo(call, expr) }
 
-void nq_onForeachStart(void *this, void *decl, void *collec);
-void *nq_onForeachEnd(void *this);
+/* Arrays */
 
-void nq_onWhileStart(void *this, void *condition);
-void *nq_onWhileEnd(void *this);
+nq_onArrayLiteralStart:   unmangled func (l: OocListener) { l onArrayLiteralStart() }
+nq_onArrayLiteralEnd:     unmangled func (l: OocListener) -> Object { l onArrayLiteralEnd() }
 
-void *nq_onEquals(void *this, void *left, void *right);
-void *nq_onNotEquals(void *this, void *left, void *right);
-void *nq_onLessThan(void *this, void *left, void *right);
-void *nq_onMoreThan(void *this, void *left, void *right);
-void *nq_onCmp(void *this, void *left, void *right);
-void *nq_onLessThanOrEqual(void *this, void *left, void *right);
-void *nq_onMoreThanOrEqual(void *this, void *left, void *right);
+/* Tuples */
 
-void *nq_onDecLiteral(void *this, char *value);
-void *nq_onBinLiteral(void *this, char *value);
-void *nq_onOctLiteral(void *this, char *value);
-void *nq_onHexLiteral(void *this, char *value);
+nq_onTupleStart:   unmangled func (l: OocListener) { l onTupleStart() }
+nq_onTupleEnd:     unmangled func (l: OocListener) -> Object { l onTupleEnd() }
+
+/* Various expressions/statements */
+
+nq_onStringLiteral: unmangled func (l: OocListener, text: CString) -> Object  { l onStringLiteral(text) }
+nq_onCharLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onCharLiteral(value) }
+
+nq_onReturn:    unmangled func (l: OocListener, expr: Object) -> Object { l onReturn(expr) }
+nq_onBreak:     unmangled func (l: OocListener) -> Object { l onBreak() }
+nq_onContinue:  unmangled func (l: OocListener) -> Object { l onContinue() }
+
+nq_onVarAccess:   unmangled func (l: OocListener, expr: Object, name: CString) -> Object { l onVarAccess(expr, name) }
+
+nq_onArrayAccessStart: unmangled func (l: OocListener, array: Object) { l onArrayAccessStart(array) }
+nq_onArrayAccessEnd:   unmangled func (l: OocListener) -> Object { l onArrayAccessEnd() }
+
+nq_onCast: unmangled func (l: OocListener, expr, type: Object) -> Object { l onCast(expr, type) }
+
+/* Blocks */
+
+nq_onBlockStart: unmangled func (l: OocListener) { l onBlockStart() }
+nq_onBlockEnd:   unmangled func (l: OocListener) -> Object { l onBlockEnd() }
+
+/* If-else, foreach, while */
+
+nq_onIfStart:   unmangled func (l: OocListener, condition: Object) { l onIfStart() }
+nq_onIfEnd:     unmangled func (l: OocListener) -> Object { l onIfEnd() }
+
+nq_onElseStart: unmangled func (l: OocListener) { l onElseStart() }
+nq_onElseEnd:   unmangled func (l: OocListener) { l onElseEnd() }
+
+nq_onForeachStart:   unmangled func (l: OocListener, decl, collec: Object) { l onForeachStart(decl, collec) }
+nq_onForeachEnd:     unmangled func (l: OocListener) -> Object { l onForeachEnd() }
+
+nq_onWhileStart:   unmangled func (l: OocListener, condition: Object) { l onWhileStart() }
+nq_onWhileEnd:     unmangled func (l: OocListener) -> Object { l onWhileEnd() }
+
+/* Various operators */
+
+UnOpType: enum {
+    not, bNot, uMinus
+}
+
+nq_onLogicalNot:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType not, inner) }
+nq_onBinaryNot:           unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType bNot, inner) }
+nq_onUnaryMinus:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType uMinus, inner) }
+
+BinOpType: enum {
+    equals, notEquals, lessThan, moreThan, cmp, lessThanOrEqual, moreThanOrEqual
+
+    assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assSub, assAdd, ass
+
+    and, or, bAnd, bOr, bXor, rshift, lshift, div, mul, sub, add, range
+}
+
+nq_onEquals:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType equals, left, right) }
+nq_onNotEquals:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType notEquals, left, right) }
+nq_onLessThan:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType lessThan, left, right) }
+nq_onMoreThan:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType moreThan, left, right) }
+nq_onCmp:             unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType cmp, left, right) }
+nq_onLessThanOrEqual: unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType lessThanOrEqual, left, right) }
+nq_onMoreThanOrEqual: unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType moreThanOrEqual, left, right) }
+
+nq_onAssignAnd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assAnd, left, right) }
+nq_onAssignOr:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assOr, left, right) }
+nq_onAssignXor:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assXor, left, right) }
+nq_onAssignRightShift:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assRShift, left, right) }
+nq_onAssignLeftShift:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assLShift, left, right) }
+nq_onAssignDiv:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assDiv, left, right) }
+nq_onAssignMul:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assMul, left, right) }
+nq_onAssignSub:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assSub, left, right) }
+nq_onAssignAdd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assAdd, left, right) }
+nq_onAssign:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType ass, left, right) }
+
+nq_onLogicalAnd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType and, left, right) }
+nq_onLogicalOr:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType or, left, right) }
+
+nq_onBinaryAnd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType bAnd, left, right) }
+nq_onBinaryOr:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType bOr, left, right) }
+nq_onBinaryXor:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType bXor, left, right) }
+
+nq_onBinaryRightShift:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType rshift, left, right) }
+nq_onBinaryLeftShift:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType lshift, left, right) }
+
+nq_onDiv:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType div, left, right) }
+nq_onMul:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType mul, left, right) }
+nq_onSub:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType sub, left, right) }
+nq_onAdd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType add, left, right) }
+
+nq_onMod:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType mod, left, right) }
+nq_onRangeLiteral: unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType range, left, right) }
+
+nq_onTernary: unmangled func (l: OocListener, condition, ifTrue, ifFalse: Object) -> Object { l onTernary(condition, ifTrue, ifFalse) }
+
+IntFormat: enum {
+    dec, bin, oct, hex
+}
+
+nq_onDecLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat dec, value) }
+nq_onBinLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat bin, value) }
+nq_onOctLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat oct, value) }
+nq_onHexLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat hex, value) }
+
 void *nq_onFloatLiteral(void *this, char *value);
 void *nq_onBoolLiteral(void *this, bool value);
 void *nq_onNull(void *this);
-
-void *nq_onTernary(void *this, void *condition, void *ifTrue, void *ifFalse);
-void *nq_onAssignAnd(void *this, void *left, void *right);
-void *nq_onAssignOr(void *this, void *left, void *right);
-void *nq_onAssignXor(void *this, void *left, void *right);
-void *nq_onAssignRightShift(void *this, void *left, void *right);
-void *nq_onAssignLeftShift(void *this, void *left, void *right);
-void *nq_onAssignDiv(void *this, void *left, void *right);
-void *nq_onAssignMul(void *this, void *left, void *right);
-void *nq_onAssignSub(void *this, void *left, void *right);
-void *nq_onAssignAdd(void *this, void *left, void *right);
-void *nq_onAssign(void *this, void *left, void *right);
-
-void *nq_onAdd(void *this, void *left, void *right);
-void *nq_onSub(void *this, void *left, void *right);
-void *nq_onMod(void *this, void *left, void *right);
-void *nq_onMul(void *this, void *left, void *right);
-void *nq_onDiv(void *this, void *left, void *right);
-void *nq_onRangeLiteral(void *this, void *left, void *right);
-void *nq_onBinaryLeftShift(void *this, void *left, void *right);
-void *nq_onBinaryRightShift(void *this, void *left, void *right);
-void *nq_onLogicalOr(void *this, void *left, void *right);
-void *nq_onLogicalAnd(void *this, void *left, void *right);
-void *nq_onBinaryOr(void *this, void *left, void *right);
-void *nq_onBinaryXor(void *this, void *left, void *right);
-void *nq_onBinaryAnd(void *this, void *left, void *right);
-
-void *nq_onLogicalNot(void *this, void *inner);
-void *nq_onBinaryNot(void *this, void *inner);
-void *nq_onUnaryMinus(void *this, void *inner);
 
 void *nq_onParenthesis(void *this, void *inner);
 
@@ -267,5 +321,6 @@ void nq_onCatchStart(void *this);
 void nq_onCatchExpr(void *this, void *value);
 void nq_onCatchEnd(void *this);
 
-void nq_error(void *this, int errorID, char *defaultMessage, int index);
+void nq_error(void *this, int errorID, char *defaultMessage, int index)
 
+nq_onStatement:   unmangled func (l: OocListener, statement: Object) { l onStatement(statement) }
