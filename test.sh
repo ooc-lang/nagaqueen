@@ -1,3 +1,3 @@
 #!/bin/sh
-mkdir -p bin/testcompile
+mkdir -p bin
 rock -sourcepath=source nagaqueen/callbacks -o=bin/testcompile -v

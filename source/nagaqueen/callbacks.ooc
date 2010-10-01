@@ -21,14 +21,14 @@ nq_onImportNamespace: unmangled func (l: OocListener, namespace: CString, quanti
 /* Versions */
 
 nq_onVersionName:     unmangled func (l: OocListener, name: CString) -> Object { l onVersionName(name) }
-nq_onVersionNegation: unmangled func (l: OocListener, specLeft, specRight: Object) -> Object { l onVersionNegation(spec) }
+nq_onVersionNegation: unmangled func (l: OocListener, spec: Object) -> Object { l onVersionNegation(spec) }
 nq_onVersionAnd:      unmangled func (l: OocListener, specLeft, specRight: Object) -> Object { l onVersionAnd(specLeft, specRight) }
 nq_onVersionOr:       unmangled func (l: OocListener, specLeft, specRight: Object) -> Object { l onVersionOr(specLeft, specRight) }
 
 nq_onVersionStart:       unmangled func (l: OocListener, spec: Object) { l onVersionStart(spec) }
-nq_onVersionElseIfStart: unmangled func (l: OocListener, notSpec, elseSpec: Object) -> Object { l onVersionElseIfStart(spec) }
-nq_onVersionElseStart:   unmangled func (l: OocListener, notSpec, elseSpec: Object) -> Object { l onVersionElseStart(spec) }
-nq_onVersionEnd:         unmangled func (l: OocListener, spec: Object) -> Object { l onVersionEnd() }
+nq_onVersionElseIfStart: unmangled func (l: OocListener, notSpec, elseSpec: Object) -> Object { l onVersionElseIfStart(notSpec, elseSpec) }
+nq_onVersionElseStart:   unmangled func (l: OocListener, notSpec, elseSpec: Object) -> Object { l onVersionElseStart(notSpec, elseSpec) }
+nq_onVersionEnd:         unmangled func (l: OocListener) -> Object { l onVersionEnd() }
 
 /* Extend keyword */
 
@@ -39,9 +39,9 @@ nq_onExtendEnd:   unmangled func (l: OocListener) { l onExtendEnd() }
 
 nq_onCoverStart:      unmangled func (l: OocListener, name, doc: CString) { l onCoverStart(name, doc) }
 nq_onCoverExtern:     unmangled func (l: OocListener, externName: CString) { l onCoverExtern(externName) }
-nq_onCoverFromType:   unmangled func (l: OocListener, type: Object) { l onCoverFromType(externName) }
-nq_onCoverExtends:    unmangled func (l: OocListener, type: Object) { l onCoverExtends(externName) }
-nq_onCoverImplements: unmangled func (l: OocListener, type: Object) { l onCoverImplements(externName) }
+nq_onCoverFromType:   unmangled func (l: OocListener, type: Object) { l onCoverFromType(type) }
+nq_onCoverExtends:    unmangled func (l: OocListener, type: Object) { l onCoverExtends(type) }
+nq_onCoverImplements: unmangled func (l: OocListener, type: Object) { l onCoverImplements(type) }
 nq_onCoverEnd:        unmangled func (l: OocListener) { l onCoverEnd() }
 
 /* Enums */
@@ -49,19 +49,15 @@ nq_onCoverEnd:        unmangled func (l: OocListener) { l onCoverEnd() }
 nq_onEnumStart:         unmangled func (l: OocListener, name, doc: CString) { l onEnumStart(name, doc) }
 nq_onEnumEnd:           unmangled func (l: OocListener) { l onEnumEnd() }
 
-nq_onEnumExtern:        unmangled func (l: OocListener, externName: CString) { l onEnumStart(name, doc) }
+nq_onEnumExtern:        unmangled func (l: OocListener, externName: CString) { l onEnumExtern(externName) }
 nq_onEnumIncrementExpr: unmangled func (l: OocListener, oper: Char, step: Object) { l onEnumIncrementExpr(oper, step) }
 
 nq_onEnumElementStart:  unmangled func (l: OocListener, name, doc: CString) { l onEnumElementStart(name, doc) }
 nq_onEnumElementValue:  unmangled func (l: OocListener, value: Object) { l onEnumElementValue(value) }
-nq_onEnumElementExtern: unmangled func (l: OocListener, externName: CString) { l onEnumStart(externName) }
+nq_onEnumElementExtern: unmangled func (l: OocListener, externName: CString) { l onEnumElementExtern(externName) }
 nq_onEnumElementEnd:    unmangled func (l: OocListener) { l onEnumElementEnd() }
 
 /* Classes */
-
-TypeAttribute: enum {
-    _abstract, _final, _extends, _implements, _fromType
-}
 
 nq_onClassStart:      unmangled func (l: OocListener, name, doc: CString) { l onClassStart(name, doc) }
 nq_onClassBody:       unmangled func (l: OocListener) { l onClassBody() }
@@ -69,25 +65,21 @@ nq_onClassEnd:        unmangled func (l: OocListener) { l onClassEnd() }
 
 nq_onClassAbstract:   unmangled func (l: OocListener) { l onClassAttribute(TypeAttribute _abstract) }
 nq_onClassFinal:      unmangled func (l: OocListener) { l onClassAttribute(TypeAttribute _final) }
-nq_onClassExtends:    unmangled func (l: OocListener) { l onClassAttribute(TypeAttribute _extends, type) }
-nq_onClassImplements: unmangled func (l: OocListener) { l onClassAttribute(TypeAttribute _implements, type) }
+nq_onClassExtends:    unmangled func (l: OocListener, type: Object) { l onClassAttribute(TypeAttribute _extends, type) }
+nq_onClassImplements: unmangled func (l: OocListener, type: Object) { l onClassAttribute(TypeAttribute _implements, type) }
 
 /* Interfaces */
 
 nq_onInterfaceStart:   unmangled func (l: OocListener) { l onInterfaceStart() }
 nq_onInterfaceEnd:     unmangled func (l: OocListener) { l onInterfaceEnd() }
 
-nq_onInterfaceExtends: unmangled func (l: OocListener, type: Type) { l onInterfaceAttribute(TypeAttribute _extends, type) }
-
-FieldAttributes: enum {
-    _abstract, _final, _const, _static, _unmangled,  _proto, _extern
-}
+nq_onInterfaceExtends: unmangled func (l: OocListener, type: Object) { l onInterfaceAttribute(TypeAttribute _extends, type) }
 
 /* Properties */
 
 nq_onPropertyDeclStart:   unmangled func (l: OocListener, name, doc: CString) { l onPropertyDeclStart(name, doc) }
 nq_onPropertyDeclEnd:     unmangled func (l: OocListener) -> Object { l onPropertyDeclEnd() }
-nq_onPropertyDeclType:    unmangled func (l: OocListener, type: Type) { l onPropertyDeclType(type) }
+nq_onPropertyDeclType:    unmangled func (l: OocListener, type: Object) { l onPropertyDeclType(type) }
 
 nq_onPropertyDeclGetterStart:   unmangled func (l: OocListener, doc: CString) { l onPropertyDeclGetterStart(doc) }
 nq_onPropertyDeclGetterEnd:     unmangled func (l: OocListener) -> Object { l onPropertyDeclGetterEnd() }
@@ -115,7 +107,7 @@ nq_onVarDeclUnmangled: unmangled func (l: OocListener, unmangledName: CString) {
 
 /* Types */
 
-nq_onTypeAccess: unmangled func (l: OocListener, type: Object) -> Object { l onTypeAccess() }
+nq_onTypeAccess: unmangled func (l: OocListener, type: Object) -> Object { l onTypeAccess(type) }
 
 nq_onTypeNew: unmangled func (l: OocListener, name: CString) -> Object {  l onTypeNew(name) }
 
@@ -132,23 +124,15 @@ nq_onTypeListElement: unmangled func (l: OocListener, list, elem: Object) -> Obj
 nq_onFuncTypeNew:        unmangled func (l: OocListener) -> Object { l onFuncTypeNew() }
 nq_onFuncTypeGenericArgument: unmangled func (l: OocListener, type: Object, name: CString) { l onFuncTypeGenericArgument(type, name) }
 nq_onFuncTypeArgument:   unmangled func (l: OocListener, funcType, argType: Object) { l onFuncTypeArgument(funcType, argType) }
-nq_onFuncTypeVarArg:     unmangled func (l: OocListener, funcType) { l onFuncTypeVarArg(funcType) }
+nq_onFuncTypeVarArg:     unmangled func (l: OocListener, funcType: Object) { l onFuncTypeVarArg(funcType) }
 nq_onFuncTypeReturnType: unmangled func (l: OocListener, funcType, returnType: Object) { l onFuncTypeArgument(funcType, returnType) }
 
 /* Operators (minimal because function-related callbacks are re-used for operators) */
 
-nq_onOperatorStart: unmangled func (l: OocListener, symbol: CString) { l onOperatorStart() }
+nq_onOperatorStart: unmangled func (l: OocListener, symbol: CString) { l onOperatorStart(symbol) }
 nq_onOperatorEnd:   unmangled func (l: OocListener) { l onOperatorEnd() }
 
 /* Functions */
-
-FuncAttributes: enum {
-    _extern, _unmangled, _suffix, _abstract, _thisRef, _const, _static, _inline, _final, _proto, _super
-}
-
-FuncArgType: enum {
-    varArg, dotArg, assArg
-}
 
 nq_onFunctionStart: unmangled func (l: OocListener, name, doc: CString) { l onFunctionStart(name, doc) }
 nq_onFunctionEnd:   unmangled func (l: OocListener) { l onFunctionEnd() }
@@ -162,13 +146,14 @@ nq_onVarArg: unmangled func (l: OocListener, name: CString) { l onArg(name, Func
 nq_onDotArg: unmangled func (l: OocListener, name: CString) { l onArg(name, FuncArgType dotArg) }
 nq_onAssArg: unmangled func (l: OocListener, name: CString) { l onArg(name, FuncArgType assArg) }
 
-nq_onFunctionReturnType: unmangled func (l: OocListener, returnType: Type)       { l onFunctionAttr(FuncAttributes _returnType, returnType) }
+nq_onFunctionReturnType: unmangled func (l: OocListener, returnType: Object)     { l onFunctionReturnType(returnType) }
+
 nq_onFunctionExtern:     unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _extern, externName) }
 nq_onFunctionUnmangled:  unmangled func (l: OocListener, unmangledName: CString) { l onFunctionAttr(FuncAttributes _unmangled, unmangledName) }
 nq_onFunctionSuffix:     unmangled func (l: OocListener, suffix: CString)        { l onFunctionAttr(FuncAttributes _suffix, suffix) }
 nq_onFunctionThisRef:    unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _thisRef) }
 
-nq_onFunctionAbstact:   unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _abstract) }
+nq_onFunctionAbstract:  unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _abstract) }
 nq_onFunctionConst:     unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _const) }
 nq_onFunctionStatic:    unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _static) }
 nq_onFunctionInline:    unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _inline) }
@@ -219,7 +204,7 @@ nq_onBlockEnd:   unmangled func (l: OocListener) -> Object { l onBlockEnd() }
 
 /* If-else, foreach, while */
 
-nq_onIfStart:   unmangled func (l: OocListener, condition: Object) { l onIfStart() }
+nq_onIfStart:   unmangled func (l: OocListener, condition: Object) { l onIfStart(condition) }
 nq_onIfEnd:     unmangled func (l: OocListener) -> Object { l onIfEnd() }
 
 nq_onElseStart: unmangled func (l: OocListener) { l onElseStart() }
@@ -228,7 +213,7 @@ nq_onElseEnd:   unmangled func (l: OocListener) { l onElseEnd() }
 nq_onForeachStart:   unmangled func (l: OocListener, decl, collec: Object) { l onForeachStart(decl, collec) }
 nq_onForeachEnd:     unmangled func (l: OocListener) -> Object { l onForeachEnd() }
 
-nq_onWhileStart:   unmangled func (l: OocListener, condition: Object) { l onWhileStart() }
+nq_onWhileStart:   unmangled func (l: OocListener, condition: Object) { l onWhileStart(condition) }
 nq_onWhileEnd:     unmangled func (l: OocListener) -> Object { l onWhileEnd() }
 
 /* Match */
@@ -252,21 +237,9 @@ nq_onCatchEnd:     unmangled func (l: OocListener) { l onCatchEnd() }
 
 /* Various operators */
 
-UnOpType: enum {
-    not, bNot, uMinus
-}
-
 nq_onLogicalNot:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType not, inner) }
 nq_onBinaryNot:           unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType bNot, inner) }
 nq_onUnaryMinus:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType uMinus, inner) }
-
-BinOpType: enum {
-    equals, notEquals, lessThan, moreThan, cmp, lessThanOrEqual, moreThanOrEqual
-
-    assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assSub, assAdd, ass
-
-    and, or, bAnd, bOr, bXor, rshift, lshift, div, mul, sub, add, range
-}
 
 nq_onEquals:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType equals, left, right) }
 nq_onNotEquals:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType notEquals, left, right) }
@@ -307,10 +280,6 @@ nq_onRangeLiteral: unmangled func (l: OocListener, left, right: Object) -> Objec
 
 nq_onTernary: unmangled func (l: OocListener, condition, ifTrue, ifFalse: Object) -> Object { l onTernary(condition, ifTrue, ifFalse) }
 
-IntFormat: enum {
-    dec, bin, oct, hex
-}
-
 nq_onDecLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat dec, value) }
 nq_onBinLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat bin, value) }
 nq_onOctLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat oct, value) }
@@ -318,7 +287,7 @@ nq_onHexLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l
 
 nq_onFloatLiteral:  unmangled func (l: OocListener, value: CString) -> Object { l onFloatLiteral(value) }
 nq_onBoolLiteral:   unmangled func (l: OocListener, value: Bool) -> Object { l onBoolLiteral(value) }
-nq_onNullLiteral:   unmangled func (l: OocListener) -> Object { l onNullLiteral(value) }
+nq_onNullLiteral:   unmangled func (l: OocListener) -> Object { l onNullLiteral() }
 
 nq_onParenthesis:   unmangled func (l: OocListener, inner: Object) -> Object { l onParenthesis(inner) }
 

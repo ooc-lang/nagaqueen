@@ -1,4 +1,5 @@
-ooc_tmp
-*.o
-usage/fromfile/fromfile
+*_tmp
+.libs
+bin
+*.[oa]
 *~
