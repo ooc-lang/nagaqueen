@@ -552,12 +552,12 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "catch") throw()
     }
 
-    onUnOp: func (type: UnOpType, operand: Object) {
-        UnsupportedAstElement new(class, "unary-op") throw()
+    onUnOp: func (type: UnOpType, operand: Object) -> Object {
+        UnsupportedAstElement new(class, "unary-op") throw(); null
     }
 
-    onBinOp: func (type: BinOpType, left, right: Object) {
-        UnsupportedAstElement new(class, "binary-op") throw()
+    onBinOp: func (type: BinOpType, left, right: Object) -> Object {
+        UnsupportedAstElement new(class, "binary-op") throw(); null
     }
 
     onTernary: func (condition, ifTrue, ifFalse: Object) -> Object {
