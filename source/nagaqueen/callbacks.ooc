@@ -1,6 +1,6 @@
 import OocListener
 
-nq_setTokenPositionPointer: func (l: OocListener, int *tokenPosPointer) {
+nq_setTokenPositionPointer: func (l: OocListener, tokenPosPointer: Int*) {
     l tokenPos = tokenPosPointer
 }
 
@@ -165,8 +165,8 @@ nq_onAssArg: unmangled func (l: OocListener, name: CString) { l onArg(name, Func
 nq_onFunctionReturnType: unmangled func (l: OocListener, returnType: Type)       { l onFunctionAttr(FuncAttributes _returnType, returnType) }
 nq_onFunctionExtern:     unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _extern, externName) }
 nq_onFunctionUnmangled:  unmangled func (l: OocListener, unmangledName: CString) { l onFunctionAttr(FuncAttributes _unmangled, unmangledName) }
-nq_onFunctionExtern:     unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _suffix, externName) }
-nq_onFunctionThisRef:   unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _thisRef) }
+nq_onFunctionSuffix:     unmangled func (l: OocListener, suffix: CString)        { l onFunctionAttr(FuncAttributes _suffix, suffix) }
+nq_onFunctionThisRef:    unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _thisRef) }
 
 nq_onFunctionAbstact:   unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _abstract) }
 nq_onFunctionConst:     unmangled func (l: OocListener)    { l onFunctionAttr(FuncAttributes _const) }
@@ -183,8 +183,8 @@ nq_onFunctionCallEnd:   unmangled func (l: OocListener) {  l onFunctionCallEnd()
 
 nq_onFunctionCallSuffix: unmangled func (l: OocListener, suffix: CString) {  l onFunctionCallSuffix(suffix) }
 nq_onFunctionCallArg:    unmangled func (l: OocListener, arg: Object)     {  l onFunctionCallArg(arg) }
-nq_onFunctionCallChain:  unamngled func (l: OocListener, expr, call: Object) -> Object { l onFunctionCallChain(expr, call) }
-nq_onFunctionCallCombo:  unamngled func (l: OocListener, call, expr: Object) { l onFunctionCallCombo(call, expr) }
+nq_onFunctionCallChain:  unmangled func (l: OocListener, expr, call: Object) -> Object { l onFunctionCallChain(expr, call) }
+nq_onFunctionCallCombo:  unmangled func (l: OocListener, call, expr: Object) { l onFunctionCallCombo(call, expr) }
 
 /* Arrays */
 
@@ -332,3 +332,4 @@ nq_onStatement:   unmangled func (l: OocListener, statement: Object) { l onState
 /* Error handling */
 
 nq_error: unmangled func (l: OocListener, errorID: Int, defaultMessage: String, index: Int) { l onError(errorID, defaultMessage, index) }
+
