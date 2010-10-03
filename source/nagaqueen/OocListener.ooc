@@ -1,5 +1,4 @@
-
-
+import callbacks
 
 /**
  * Override and implement to be able to react to nagaqueen's parsing events.
@@ -9,6 +8,10 @@ OocListener: abstract class {
     tokenPos: Int*
 
     init: func {}
+
+    parse: func (path: String) {
+        nq_parse(this, path)
+    }
 
     /* Uses, imports, includes */
 
@@ -116,6 +119,10 @@ OocListener: abstract class {
          UnsupportedAstElement new(class, "enum-end") throw()
     }
 
+    onEnumFromType: func (fromType: Object) {
+        UnsupportedAstElement new(class, "enum-fromtype") throw()
+    }
+
 
     onEnumExtern: func (externName: CString) {
          UnsupportedAstElement new(class, "enum-extern") throw()
@@ -189,6 +196,10 @@ OocListener: abstract class {
 
     onPropertyDeclType: func (type: Object) {
         UnsupportedAstElement new(class, "property-decl-type") throw()
+    }
+
+    onPropertyAttribute: func (attr: FieldAttributes, value: CString = null) {
+        UnsupportedAstElement new(class, "property-decl-attribute") throw()
     }
 
 
@@ -376,6 +387,10 @@ OocListener: abstract class {
 
     onFunctionCallArg: func (arg: Object) {
         UnsupportedAstElement new(class, "function-call") throw()
+    }
+
+    onFunctionCallExpr: func (call, expr: Object) {
+        UnsupportedAstElement new(class, "function-call-expr") throw()
     }
 
     onFunctionCallChain: func (expr, call: Object) -> Object {
@@ -578,7 +593,7 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "bool-literal") throw(); null
     }
 
-    onNullLiteral: func -> Object {
+    onNull: func -> Object {
         UnsupportedAstElement new(class, "null-literal") throw(); null
     }
 

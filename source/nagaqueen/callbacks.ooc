@@ -1,6 +1,8 @@
 import OocListener
 
-nq_setTokenPositionPointer: func (l: OocListener, tokenPosPointer: Int*) {
+nq_parse: extern func (l: OocListener, path: CString) -> Int
+
+nq_setTokenPositionPointer: unmangled func (l: OocListener, tokenPosPointer: Int*) {
     l tokenPos = tokenPosPointer
 }
 
@@ -49,6 +51,8 @@ nq_onCoverEnd:        unmangled func (l: OocListener) { l onCoverEnd() }
 nq_onEnumStart:         unmangled func (l: OocListener, name, doc: CString) { l onEnumStart(name, doc) }
 nq_onEnumEnd:           unmangled func (l: OocListener) { l onEnumEnd() }
 
+nq_onEnumFromType:      unmangled func (l: OocListener, fromType: Object) { l onEnumFromType(fromType) }
+
 nq_onEnumExtern:        unmangled func (l: OocListener, externName: CString) { l onEnumExtern(externName) }
 nq_onEnumIncrementExpr: unmangled func (l: OocListener, oper: Char, step: Object) { l onEnumIncrementExpr(oper, step) }
 
@@ -80,6 +84,8 @@ nq_onInterfaceExtends: unmangled func (l: OocListener, type: Object) { l onInter
 nq_onPropertyDeclStart:   unmangled func (l: OocListener, name, doc: CString) { l onPropertyDeclStart(name, doc) }
 nq_onPropertyDeclEnd:     unmangled func (l: OocListener) -> Object { l onPropertyDeclEnd() }
 nq_onPropertyDeclType:    unmangled func (l: OocListener, type: Object) { l onPropertyDeclType(type) }
+
+nq_onPropertyDeclStatic:    unmangled func (l: OocListener) { l onPropertyAttribute(FieldAttributes _static) }
 
 nq_onPropertyDeclGetterStart:   unmangled func (l: OocListener, doc: CString) { l onPropertyDeclGetterStart(doc) }
 nq_onPropertyDeclGetterEnd:     unmangled func (l: OocListener) -> Object { l onPropertyDeclGetterEnd() }
@@ -168,6 +174,7 @@ nq_onFunctionCallEnd:   unmangled func (l: OocListener) {  l onFunctionCallEnd()
 
 nq_onFunctionCallSuffix: unmangled func (l: OocListener, suffix: CString) {  l onFunctionCallSuffix(suffix) }
 nq_onFunctionCallArg:    unmangled func (l: OocListener, arg: Object)     {  l onFunctionCallArg(arg) }
+nq_onFunctionCallExpr:   unmangled func (l: OocListener, call: Object, expr: Object) { l onFunctionCallExpr(call, expr) }
 nq_onFunctionCallChain:  unmangled func (l: OocListener, expr, call: Object) -> Object { l onFunctionCallChain(expr, call) }
 nq_onFunctionCallCombo:  unmangled func (l: OocListener, call, expr: Object) { l onFunctionCallCombo(call, expr) }
 
@@ -287,7 +294,7 @@ nq_onHexLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l
 
 nq_onFloatLiteral:  unmangled func (l: OocListener, value: CString) -> Object { l onFloatLiteral(value) }
 nq_onBoolLiteral:   unmangled func (l: OocListener, value: Bool) -> Object { l onBoolLiteral(value) }
-nq_onNullLiteral:   unmangled func (l: OocListener) -> Object { l onNullLiteral() }
+nq_onNull:   unmangled func (l: OocListener) -> Object { l onNull() }
 
 nq_onParenthesis:   unmangled func (l: OocListener, inner: Object) -> Object { l onParenthesis(inner) }
 
