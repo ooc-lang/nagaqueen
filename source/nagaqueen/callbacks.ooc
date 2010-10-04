@@ -141,7 +141,7 @@ nq_onOperatorEnd:   unmangled func (l: OocListener) { l onOperatorEnd() }
 /* Functions */
 
 nq_onFunctionStart: unmangled func (l: OocListener, name, doc: CString) { l onFunctionStart(name, doc) }
-nq_onFunctionEnd:   unmangled func (l: OocListener) { l onFunctionEnd() }
+nq_onFunctionEnd:   unmangled func (l: OocListener) -> Object { l onFunctionEnd() }
 nq_onFunctionBody:  unmangled func (l: OocListener) { l onFunctionBody() }
 
 nq_onFunctionArgsStart: unmangled func (l: OocListener) { l onFunctionArgsStart() }
@@ -170,7 +170,7 @@ nq_onFunctionSuper:     unmangled func (l: OocListener)    { l onFunctionAttr(Fu
 /* Function calls */
 
 nq_onFunctionCallStart: unmangled func (l: OocListener, name: CString) {  l onFunctionCallStart(name) }
-nq_onFunctionCallEnd:   unmangled func (l: OocListener) {  l onFunctionCallEnd() }
+nq_onFunctionCallEnd:   unmangled func (l: OocListener) -> Object {  l onFunctionCallEnd() }
 
 nq_onFunctionCallSuffix: unmangled func (l: OocListener, suffix: CString) {  l onFunctionCallSuffix(suffix) }
 nq_onFunctionCallArg:    unmangled func (l: OocListener, arg: Object)     {  l onFunctionCallArg(arg) }
