@@ -307,5 +307,5 @@ nq_onStatement:   unmangled func (l: OocListener, statement: Object) { l onState
 
 /* Error handling */
 
-nq_error: unmangled func (l: OocListener, errorID: Int, defaultMessage: String, index: Int) { l onError(errorID, defaultMessage, index) }
+nq_error: unmangled func (l: OocListener, errorID: Int, defaultMessage: CString, index: Int) { l onError(errorID, defaultMessage toString(), index) }
 
