@@ -1205,7 +1205,7 @@ Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$
                     - ']' - { $$=l=nq_onArrayAccessEnd(core->this); }
                  )
                 | - call:FunctionCall                   { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
-                | - !(IN_KW ![A-Za-z0-9_]) r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); }
+                | - r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); }
                 | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
                 | '&' ![&=] - &([ \t\r\n;,)}] | ']')    { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, l); }
                 | '@'                                    { $$=l=nq_onDereference(core->this, l); }

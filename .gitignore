@@ -4,3 +4,5 @@ nagaqueen.c
 *.o
 usage/fromfile/fromfile
 *~
+.libs
+bin
