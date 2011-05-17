@@ -131,7 +131,7 @@ nq_onFuncTypeNew:        unmangled func (l: OocListener) -> Object { l onFuncTyp
 nq_onFuncTypeGenericArgument: unmangled func (l: OocListener, type: Object, name: CString) { l onFuncTypeGenericArgument(type, name) }
 nq_onFuncTypeArgument:   unmangled func (l: OocListener, funcType, argType: Object) { l onFuncTypeArgument(funcType, argType) }
 nq_onFuncTypeVarArg:     unmangled func (l: OocListener, funcType: Object) { l onFuncTypeVarArg(funcType) }
-nq_onFuncTypeReturnType: unmangled func (l: OocListener, funcType, returnType: Object) { l onFuncTypeArgument(funcType, returnType) }
+nq_onFuncTypeReturnType: unmangled func (l: OocListener, funcType, returnType: Object) { l onFuncTypeReturnType(funcType, returnType) }
 
 /* Operators (minimal because function-related callbacks are re-used for operators) */
 
