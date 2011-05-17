@@ -77,7 +77,7 @@ typedef struct _NagaQueenCore NagaQueenCore;
 #define YY_XTYPE NagaQueenCore *
 #define YY_XVAR core
 
-#define YY_INPUT(buf, result, max_size) yyInput(buf, &result, max_size, core)
+#define YY_INPUT(buf, result, max_size, core) yyInput(buf, &result, max_size, core)
 
 void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {
     (*result) = fread(buf, 1, max_size, core->stream);
