@@ -356,6 +356,7 @@ enum NagaQueenError {
     NQE_EXP_ARG,
     NQE_UNCLOSED_COMMENT,
     NQE_MISSING_OPERAND,
+    NQE_MISPLACED_SUFFIX,
 };
 
 /////////////////////                  error IDs end                 ////////////////////////
@@ -544,6 +545,11 @@ FunctionDeclBody = (
                 )?
                 - CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_ARG, "Malformed function argument (remember, it's `name: Type` in ooc, not `Type name`)\n", G->pos + G->offset) }
                               { nq_onFunctionArgsEnd(core->this) }
+            )?
+            
+            # optional suffix
+            (
+            - '~' suffix:IDENT { nq_error(core->this, NQE_MISPLACED_SUFFIX, "Misplaced function suffix (remember, it's `name: func ~suffix (args)`, not `name: func (args) ~suffix`", core->token[0]) }
             )?
 
             # return type is optional
