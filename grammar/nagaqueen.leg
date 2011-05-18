@@ -1247,7 +1247,7 @@ ACS = (
 VariableAccess = i:IDENT_CORE
 
 Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
-        | ('(' { tokenPos; } WS inner:Expr WS ')' - { $$=nq_onParenthesis(core->this, inner); })
+        | ('(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onParenthesis(core->this, inner); } ('&' ![&=] { $$=nq_onAddressOf(core->this, $$); })? -)
         | ValueCore
 
 ArrayLiteral = '[' { tokenPos; } WS { nq_onArrayLiteralStart(core->this); } (
