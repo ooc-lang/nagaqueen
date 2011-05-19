@@ -1252,7 +1252,8 @@ ACS = (
 
 VariableAccess = i:IDENT_CORE
 
-Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
+Value   = ('-' - '(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onUnaryMinus(core->this, nq_onParenthesis(core->this, inner)); } -)
+        | ('-' - { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
         | ('(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onParenthesis(core->this, inner); } ('&' ![&=] { $$=nq_onAddressOf(core->this, $$); })? -)
         | ValueCore
 
