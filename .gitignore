@@ -1,8 +1,7 @@
-ooc_tmp
-nagaqueen
-nagaqueen.c
-*.o
-usage/fromfile/fromfile
+*_tmp
+.libs
+bin
+*.[oa]
 *~
 .libs
 bin

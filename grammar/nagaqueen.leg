@@ -77,7 +77,7 @@ typedef struct _NagaQueenCore NagaQueenCore;
 #define YY_XTYPE NagaQueenCore *
 #define YY_XVAR core
 
-#define YY_INPUT(buf, result, max_size) yyInput(buf, &result, max_size, core)
+#define YY_INPUT(buf, result, max_size, core) yyInput(buf, &result, max_size, core)
 
 void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {
     (*result) = fread(buf, 1, max_size, core->stream);
@@ -114,7 +114,6 @@ void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
 char *nq_StringClone(char *string);
 char *nq_trailingQuest(char *string);
 char *nq_trailingBang (char *string);
-char *nq_mangleIdents(char *string);
 
 void nq_onUse(void *this, char *name);
 void nq_onInclude(void *this, char *path);
@@ -144,6 +143,7 @@ void nq_onCoverEnd(void *this);
 
 void nq_onEnumStart(void *this, char *name, char *doc);
 void nq_onEnumExtern(void *this, char *externName);
+void nq_onEnumFromType(void *this, void *fromType);
 void nq_onEnumIncrementExpr(void *this, char oper, void *step);
 void nq_onEnumElementStart(void *this, char *name, char *doc);
 void nq_onEnumElementValue(void *this, void *value);
@@ -356,6 +356,7 @@ enum NagaQueenError {
     NQE_EXP_ARG,
     NQE_UNCLOSED_COMMENT,
     NQE_MISSING_OPERAND,
+    NQE_MISPLACED_SUFFIX,
 };
 
 /////////////////////                  error IDs end                 ////////////////////////
@@ -544,6 +545,11 @@ FunctionDeclBody = (
                 )?
                 - CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_ARG, "Malformed function argument (remember, it's `name: Type` in ooc, not `Type name`)\n", G->pos + G->offset) }
                               { nq_onFunctionArgsEnd(core->this) }
+            )?
+            
+            # optional suffix
+            (
+            - '~' suffix:IDENT { nq_error(core->this, NQE_MISPLACED_SUFFIX, "Misplaced function suffix (remember, it's `name: func ~suffix (args)`, not `name: func (args) ~suffix`", core->token[0]) }
             )?
 
             # return type is optional
@@ -1247,7 +1253,7 @@ ACS = (
 VariableAccess = i:IDENT_CORE
 
 Value   = (MINUS { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
-        | ('(' { tokenPos; } WS inner:Expr WS ')' - { $$=nq_onParenthesis(core->this, inner); })
+        | ('(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onParenthesis(core->this, inner); } ('&' ![&=] { $$=nq_onAddressOf(core->this, $$); })? -)
         | ValueCore
 
 ArrayLiteral = '[' { tokenPos; } WS { nq_onArrayLiteralStart(core->this); } (
@@ -1401,7 +1407,7 @@ CLOS_SQUAR    = ']'
 CLOS_PAREN    = ')'
 CLOS_COMMENT  = '*/'
 
--          = [ \t]*
+-          = ([ \t] | CommentMultiLine)*
 EOL        = ('\n' | '\r\n' | '\r')  { core->yylineno++; }
 Terminator = (CommentLine
            | CommentMultiLine? (EOL | ';')
