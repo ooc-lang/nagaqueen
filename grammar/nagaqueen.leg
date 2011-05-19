@@ -5,8 +5,8 @@
 
 // workaround for peg/leg/greg's shady parsing of "{}" even in
 // character class literals
-#define _OBRACK "{"
-#define _CBRACK "}"
+#define _OBRACK '{'
+#define _CBRACK '}'
 
 #ifdef __OOC_USE_GC__
 
@@ -359,6 +359,7 @@ enum NagaQueenError {
     NQE_MISPLACED_SUFFIX,
     NQE_MALFORMED_STRINGLIT,
     NQE_MALFORMED_CHARLIT,
+    NQE_MALFORMED_TERNARY,
 };
 
 /////////////////////                  error IDs end                 ////////////////////////
@@ -367,8 +368,10 @@ enum NagaQueenError {
 
 Module  =  ModuleCore
           | WS ( !EOL . )*
-          ('}'? { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Unmatched closing bracket", core->token[0]); })
-          EOL { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
+          EOL { tokenPos; char *message = "Expected include, import, statement or declaration\n";
+            if(G->buf[core->token[0]] == _CBRACK) { message = "Unmatched closing bracket"; }
+            nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, message, core->token[0]);
+          }
 
 ModuleCore = (WS 'version' { tokenPos }
               - '('
@@ -1142,7 +1145,7 @@ Assignment = l: Ternary
 Ternary =   cond:LogicalOr
             (
           - QUEST { tokenPos; }
-          WS ifTrue:LogicalOr
+          WS ifTrue:LogicalOr ~{ nq_error(core->this, NQE_MALFORMED_TERNARY, "Expected expression between ? and : in ternary expression!\n", G->pos + G->offset) }
           - COLON
           WS ifFalse:LogicalOr
             { $$=nq_onTernary(core->this, cond, ifTrue, ifFalse); }
