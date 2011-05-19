@@ -366,7 +366,9 @@ enum NagaQueenError {
 %}
 
 Module  =  ModuleCore
-          | WS ( !EOL . )* EOL   { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
+          | WS ( !EOL . )*
+          ('}'? { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Unmatched closing bracket", core->token[0]); })
+          EOL { tokenPos; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", core->token[0]); }
 
 ModuleCore = (WS 'version' { tokenPos }
               - '('
