@@ -1407,7 +1407,7 @@ CLOS_SQUAR    = ']'
 CLOS_PAREN    = ')'
 CLOS_COMMENT  = '*/'
 
--          = [ \t]*
+-          = ([ \t] | CommentMultiLine)*
 EOL        = ('\n' | '\r\n' | '\r')  { core->yylineno++; }
 Terminator = (CommentLine
            | CommentMultiLine? (EOL | ';')
