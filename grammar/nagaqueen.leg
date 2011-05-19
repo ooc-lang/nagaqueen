@@ -357,6 +357,8 @@ enum NagaQueenError {
     NQE_UNCLOSED_COMMENT,
     NQE_MISSING_OPERAND,
     NQE_MISPLACED_SUFFIX,
+    NQE_MALFORMED_STRINGLIT,
+    NQE_MALFORMED_CHARLIT,
 };
 
 /////////////////////                  error IDs end                 ////////////////////////
@@ -1434,9 +1436,16 @@ IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident
                < [a-zA-Z_][0-9a-zA-Z_]* > { $$=yytext; }
                ( '?' { $$=nq_trailingQuest($$); }
                | '!' { $$=nq_trailingBang($$); })?
+               
+SINGLE_QUOTE = '\''
+DOUBLE_QUOTE = '"'
 
-STRING_LIT   = ["] < (!["] ("\\\"" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | EOL | .))* > ["]  -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
-CHAR_LIT     = ['] < (!['] ("\\\'" | '\\\\' | '\\a' | '\\b' | '\\t' | '\\n' | '\\v' | '\\f' | '\\r' | '\\0' | .)) > [']         -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
+STRING_LIT   = '"' < (!'"'   ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0]) | EOL | .))* >
+               DOUBLE_QUOTE ~{ nq_error(core->this, NQE_MALFORMED_STRINGLIT , "Malformed string literal!\n", G->pos + G->offset); }
+               -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
+CHAR_LIT     = '\'' < (!'\'' ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0]) | .)) >
+               SINGLE_QUOTE  ~{ nq_error(core->this, NQE_MALFORMED_CHARLIT , "Malformed char literal!\n", G->pos + G->offset); }
+               -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
 BOOL_LIT     = (TRUE_KW &[^A-Za-z_] { $$=(void*) true; } | FALSE_KW &[^A-Za-z_] { $$=(void*) false; }) -
 
 %%
