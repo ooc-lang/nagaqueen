@@ -1442,10 +1442,10 @@ IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident
 SINGLE_QUOTE = '\''
 DOUBLE_QUOTE = '"'
 
-STRING_LIT   = '"' < (!'"'   ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0]) | EOL | .))* >
+STRING_LIT   = '"' < (!'"'   ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0\\]) | EOL | .))* >
                DOUBLE_QUOTE ~{ nq_error(core->this, NQE_MALFORMED_STRINGLIT , "Malformed string literal!\n", G->pos + G->offset); }
                -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
-CHAR_LIT     = '\'' < (!'\'' ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0]) | .)) >
+CHAR_LIT     = '\'' < (!'\'' ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0\\]) | .)) >
                SINGLE_QUOTE  ~{ nq_error(core->this, NQE_MALFORMED_CHARLIT , "Malformed char literal!\n", G->pos + G->offset); }
                -  { tokenPos; $$=nq_onCharLiteral(core->this, yytext); }
 BOOL_LIT     = (TRUE_KW &[^A-Za-z_] { $$=(void*) true; } | FALSE_KW &[^A-Za-z_] { $$=(void*) false; }) -
