@@ -44,12 +44,12 @@ nq_onCoverExtern:     unmangled func (l: OocListener, externName: CString) { l o
 nq_onCoverFromType:   unmangled func (l: OocListener, type: Object) { l onCoverFromType(type) }
 nq_onCoverExtends:    unmangled func (l: OocListener, type: Object) { l onCoverExtends(type) }
 nq_onCoverImplements: unmangled func (l: OocListener, type: Object) { l onCoverImplements(type) }
-nq_onCoverEnd:        unmangled func (l: OocListener) { l onCoverEnd() }
+nq_onCoverEnd:        unmangled func (l: OocListener) -> Object { l onCoverEnd() }
 
 /* Enums */
 
 nq_onEnumStart:         unmangled func (l: OocListener, name, doc: CString) { l onEnumStart(name, doc) }
-nq_onEnumEnd:           unmangled func (l: OocListener) { l onEnumEnd() }
+nq_onEnumEnd:           unmangled func (l: OocListener) -> Object { l onEnumEnd() }
 
 nq_onEnumFromType:      unmangled func (l: OocListener, fromType: Object) { l onEnumFromType(fromType) }
 
@@ -65,7 +65,7 @@ nq_onEnumElementEnd:    unmangled func (l: OocListener) { l onEnumElementEnd() }
 
 nq_onClassStart:      unmangled func (l: OocListener, name, doc: CString) { l onClassStart(name, doc) }
 nq_onClassBody:       unmangled func (l: OocListener) { l onClassBody() }
-nq_onClassEnd:        unmangled func (l: OocListener) { l onClassEnd() }
+nq_onClassEnd:        unmangled func (l: OocListener) -> Object { l onClassEnd() }
 
 nq_onClassAbstract:   unmangled func (l: OocListener) { l onClassAttribute(TypeAttribute _abstract) }
 nq_onClassFinal:      unmangled func (l: OocListener) { l onClassAttribute(TypeAttribute _final) }
@@ -75,7 +75,7 @@ nq_onClassImplements: unmangled func (l: OocListener, type: Object) { l onClassA
 /* Interfaces */
 
 nq_onInterfaceStart:   unmangled func (l: OocListener) { l onInterfaceStart() }
-nq_onInterfaceEnd:     unmangled func (l: OocListener) { l onInterfaceEnd() }
+nq_onInterfaceEnd:     unmangled func (l: OocListener) -> Object { l onInterfaceEnd() }
 
 nq_onInterfaceExtends: unmangled func (l: OocListener, type: Object) { l onInterfaceAttribute(TypeAttribute _extends, type) }
 

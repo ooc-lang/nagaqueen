@@ -104,7 +104,7 @@ OocListener: abstract class {
          UnsupportedAstElement new(class, "cover-implements") throw()
     }
 
-    onCoverEnd: func {
+    onCoverEnd: func -> Object {
          UnsupportedAstElement new(class, "cover-end") throw()
     }
 
@@ -115,7 +115,7 @@ OocListener: abstract class {
          UnsupportedAstElement new(class, "enum-start") throw()
     }
 
-    onEnumEnd: func {
+    onEnumEnd: func -> Object {
          UnsupportedAstElement new(class, "enum-end") throw()
     }
 
@@ -160,7 +160,7 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "class-body") throw()
     }
 
-    onClassEnd: func {
+    onClassEnd: func -> Object {
         UnsupportedAstElement new(class, "class-end") throw()
     }
 
@@ -174,7 +174,7 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "interface-start") throw()
     }
 
-    onInterfaceEnd: func {
+    onInterfaceEnd: func -> Object {
         UnsupportedAstElement new(class, "interface-end") throw()
     }
 
