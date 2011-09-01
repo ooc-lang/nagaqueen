@@ -899,13 +899,8 @@ PropertyDeclGetter =
            (
              COLON
              WS
-             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
-           )?
-           WS GET_KW WS
-           (
-             COLON
-             WS
-             wrappedName:WrappedName { nq_onFunctionWrapped(core->this, wrappedName); }
+               externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+             | wrappedName:WrappedName { nq_onFunctionWrapped(core->this, wrappedName); }
            )?
            ('{'
                 (WS
@@ -922,13 +917,8 @@ PropertyDeclSetter =
            (
              COLON
              WS
-             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
-           )?
-           WS SET_KW WS
-           (
-             COLON
-             WS
-             wrappedName:WrappedName { nq_onFunctionWrapped(core->this, wrappedName); }
+               externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+             | wrappedName:WrappedName { nq_onFunctionWrapped(core->this, wrappedName); }
            )?
            ('(' WS
                 (
