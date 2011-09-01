@@ -646,7 +646,7 @@ FieldAttributes: enum {
  * Attributes of a function
  */
 FuncAttributes: enum {
-    _extern, _unmangled, _suffix, _abstract, _thisRef, _const, _static, _inline, _final, _proto, _super
+    _extern, _wrapped, _unmangled, _suffix, _abstract, _thisRef, _const, _static, _inline, _final, _proto, _super
 }
 
 /**

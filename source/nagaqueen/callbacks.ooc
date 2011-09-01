@@ -155,6 +155,7 @@ nq_onAssArg: unmangled func (l: OocListener, name: CString) { l onArg(name, Func
 nq_onFunctionReturnType: unmangled func (l: OocListener, returnType: Object)     { l onFunctionReturnType(returnType) }
 
 nq_onFunctionExtern:     unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _extern, externName) }
+nq_onFunctionWrapped:    unmangled func (l: OocListener, wrappedName: CString)   { l onFunctionAttr(FuncAttributes _wrapped, wrappedName) }
 nq_onFunctionUnmangled:  unmangled func (l: OocListener, unmangledName: CString) { l onFunctionAttr(FuncAttributes _unmangled, unmangledName) }
 nq_onFunctionSuffix:     unmangled func (l: OocListener, suffix: CString)        { l onFunctionAttr(FuncAttributes _suffix, suffix) }
 nq_onFunctionThisRef:    unmangled func (l: OocListener, externName: CString)    { l onFunctionAttr(FuncAttributes _thisRef) }

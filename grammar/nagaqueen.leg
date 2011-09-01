@@ -208,6 +208,7 @@ void nq_onOperatorEnd(void *this);
 
 void nq_onFunctionStart(void *this, char *name, char *doc);
 void nq_onFunctionExtern(void *this, char *externName);
+void nq_onFunctionWrapped(void *this, char *wrappedName);
 void nq_onFunctionUnmangled(void *this, char *unmangledName);
 void nq_onFunctionAbstract(void *this);
 void nq_onFunctionThisRef(void *this);
@@ -517,6 +518,7 @@ RegularFunctionDecl =
             # modifiers
             (-  ( externName:ExternName  { nq_onFunctionExtern(core->this, externName) }
                 | unmangledName:UnmangledName { nq_onFunctionUnmangled(core->this, unmangledName) }
+                | wrappedName:WrappedName { nq_onFunctionWrapped(core->this, wrappedName) }
                 | ABSTRACT_KW { nq_onFunctionAbstract(core->this) }
                 | STATIC_KW   { nq_onFunctionStatic(core->this) }
                 | INLINE_KW   { nq_onFunctionInline(core->this) }
@@ -801,6 +803,13 @@ ExternName = EXTERN_KW { $$="" }
               - ')'
               )?
 
+WrappedName = WRAPPED_KW { $$="" }
+              (
+              - '('
+              - < [A-Za-z_] [A-Za-z0-9_]* > { $$=yytext } # is that correct? should it be $$=$$? what's happening?
+              - ')'
+              )?
+
 UnmangledName = UNMANGLED_KW { $$="" }
              (
              - '('
@@ -892,6 +901,12 @@ PropertyDeclGetter =
              WS
              externName:ExternName { nq_onFunctionExtern(core->this, externName); }
            )?
+           WS GET_KW WS
+           (
+             COLON
+             WS
+             wrappedName:WrappedName { nq_onFunctionWrapped(core->this, wrappedName); }
+           )?
            ('{'
                 (WS
                 (s:Stmt  { nq_onStatement(core->this, s) })
@@ -908,6 +923,12 @@ PropertyDeclSetter =
              COLON
              WS
              externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+           )?
+           WS SET_KW WS
+           (
+             COLON
+             WS
+             wrappedName:WrappedName { nq_onFunctionWrapped(core->this, wrappedName); }
            )?
            ('(' WS
                 (
@@ -1317,6 +1338,7 @@ STATIC_KW    = "static"
 INLINE_KW    = "inline"
 EXTENDS_KW   = "extends"
 EXTERN_KW    = "extern"
+WRAPPED_KW   = "wrapped"
 UNMANGLED_KW = "unmangled"
 IMPLEMENTS_KW= "implements"
 
