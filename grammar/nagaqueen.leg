@@ -438,7 +438,7 @@ IncludeCore = < ([A-Za-z0-9/._] | '-')+ >  { tokenPos; nq_onInclude(core->this, 
             - defineName:DefineName defineVal:DefineValue { nq_onIncludeDefine(core->this, defineName, defineVal) }
            (- ','
             - defineName:DefineName defineVal:DefineValue { nq_onIncludeDefine(core->this, defineName, defineVal) }
-           )?
+           )*
            - ')'
           )?
 
