@@ -892,7 +892,7 @@ PropertyDeclGetter =
            (
              COLON
              WS
-               externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
            )?
            ('{'
                 (WS
@@ -909,7 +909,7 @@ PropertyDeclSetter =
            (
              COLON
              WS
-               externName:ExternName { nq_onFunctionExtern(core->this, externName); }
+             externName:ExternName { nq_onFunctionExtern(core->this, externName); }
            )?
            ('(' WS
                 (
