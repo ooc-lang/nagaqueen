@@ -669,9 +669,9 @@ UnOpType: enum {
 BinOpType: enum {
     equals, notEquals, lessThan, moreThan, cmp, lessThanOrEqual, moreThanOrEqual
 
-    assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assSub, assAdd, ass
+    assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assExp, assSub, assAdd, ass
 
-    and, or, bAnd, bOr, bXor, rshift, lshift, div, mul, sub, add, range, mod
+    and, or, bAnd, bOr, bXor, rshift, lshift, div, mul, exp, sub, add, range, mod
 }
 
 /**

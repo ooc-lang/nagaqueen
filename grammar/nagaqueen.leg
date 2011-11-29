@@ -1208,7 +1208,7 @@ ProductLogicalNot = L_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onLogi
 ProductBinaryNot  = B_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onBinaryNot (core->this, inner); }
 
 ProductCore = l:Access
-                    ( EXP         { tokenPos; }  WS r:Access              { $$=l=nq_onExp(core->this, l, r); }
+                    ( EXP         { tokenPos; }  WS r:Product             { $$=l=nq_onExp(core->this, l, r); }
                     | STAR        { tokenPos; }  WS r:Access              { $$=l=nq_onMul(core->this, l, r); }
                     | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
                     )*
