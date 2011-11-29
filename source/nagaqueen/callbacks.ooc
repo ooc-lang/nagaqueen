@@ -263,6 +263,7 @@ nq_onAssignRightShift:       unmangled func (l: OocListener, left, right: Object
 nq_onAssignLeftShift:        unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assLShift, left, right) }
 nq_onAssignDiv:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assDiv, left, right) }
 nq_onAssignMul:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assMul, left, right) }
+nq_onAssignExp:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assExp, left, right) }
 nq_onAssignSub:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assSub, left, right) }
 nq_onAssignAdd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assAdd, left, right) }
 nq_onAssign:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType ass, left, right) }
@@ -279,6 +280,7 @@ nq_onBinaryLeftShift:        unmangled func (l: OocListener, left, right: Object
 
 nq_onDiv:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType div, left, right) }
 nq_onMul:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType mul, left, right) }
+nq_onExp:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType exp, left, right) }
 nq_onSub:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType sub, left, right) }
 nq_onAdd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType add, left, right) }
 

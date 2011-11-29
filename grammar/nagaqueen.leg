@@ -295,6 +295,7 @@ void *nq_onAssignRightShift(void *this, void *left, void *right);
 void *nq_onAssignLeftShift(void *this, void *left, void *right);
 void *nq_onAssignDiv(void *this, void *left, void *right);
 void *nq_onAssignMul(void *this, void *left, void *right);
+void *nq_onAssignExp(void *this, void *left, void *right);
 void *nq_onAssignSub(void *this, void *left, void *right);
 void *nq_onAssignAdd(void *this, void *left, void *right);
 void *nq_onAssign(void *this, void *left, void *right);
@@ -303,6 +304,7 @@ void *nq_onAdd(void *this, void *left, void *right);
 void *nq_onSub(void *this, void *left, void *right);
 void *nq_onMod(void *this, void *left, void *right);
 void *nq_onMul(void *this, void *left, void *right);
+void *nq_onExp(void *this, void *left, void *right);
 void *nq_onDiv(void *this, void *left, void *right);
 void *nq_onRangeLiteral(void *this, void *left, void *right);
 void *nq_onBinaryLeftShift(void *this, void *left, void *right);
@@ -490,7 +492,7 @@ OperatorDecl =
             OPERATOR_KW { tokenPos; } -
             - < ( "<=>"| ">>="| "<<="| ">>" | "<<"
                 | ">=" | "<=" | "!=" | "==" | ">" | "<" | "!"
-                | "+=" | "-=" | "*=" | "/=" | "+" | "-" | "*" | "/" | "="
+                | "+=" | "-=" | "*=" | "**="| "/=" | "+" | "-" | "**" | "/" | "*" | "="
                 | "[]="| "[]" | "&&" | "||" | "%" | "as" | "implicit as"
                 | "&=" | "|=" | "^=" | "&"  | "|" | "^" | "~"
                 ) >
@@ -1134,6 +1136,7 @@ Assignment = l: Ternary
                 | ASS_ADD        { tokenPos; }  WS   r: Ternary               ~{  missingOp("+=") }  { $$=l=nq_onAssignAdd(core->this, l, r); }
                 | ASS_SUB        { tokenPos; }  WS   r: Ternary               ~{  missingOp("-=") }  { $$=l=nq_onAssignSub(core->this, l, r); }
                 | ASS_MUL        { tokenPos; }  WS   r: Ternary               ~{  missingOp("*=") }  { $$=l=nq_onAssignMul(core->this, l, r); }
+                | ASS_EXP        { tokenPos; }  WS   r: Ternary               ~{  missingOp("**=") }  { $$=l=nq_onAssignExp(core->this, l, r); }
                 | ASS_DIV        { tokenPos; }  WS   r: Ternary               ~{  missingOp("/=") }  { $$=l=nq_onAssignDiv(core->this, l, r); }
                 | ASS_B_LSHIFT   { tokenPos; }  WS   r: Ternary               ~{  missingOp("<<=") } { $$=l=nq_onAssignLeftShift(core->this, l, r); }
                 | ASS_B_RSHIFT   { tokenPos; }  WS   r: Ternary               ~{  missingOp(">>=") } { $$=l=nq_onAssignRightShift(core->this, l, r); }
@@ -1205,7 +1208,8 @@ ProductLogicalNot = L_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onLogi
 ProductBinaryNot  = B_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onBinaryNot (core->this, inner); }
 
 ProductCore = l:Access
-                    ( STAR        { tokenPos; }  WS r:Access              { $$=l=nq_onMul(core->this, l, r); }
+                    ( EXP         { tokenPos; }  WS r:Product             { $$=l=nq_onExp(core->this, l, r); }
+                    | STAR        { tokenPos; }  WS r:Access              { $$=l=nq_onMul(core->this, l, r); }
                     | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
                     )*
 
@@ -1367,6 +1371,7 @@ ASS_DECL     = ':='  -
 ASS          = !DOUBLE_ARROW '=' -
 ASS_ADD      = '+='  -
 ASS_SUB      = '-='  -
+ASS_EXP      = '**='  -
 ASS_MUL      = '*='  -
 ASS_DIV      = '/='  -
 ASS_B_RSHIFT = '>>='  -
@@ -1407,6 +1412,7 @@ PLUS         = '+' !'='   -
 MINUS        = '-' !'='  -
 
 PERCENT      = '%' !'='  -
+EXP          = '**' ! '='  -
 STAR         = '*' !'='  -
 SLASH        = '/' !'=' ![/*]   -
 
