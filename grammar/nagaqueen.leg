@@ -376,17 +376,17 @@ Module  =  ModuleCore
           }
 
 ModuleCore = (WS 'version' { tokenPos }
-              - '('
+              WS '('
               - spec: VersionSpec
-              - ')'
+              WS ')'
               - '{' { nq_onVersionStart(core->this, spec) }
               WS ModuleCore* WS
               - '}' { nq_onVersionEnd(core->this) }
               (
                   WS 'else' - 'version' { tokenPos }
-                  - '('
+                  WS '('
                   - elseSpec: VersionSpec
-                  - ')'
+                  WS ')'
                   - '{' { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
                   WS ModuleCore* WS
                   - '}' { nq_onVersionEnd(core->this) }
@@ -548,11 +548,11 @@ FunctionDeclBody = (
 
             # arguments are optional
             (
-                - '(' { nq_onFunctionArgsStart(core->this) }
+                WS '(' { nq_onFunctionArgsStart(core->this) }
                 (          WS Argument WS
                     (',' WS Argument WS)*
                 )?
-                - CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_ARG, "Malformed function argument (remember, it's `name: Type` in ooc, not `Type name`)\n", G->pos + G->offset) }
+                WS CLOS_PAREN ~{ nq_error(core->this, NQE_EXP_ARG, "Malformed function argument (remember, it's `name: Type` in ooc, not `Type name`)\n", G->pos + G->offset) }
                               { nq_onFunctionArgsEnd(core->this) }
             )?
             
@@ -995,17 +995,17 @@ Old = { $$=NULL }
 Stmt     = (
                 old:Old
                 WS 'version' { tokenPos; }
-                - '('
+                WS '('
                 - spec:VersionSpec
-                - ')'
+                WS ')'
                 - '{' { nq_onVersionStart(core->this, spec); }
                 WS (s:Stmt { nq_onStatement(core->this, s); })* WS
                 - '}' { old=$$=nq_onVersionEnd(core->this); }
                 (
                   WS 'else' - 'version' { tokenPos }
-                  - '('
+                  WS '('
                   - elseSpec: VersionSpec
-                  - ')'
+                  WS ')'
                   - '{' { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
                   WS (s:Stmt { nq_onStatement(core->this, s); })* WS
                   - '}' { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
@@ -1047,9 +1047,9 @@ Block   = (
 
 If      = (
           IF_KW { tokenPos; }
-          - '(' WS
+          WS '(' WS
           - e:Expr       { nq_onIfStart(core->this, e); }
-          - ')'
+          WS ')'
           - Body
           )              { $$=nq_onIfEnd(core->this); }
 
@@ -1096,18 +1096,18 @@ ImplicitDecl = (v:VariableDecl { $$=v })
              | (i:IDENT        { $$=nq_onVarAccess(core->this, NULL, i); })
 
 Foreach = FOR_KW { tokenPos; }
-          - '(' WS
+          WS '(' WS
           - decl:ImplicitDecl
           - IN_KW
           - collec:Expr
-          - ')' { nq_onForeachStart(core->this, decl, collec); }
+          WS ')' { nq_onForeachStart(core->this, decl, collec); }
           - Body
           -            { $$=nq_onForeachEnd(core->this); }
 
 While = WHILE_KW { tokenPos; }
-        - '(' WS
+        WS '(' WS
         - condition:Expr
-        - ')' { nq_onWhileStart(core->this, condition); }
+        WS ')' { nq_onWhileStart(core->this, condition); }
         - Body
         -            { $$=nq_onWhileEnd(core->this); }
 
