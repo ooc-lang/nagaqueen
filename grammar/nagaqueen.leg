@@ -379,23 +379,41 @@ ModuleCore = (WS 'version' { tokenPos }
               WS '('
               - spec: VersionSpec
               WS ')'
+              ((
               - '{' { nq_onVersionStart(core->this, spec) }
               WS ModuleCore* WS
               - '}' { nq_onVersionEnd(core->this) }
+              )
+              |
+              (
+              - s:Stmt { nq_onVersionStart(core->this, spec); nq_onStatement(core->this, s); nq_onVersionEnd(core->this) }
+              ))
               (
                   WS 'else' - 'version' { tokenPos }
                   WS '('
                   - elseSpec: VersionSpec
                   WS ')'
+                  ((
                   - '{' { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
                   WS ModuleCore* WS
                   - '}' { nq_onVersionEnd(core->this) }
+                  )
+                  |
+                  (
+                  - s:Stmt { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec); nq_onStatement(core->this, s); nq_onVersionEnd(core->this) }
+                  ))
               )*
               (
                   WS 'else' { tokenPos }
+                  ((
                   - '{' { nq_onVersionElseStart(core->this, spec) }
                   WS ModuleCore* WS
                   - '}' { nq_onVersionEnd(core->this) }
+                  )
+                  |
+                  (
+                  - s:Stmt { nq_onVersionElseStart(core->this, spec); nq_onStatement(core->this, s); nq_onVersionEnd(core->this) }
+                  ))
               )?
             )
           |(WS Include WS
@@ -998,23 +1016,41 @@ Stmt     = (
                 WS '('
                 - spec:VersionSpec
                 WS ')'
+                ((
                 - '{' { nq_onVersionStart(core->this, spec); }
                 WS (s:Stmt { nq_onStatement(core->this, s); })* WS
                 - '}' { old=$$=nq_onVersionEnd(core->this); }
+                )
+                |
+                (
+                - s:Stmt { nq_onVersionStart(core->this, spec); nq_onStatement(core->this, s); old=$$=nq_onVersionEnd(core->this); }
+                ))
                 (
                   WS 'else' - 'version' { tokenPos }
                   WS '('
                   - elseSpec: VersionSpec
                   WS ')'
+                  ((
                   - '{' { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
                   WS (s:Stmt { nq_onStatement(core->this, s); })* WS
                   - '}' { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                  )
+                  |
+                  (
+                  - s:Stmt { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec); nq_onStatement(core->this, s); $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                  ))
                 )*
                 (
                   WS 'else' { tokenPos }
+                  ((
                   - '{' { nq_onVersionElseStart(core->this, spec) }
                   WS (s:Stmt { nq_onStatement(core->this, s); })* WS
                   - '}' { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                  )
+                  |
+                  (
+                  - s:Stmt { nq_onVersionElseStart(core->this, spec); nq_onStatement(core->this, s); $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
+                  ))
                 )?
             )
          | StmtCore
