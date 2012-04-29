@@ -667,7 +667,7 @@ UnOpType: enum {
  * Binary operators
  */
 BinOpType: enum {
-    equals, notEquals, lessThan, moreThan, cmp, lessThanOrEqual, moreThanOrEqual
+    doubleArrow, equals, notEquals, lessThan, moreThan, cmp, lessThanOrEqual, moreThanOrEqual
 
     assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assExp, assSub, assAdd, ass
 

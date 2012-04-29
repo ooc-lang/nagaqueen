@@ -244,6 +244,8 @@ nq_onCatchEnd:     unmangled func (l: OocListener) { l onCatchEnd() }
 
 /* Various operators */
 
+nq_onDoubleArrow: unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType doubleArrow, left, right) }
+
 nq_onLogicalNot:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType not, inner) }
 nq_onBinaryNot:           unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType bNot, inner) }
 nq_onUnaryMinus:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType uMinus, inner) }
