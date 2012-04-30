@@ -287,6 +287,7 @@ void *nq_onFloatLiteral(void *this, char *value);
 void *nq_onBoolLiteral(void *this, bool value);
 void *nq_onNull(void *this);
 
+void *nq_onDoubleArrow(void *this, void *left, void *right);
 void *nq_onTernary(void *this, void *condition, void *ifTrue, void *ifFalse);
 void *nq_onAssignAnd(void *this, void *left, void *right);
 void *nq_onAssignOr(void *this, void *left, void *right);
@@ -508,7 +509,7 @@ GenericArguments =
 
 OperatorDecl =
             OPERATOR_KW { tokenPos; } -
-            - < ( "<=>"| ">>="| "<<="| ">>" | "<<"
+            - < ( "=>" | "<=>"| ">>="| "<<="| ">>" | "<<"
                 | ">=" | "<=" | "!=" | "==" | ">" | "<" | "!"
                 | "+=" | "-=" | "*=" | "**="| "/=" | "+" | "-" | "**" | "/" | "*" | "="
                 | "[]="| "[]" | "&&" | "||" | "%" | "as" | "implicit as"
@@ -1096,7 +1097,7 @@ Else    = (
           )              { $$=nq_onElseEnd(core->this); }
 
 Case    = CASE_KW  { tokenPos; nq_onCaseStart(core->this); }
-        (- v:Expr { nq_onCaseExpr(core->this, v); })?
+        (- v:CaseExpr { nq_onCaseExpr(core->this, v); })?
         WS DOUBLE_ARROW
          (WS
           (s:Stmt  { nq_onStatement(core->this, s) })
@@ -1158,9 +1159,23 @@ Return  = (RETURN_KW &([^A-Za-z_]) { tokenPos; } - e:Expr { $$=nq_onReturn(core-
 
 
 Expr     =   v:VariableDecl -
+           | d:DoubleArrow -
            | b:BinaryOperation - (- '.' { tokenPos; } WS call:FunctionCall { $$=b=nq_onFunctionCallChain(core->this, b, call); })*
            | AnonymousFunctionDecl
 
+CaseExpr = ( v:VariableDecl -
+           | b:BinaryOperation - (- '.' { tokenPos; } WS call:FunctionCall { $$=b=nq_onFunctionCallChain(core->this, b, call); })*
+           | AnonymousFunctionDecl
+           )
+           |
+           ( '('  -
+             Expr -
+             ')'
+           )
+
+DoubleArrow = l:Assignment
+              DOUBLE_ARROW { tokenPos; } WS r:Expr        ~{  missingOp("=>") } { $$=l=nq_onDoubleArrow(core->this, l, r); }
+            
 #operators
 
 BinaryOperation = Assignment
