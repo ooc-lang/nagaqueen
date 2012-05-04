@@ -426,6 +426,10 @@ OocListener: abstract class {
 
     /* Various expressions/statements */
 
+    onRawStringLiteral: func (object: Object) {
+        UnsupportedAstElement new(class, "raw string") throw(); null
+    }
+
     onStringLiteral: func (text: CString) -> Object  {
         UnsupportedAstElement new(class, "string") throw(); null
     }
