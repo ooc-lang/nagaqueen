@@ -197,6 +197,7 @@ void nq_onTypeGenericArgument(void *this, void *type, void *genType);
 void nq_onFuncTypeGenericArgument(void *this, void *type, char *name);
 void *nq_onTypeList(void *this);
 void *nq_onTypeListElement(void *this, void *list, void *elem);
+void *nq_onTypeNamespace(void *this, void *type, void *indent);
 
 void *nq_onFuncTypeNew(void *this);
 void nq_onFuncTypeArgument(void *this, void *funcType, void *argType);
@@ -959,7 +960,7 @@ TypeBase = FuncType |
 # a GenericType is just like a Type but with non-optional generic type arguments
 # it's used when we have to decide between a Type and a VariableAccess
 GenericType
-        = t:TypeBase
+        = (t:TypeBase
            - '<' - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
           (- ','    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
            - '>'
@@ -967,7 +968,13 @@ GenericType
           |   '@' { t=$$=nq_onTypeReference(core->this, t); }
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
-          - { $$=t; }
+          - { $$=t; }) |
+          ('('
+           temp: Old # When entering the TypeBase rule, i gets overwritten, so we just use a dummy rule to store it
+           - i:IDENT { temp=nq_StringClone(i); }
+           - t:GenericType { $$=nq_onTypeNamespace(core->this, t, temp); }
+           ')'
+          )
 
 Type    = list:TypeList { $$=list; } | (
           t:TypeBase
@@ -978,7 +985,14 @@ Type    = list:TypeList { $$=list; } | (
           |  '@'   { t=$$=nq_onTypeReference(core->this, t); }
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
-          - { $$=t; })
+          - { $$=t; }) |
+          ('('
+           temp: Old # When entering the TypeBase rule, i gets overwritten, so we just use a dummy rule to store it
+           - i:IDENT { temp=nq_StringClone(i); }
+           - t:Type { $$=nq_onTypeNamespace(core->this, t, temp); }
+           ')'
+          )
+
 
 TypeListCore = { $$=nq_onTypeList(core->this); }
 TypeList = '(' WS list:TypeListCore
