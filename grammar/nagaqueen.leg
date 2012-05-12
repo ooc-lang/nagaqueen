@@ -197,7 +197,7 @@ void nq_onTypeGenericArgument(void *this, void *type, void *genType);
 void nq_onFuncTypeGenericArgument(void *this, void *type, char *name);
 void *nq_onTypeList(void *this);
 void *nq_onTypeListElement(void *this, void *list, void *elem);
-void *nq_onTypeNamespace(void *this, void *type, void *indent);
+void *nq_onTypeNamespace(void *this, void *type, void *ident);
 
 void *nq_onFuncTypeNew(void *this);
 void nq_onFuncTypeArgument(void *this, void *funcType, void *argType);
