@@ -972,7 +972,15 @@ GenericType
           ('('
            temp: Old # When entering the TypeBase rule, i gets overwritten, so we just use a dummy rule to store it
            - i:IDENT { temp=nq_StringClone(i); }
-           - t:GenericType { $$=nq_onTypeNamespace(core->this, t, temp); }
+           - t:TypeBase { t=$$=nq_onTypeNamespace(core->this, t, temp); }
+           - '<' - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
+          (- ','    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
+           - '>'
+           - ('*' { t=$$=nq_onTypePointer  (core->this, t); }
+          |   '@' { t=$$=nq_onTypeReference(core->this, t); }
+          | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
+          )*
+          - { $$=t; }
            ')'
           )
 
@@ -989,7 +997,15 @@ Type    = list:TypeList { $$=list; } | (
           ('('
            temp: Old # When entering the TypeBase rule, i gets overwritten, so we just use a dummy rule to store it
            - i:IDENT { temp=nq_StringClone(i); }
-           - t:Type { $$=nq_onTypeNamespace(core->this, t, temp); }
+           - t:TypeBase { t=$$=nq_onTypeNamespace(core->this, t, temp); }
+           (- '<' - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); }
+          (- ','    - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); })*
+           - '>')?
+          - (STAR { t=$$=nq_onTypePointer  (core->this, t); }
+          |  '@'   { t=$$=nq_onTypeReference(core->this, t); }
+          | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
+          )*
+          - { $$=t; }
            ')'
           )
 
