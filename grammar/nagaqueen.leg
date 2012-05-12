@@ -960,16 +960,7 @@ TypeBase = FuncType |
 # a GenericType is just like a Type but with non-optional generic type arguments
 # it's used when we have to decide between a Type and a VariableAccess
 GenericType
-        = (t:TypeBase
-           - '<' - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
-          (- ','    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
-           - '>'
-           - ('*' { t=$$=nq_onTypePointer  (core->this, t); }
-          |   '@' { t=$$=nq_onTypeReference(core->this, t); }
-          | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
-          )*
-          - { $$=t; }) |
-          ('('
+        = (
            temp: Old # When entering the TypeBase rule, i gets overwritten, so we just use a dummy rule to store it
            - i:IDENT { temp=nq_StringClone(i); }
            - t:TypeBase { t=$$=nq_onTypeNamespace(core->this, t, temp); }
@@ -981,8 +972,16 @@ GenericType
           | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
           )*
           - { $$=t; }
-           ')'
-          )
+          ) |
+          (t:TypeBase
+           - '<' - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
+          (- ','    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
+           - '>'
+           - ('*' { t=$$=nq_onTypePointer  (core->this, t); }
+          |   '@' { t=$$=nq_onTypeReference(core->this, t); }
+          | "[" WS { inner=NULL; } - inner:Expr? "]" { t=$$=nq_onTypeBrackets(core->this, t, inner); }
+          )*
+          - { $$=t; })
 
 Type    = list:TypeList { $$=list; } | (
           t:TypeBase
