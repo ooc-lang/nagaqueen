@@ -295,7 +295,7 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "type-list-element") throw(); null
     }
 
-    onTypeNamespace: func (type, ident: Object) -> Object {
+    onTypeNamespace: func (type, ident: Object) {
         UnsupportedAstElement new(class, "type-namespace") throw(); null
     }
 
