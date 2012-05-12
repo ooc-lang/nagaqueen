@@ -197,7 +197,7 @@ void nq_onTypeGenericArgument(void *this, void *type, void *genType);
 void nq_onFuncTypeGenericArgument(void *this, void *type, char *name);
 void *nq_onTypeList(void *this);
 void *nq_onTypeListElement(void *this, void *list, void *elem);
-void *nq_onTypeNamespace(void *this, void *type, void *ident);
+void nq_onTypeNamespace(void *this, void *type, void *ident);
 
 void *nq_onFuncTypeNew(void *this);
 void nq_onFuncTypeArgument(void *this, void *funcType, void *argType);
@@ -963,7 +963,7 @@ GenericType
         = (
            temp: Old # When entering the TypeBase rule, i gets overwritten, so we just use a dummy rule to store it
            - i:IDENT { temp=nq_StringClone(i); }
-           - t:TypeBase { t=$$=nq_onTypeNamespace(core->this, t, temp); }
+           - t:TypeBase !FuncType { nq_onTypeNamespace(core->this, t, temp); }
            - '<' - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); }
           (- ','    - t2:Type { nq_onTypeGenericArgument(core->this, t, t2); })*
            - '>'
@@ -996,7 +996,7 @@ Type    = list:TypeList { $$=list; } | (
           ('('
            temp: Old # When entering the TypeBase rule, i gets overwritten, so we just use a dummy rule to store it
            - i:IDENT { temp=nq_StringClone(i); }
-           - t:TypeBase { t=$$=nq_onTypeNamespace(core->this, t, temp); }
+           - t:TypeBase !FuncType { nq_onTypeNamespace(core->this, t, temp); }
            (- '<' - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); }
           (- ','    - genType:Type { nq_onTypeGenericArgument(core->this, t, genType); })*
            - '>')?
