@@ -35,6 +35,10 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "import-namespace") throw()
     }
 
+    onSpecialize: func (type: Object) {
+        UnsupportedAstElement new(class, "specialize") throw()
+    }
+
     
     /* Versions */
 

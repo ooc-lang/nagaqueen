@@ -19,6 +19,7 @@ nq_onInclude: unmangled func (l: OocListener, name: CString) { l onInclude(name)
 nq_onIncludeDefine: unmangled func (l: OocListener, name, value: CString) { l onIncludeDefine(name, value) }
 nq_onImport: unmangled func (l: OocListener, path, name: CString) { l onImport(path, name) }
 nq_onImportNamespace: unmangled func (l: OocListener, namespace: CString, quantity: Int) { l onImportNamespace(namespace, quantity) }
+nq_onSpecialize: unmangled func (l: OocListener, type: Object) { l onSpecialize(type) }
 
 /* Versions */
 

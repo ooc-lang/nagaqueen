@@ -402,6 +402,7 @@ ModuleCore = (WS 'version' { tokenPos }
           | WS Import WS
           | WS Use WS
           | WS Decl WS
+          | WS Specialize WS
           | WS stmt:Stmt WS { nq_onStatement(core->this, stmt) }
           )
 
@@ -429,6 +430,8 @@ Include = INCLUDE_KW [ \t]
           - ','
           - IncludeCore
           )*
+
+Specialize = SPECIALIZE_KW t:Type { tokenPos; nq_onSpecialize(core->this, t) }
 
 DefineName  = < ([A-Za-z0-9_/._] | '-')+ > { $$=nq_StringClone(yytext) }
 DefineValue = ('=' < ([A-Za-z0-9_/._] | '-')+ >)? { $$=nq_StringClone(yytext) }
@@ -1326,6 +1329,7 @@ IMPLEMENTS_KW= "implements"
 
 IMPORT_KW    = "import"
 INCLUDE_KW   = "include"
+SPECIALIZE_KW = "#specialize"
 USE_KW       = "use"
 IF_KW        = "if"
 ELSE_KW      = "else"
