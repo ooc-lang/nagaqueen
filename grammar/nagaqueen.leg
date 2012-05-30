@@ -431,7 +431,7 @@ Include = INCLUDE_KW [ \t]
           - IncludeCore
           )*
 
-Specialize = SPECIALIZE_KW t:Type { tokenPos; nq_onSpecialize(core->this, t) }
+Specialize = SPECIALIZE_KW - t:Type { tokenPos; nq_onSpecialize(core->this, t) }
 
 DefineName  = < ([A-Za-z0-9_/._] | '-')+ > { $$=nq_StringClone(yytext) }
 DefineValue = ('=' < ([A-Za-z0-9_/._] | '-')+ >)? { $$=nq_StringClone(yytext) }
