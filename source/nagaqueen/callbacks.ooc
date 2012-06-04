@@ -124,6 +124,7 @@ nq_onTypeGenericArgument: unmangled func (l: OocListener, type: Object, genType:
 
 nq_onTypeList:        unmangled func (l: OocListener) -> Object { l onTypeList() }
 nq_onTypeListElement: unmangled func (l: OocListener, list, elem: Object) -> Object { l onTypeListElement(list, elem) }
+nq_onTypeNamespace:   unmangled func (l: OocListener, type, ident: Object) { l onTypeNamespace(type, ident) }
 
 // FuncType
 
