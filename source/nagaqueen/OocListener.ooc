@@ -434,8 +434,16 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "raw string") throw(); null
     }
 
-    onStringLiteral: func (text: CString) -> Object  {
+    onInterpolatedStringExpression: func(where: Int, what: Object) {
+        UnsupportedAstElement new(class, "interpolated string expression") throw()
+    }
+
+    onStringLiteral: func -> Object  {
         UnsupportedAstElement new(class, "string") throw(); null
+    }
+
+    onStringLiteralText: func(text: CString) -> Object {
+        UnsupportedAstElement new(class, "string text") throw(); null
     }
 
     onCharLiteral: func (value: CString) -> Object {
