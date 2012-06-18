@@ -1536,7 +1536,11 @@ DOUBLE_QUOTE = '"'
 
 RAW_STRING_LIT = 'c' s:STRING_LIT { nq_onRawStringLiteral(core->this, s); }
 
-STRING_LIT   = '"' { $$=nq_onStringLiteral(core->this); } < (!'"'  ( (!"\\" "#{" - e: Expr - "}" { nq_onInterpolatedStringExpression(core->this, strlen(yytext), e); } ) | ("\\" ("#{" |  ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])?) | [0-9][0-9]?[0-9]? | ["'abtnvfr0\\]) | EOL | .)))* >
+Interpolation = (!"\\"
+                "#{" - e: Expr - "}" { nq_onInterpolatedStringExpression(core->this, yyleng, e); }
+                )
+
+STRING_LIT   = '"' { $$=nq_onStringLiteral(core->this); } < (!'"'  ( Interpolation | ("\\" ("#{" |  ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])?) | [0-9][0-9]?[0-9]? | ["'abtnvfr0\\]) | EOL | .)))* >
                DOUBLE_QUOTE ~{ nq_error(core->this, NQE_MALFORMED_STRINGLIT , "Malformed string literal!\n", G->pos + G->offset); }
                -  { tokenPos; $$=nq_onStringLiteralText(core->this, yytext); }
 
