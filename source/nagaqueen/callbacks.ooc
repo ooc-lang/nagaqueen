@@ -192,9 +192,10 @@ nq_onTupleEnd:     unmangled func (l: OocListener) -> Object { l onTupleEnd() }
 /* Various expressions/statements */
 
 nq_onRawStringLiteral: unmangled func (l: OocListener, object: Object)  { l onRawStringLiteral(object) }
-nq_onInterpolatedStringExpression: unmangled func(l: OocListener, where: Int, expr: Object) { l onInterpolatedStringExpression(where, expr) }
-nq_onStringLiteral: unmangled func (l: OocListener) -> Object  { l onStringLiteral() }
-nq_onStringLiteralText: unmangled func (l: OocListener, text: CString) -> Object { l onStringLiteralText(text) }
+nq_onStringLiteralStart: unmangled func (l: OocListener) -> Object  { l onStringLiteralStart() }
+nq_onInterpolatedStringExpression: unmangled func(l: OocListener, expr: Object) { l onInterpolatedStringExpression(expr) }
+nq_onStringLiteralTextChunk: unmangled func(l: OocListener, text: CString) { l onStringLiteralTextChunk(text) }
+nq_onStringLiteralEnd: unmangled func (l: OocListener) -> Object { l onStringLiteralEnd() }
 nq_onCharLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onCharLiteral(value) }
 
 nq_onReturn:    unmangled func (l: OocListener, expr: Object) -> Object { l onReturn(expr) }
