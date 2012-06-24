@@ -1116,9 +1116,7 @@ Block   = (
 
 If      = (
           IF_KW { tokenPos; }
-          WS '(' WS
-          - e:Expr       { nq_onIfStart(core->this, e); }
-          WS ')'
+          - v:Value      { nq_onIfStart(core->this, v); }
           - Body
           )              { $$=nq_onIfEnd(core->this); }
 
@@ -1174,9 +1172,7 @@ Foreach = FOR_KW { tokenPos; }
           -            { $$=nq_onForeachEnd(core->this); }
 
 While = WHILE_KW { tokenPos; }
-        WS '(' WS
-        - condition:Expr
-        WS ')' { nq_onWhileStart(core->this, condition); }
+        - condition:Value { nq_onWhileStart(core->this, condition); }
         - Body
         -            { $$=nq_onWhileEnd(core->this); }
 
