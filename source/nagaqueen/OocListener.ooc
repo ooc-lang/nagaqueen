@@ -442,7 +442,7 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "interpolated string expression") throw()
     }
 
-    onStringLiteralTextChunk: func(text: String) {
+    onStringLiteralTextChunk: func(text: CString) {
         UnsupportedAstElement new(class, "string text chunk") throw()
     }
 
