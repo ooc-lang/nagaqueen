@@ -1116,8 +1116,16 @@ Block   = (
 
 If      = (
           IF_KW { tokenPos; }
-          - v:Value      { nq_onIfStart(core->this, v); }
-          - Body
+          (
+            WS '(' WS
+            - e:Expr { nq_onIfStart(core->this, e); }
+            WS ')'
+            - Body
+          ) |
+          (
+            - e:Expr { nq_onIfStart(core->this, e); }
+            - Scope
+          )
           )              { $$=nq_onIfEnd(core->this); }
 
 Else    = (
@@ -1172,15 +1180,23 @@ Foreach = FOR_KW { tokenPos; }
           -            { $$=nq_onForeachEnd(core->this); }
 
 While = WHILE_KW { tokenPos; }
-        - condition:Value { nq_onWhileStart(core->this, condition); }
-        - Body
+        (
+          WS '(' WS
+          - condition:Expr { nq_onWhileStart(core->this, condition); }
+          WS ')'
+          - Body
+        ) |
+        (
+          - condition:Expr { nq_onWhileStart(core->this, condition); }
+          - Scope
+        )
         -            { $$=nq_onWhileEnd(core->this); }
 
-Body =  (
-        '{'
+Scope = '{'
         (WS s:Stmt { tokenPos; nq_onStatement(core->this, s) } WS)*
         WS CLOS_BRACK ~{ nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Expected statement or a closing bracket", G->pos + G->offset) }
-        ) | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
+
+Body =  Scope | s:Stmt { tokenPos; nq_onStatement(core->this, s) }
 
 Return  = (RETURN_KW &([^A-Za-z_]) { tokenPos; } - e:Expr { $$=nq_onReturn(core->this, e); })
         | (RETURN_KW &([^A-Za-z_]) { tokenPos; } -        { $$=nq_onReturn(core->this, NULL); })
