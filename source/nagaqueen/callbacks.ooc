@@ -1,5 +1,6 @@
 import OocListener
 
+nq_memparse: extern func (l: OocListener, buffer: CString, len: SizeT) -> Int
 nq_parse: extern func (l: OocListener, path: CString) -> Int
 
 nq_setTokenPositionPointer: unmangled func (l: OocListener, tokenPosPointer: Int*) {
