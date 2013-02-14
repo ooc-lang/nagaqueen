@@ -81,6 +81,15 @@ OocListener: abstract class {
          UnsupportedAstElement new(class, "extend-end") throw()
     }
 
+    /* Templates */
+
+    onTemplateStart: func {
+         UnsupportedAstElement new(class, "template-start") throw()
+    }
+
+    onTemplateEnd: func {
+         UnsupportedAstElement new(class, "template-end") throw()
+    }
 
     /* Covers */
 

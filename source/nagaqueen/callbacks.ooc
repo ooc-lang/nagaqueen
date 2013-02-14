@@ -38,6 +38,11 @@ nq_onVersionEnd:         unmangled func (l: OocListener) -> Object { l onVersion
 nq_onExtendStart: unmangled func (l: OocListener, type: Object, doc: CString) { l onExtendStart(type, doc) }
 nq_onExtendEnd:   unmangled func (l: OocListener) { l onExtendEnd() }
 
+/* Templates */
+
+nq_onTemplateStart: unmangled func (l: OocListener) { l onTemplateStart() }
+nq_onTemplateEnd: unmangled func (l: OocListener) { l onTemplateEnd() }
+
 /* Covers */
 
 nq_onCoverStart:      unmangled func (l: OocListener, name, doc: CString) { l onCoverStart(name, doc) }

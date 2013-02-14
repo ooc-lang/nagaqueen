@@ -538,6 +538,16 @@ GenericArguments =
             MORETHAN -
             )
 
+TemplateDef = (
+            WS "template" WS
+
+            { nq_onTemplateStart(core->this) }
+
+            GenericArguments
+
+            { nq_onTemplateEnd(core->this) }
+)
+
 OperatorDecl =
             OPERATOR_KW { tokenPos; } -
             - < ( "=>" | "<=>"| ">>="| "<<="| ">>" | "<<"
@@ -773,6 +783,8 @@ CoverDecl   = (
             - COVER_KW
 
             GenericArguments?
+
+            TemplateDef?
 
             # covering another type
             (
