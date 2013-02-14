@@ -687,6 +687,7 @@ ClassDecl   = (
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     | fd:FunctionDecl
+                    | od:OperatorDecl
                     | stmt:Stmt { tokenPos; nq_onStatement(core->this, stmt); }
                     )
                 WS)*
@@ -811,6 +812,7 @@ CoverDecl   = (
                 (WS
                     ( vd:VariableDecl { tokenPos; nq_onStatement(core->this, vd); } Terminator+
                     | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
+                    | od:OperatorDecl
                     | fd:FunctionDecl
                     )
                 WS)*
