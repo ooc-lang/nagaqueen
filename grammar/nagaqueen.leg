@@ -269,7 +269,7 @@ void nq_onFunctionCallArg(void *this, void *expr);
 void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
 void *nq_onFunctionCallChain(void *this, void *expr, void *call);
-void nq_onFunctionCallCombo(void *this, void *call, void *expr);
+void *nq_onFunctionCallCombo(void *this, void *call, void *expr);
 
 void nq_onArrayLiteralStart(void *this);
 void *nq_onArrayLiteralEnd(void *this);
@@ -1354,7 +1354,7 @@ Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$
                 | - AS_KW { tokenPos; } -  r:Type       { $$=l=nq_onCast(core->this, l, r); }
                 | '&' ![&=] - &([ \t\r\n;,)}] | ']')    { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, l); }
                 | '@'                                    { $$=l=nq_onDereference(core->this, l); }
-                | - call:FunctionCallNoname             { nq_onFunctionCallCombo(core->this, call, l); $$=l=call; }
+                | - call:FunctionCallNoname             { $$=l=nq_onFunctionCallCombo(core->this, call, l); }
                 )* -
 
 FunctionCall = callName:IDENT { tokenPos; nq_onFunctionCallStart(core->this, callName); }

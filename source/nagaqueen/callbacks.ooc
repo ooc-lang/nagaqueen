@@ -183,7 +183,7 @@ nq_onFunctionCallSuffix: unmangled func (l: OocListener, suffix: CString) {  l o
 nq_onFunctionCallArg:    unmangled func (l: OocListener, arg: Object)     {  l onFunctionCallArg(arg) }
 nq_onFunctionCallExpr:   unmangled func (l: OocListener, call: Object, expr: Object) { l onFunctionCallExpr(call, expr) }
 nq_onFunctionCallChain:  unmangled func (l: OocListener, expr, call: Object) -> Object { l onFunctionCallChain(expr, call) }
-nq_onFunctionCallCombo:  unmangled func (l: OocListener, call, expr: Object) { l onFunctionCallCombo(call, expr) }
+nq_onFunctionCallCombo:  unmangled func (l: OocListener, call, expr: Object) -> Object { l onFunctionCallCombo(call, expr) }
 
 /* Arrays */
 

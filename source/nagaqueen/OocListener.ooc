@@ -410,8 +410,8 @@ OocListener: abstract class {
         UnsupportedAstElement new(class, "function-call") throw(); null
     }
 
-    onFunctionCallCombo: func (call, expr: Object) {
-        UnsupportedAstElement new(class, "function-call") throw()
+    onFunctionCallCombo: func (call, expr: Object) -> Object {
+        UnsupportedAstElement new(class, "function-call") throw(); null
     }
 
 
