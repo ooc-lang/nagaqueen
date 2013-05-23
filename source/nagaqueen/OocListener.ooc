@@ -333,8 +333,20 @@ OocListener: abstract class {
 
     /* Operators (minimal because function-related callbacks are re-used for operators) */
 
-    onOperatorStart: func (symbol: CString) {
+    onOperatorStart: func {
         UnsupportedAstElement new(class, "op-start") throw()
+    }
+
+    onOperatorBodyStart: func {
+        UnsupportedAstElement new(class, "op-body-start") throw()
+    }
+
+    onOperatorByref: func {
+        UnsupportedAstElement new(class, "op-body-byref") throw()
+    }
+
+    onOperatorSymbol: func (symbol: CString) {
+        UnsupportedAstElement new(class, "op-body-symbol") throw()
     }
 
     onOperatorEnd: func {

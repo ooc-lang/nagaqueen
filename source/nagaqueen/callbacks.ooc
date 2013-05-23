@@ -142,7 +142,10 @@ nq_onFuncTypeReturnType: unmangled func (l: OocListener, funcType, returnType: O
 
 /* Operators (minimal because function-related callbacks are re-used for operators) */
 
-nq_onOperatorStart: unmangled func (l: OocListener, symbol: CString) { l onOperatorStart(symbol) }
+nq_onOperatorStart: unmangled func (l: OocListener) { l onOperatorStart() }
+nq_onOperatorBodyStart: unmangled func (l: OocListener) { l onOperatorBodyStart() }
+nq_onOperatorByref: unmangled func (l: OocListener) { l onOperatorByref() }
+nq_onOperatorSymbol: unmangled func (l: OocListener, symbol: CString) { l onOperatorSymbol(symbol) }
 nq_onOperatorEnd:   unmangled func (l: OocListener) { l onOperatorEnd() }
 
 /* Functions */
