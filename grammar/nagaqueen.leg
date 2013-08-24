@@ -31,7 +31,19 @@ void GC_free(void *);
 
 #define tokenPos { core->token[0] = thunk->begin + G->offset; core->token[1] = (thunk->end - thunk->begin); }
 #define tokenPosPlusOne { core->token[0] = thunk->begin + G->offset + 1; core->token[1] = (thunk->end - thunk->begin); }
-#define rewindWhiteSpace { char *c = G->buf + G->pos - 1; while((G->pos > 0) && ((*c) == ' ' || (*c) == '\t' || (*c) == '\n' || (*c) == '\r')) { c--; G->pos--; } }
+#define rewindWhiteSpace { \
+    /* only rewind if at end of file */ \
+    if (core->eof == 1) { \
+      int originalPos = G->pos; \
+      char *c = G->buf + G->pos; \
+      /* rewind until we reach something non-whitespace */ \
+      while (G->pos > 0) { \
+        c--; G->pos--; \
+        char cc = *c; \
+        if (!((cc) == ' ' || (cc) == '\t' || (cc) == '\n' || (cc) == '\r')) break; \
+      } \
+    } \
+}
 
 #define missingOp(c) { \
     rewindWhiteSpace; \
@@ -80,6 +92,8 @@ struct _NagaQueenCore {
     char typeBuffer[4096];
     /* import quantity */
     int importQuantity;
+    /* 0 if still reading file, 1 if eof */
+    int eof;
 };
 
 typedef struct _NagaQueenCore NagaQueenCore;
@@ -111,9 +125,8 @@ static int _nq_fread(void *ptr, size_t size, NagaQueenCore *core) {
 
 void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {
     (*result) = core->io.read(buf, max_size, core);
-    static int doneNewlineHack = 0;
-    if((*result) == 0 && doneNewlineHack == 0) {
-        doneNewlineHack = 1;
+    if((*result) == 0 && core->eof == 0) {
+        core->eof = 1;
         (*buf) = '\n';
         (*result) = 1;
         return;
@@ -413,7 +426,7 @@ enum NagaQueenError {
 Module  =  ModuleCore
           | WS ( !EOL . )*
           EOL { tokenPos; char *message = "Expected include, import, statement or declaration\n";
-            if(G->buf[core->token[0]] == _CBRACK) { message = "Unmatched closing bracket"; }
+            if(G->buf[core->token[0]] == _CBRACK) { message = "Unmatched closing bracket\n"; }
             nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, message, core->token[0]);
           }
 
@@ -424,7 +437,7 @@ ModuleCore = (WS 'version' { tokenPos }
               ((
               - '{' { nq_onVersionStart(core->this, spec) }
               WS ModuleCore* WS
-              - '}' { nq_onVersionEnd(core->this) }
+              - CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", G->pos + G->offset) } { nq_onVersionEnd(core->this) }
               )
               |
               (
@@ -438,7 +451,7 @@ ModuleCore = (WS 'version' { tokenPos }
                   ((
                   - '{' { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
                   WS ModuleCore* WS
-                  - '}' { nq_onVersionEnd(core->this) }
+                  - CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", G->pos + G->offset) } { nq_onVersionEnd(core->this) }
                   )
                   |
                   (
@@ -450,7 +463,7 @@ ModuleCore = (WS 'version' { tokenPos }
                   ((
                   - '{' { nq_onVersionElseStart(core->this, spec) }
                   WS ModuleCore* WS
-                  - '}' { nq_onVersionEnd(core->this) }
+                  - CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_INC_IMP_STMT_OR_DECL, "Expected include, import, statement or declaration\n", G->pos + G->offset) } { nq_onVersionEnd(core->this) }
                   )
                   |
                   (
@@ -1104,8 +1117,8 @@ Stmt     = (
                 ((
                 - '{' { nq_onVersionStart(core->this, spec); }
                 WS (s:Stmt { nq_onStatement(core->this, s); })* WS
-                - '}' { old=$$=nq_onVersionEnd(core->this); }
-                )
+                - CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Malformed statement or closing bracket missing\n", G->pos + G->offset) }
+                ) { old=$$=nq_onVersionEnd(core->this); }
                 |
                 (
                 - s:Stmt { nq_onVersionStart(core->this, spec); nq_onStatement(core->this, s); old=$$=nq_onVersionEnd(core->this); }
@@ -1118,8 +1131,8 @@ Stmt     = (
                   ((
                   - '{' { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec) }
                   WS (s:Stmt { nq_onStatement(core->this, s); })* WS
-                  - '}' { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
-                  )
+                  - CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Malformed statement or closing bracket missing\n", G->pos + G->offset) }
+                  ) { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
                   |
                   (
                   - s:Stmt { spec = nq_onVersionElseIfStart(core->this, spec, elseSpec); nq_onStatement(core->this, s); $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
@@ -1130,8 +1143,8 @@ Stmt     = (
                   ((
                   - '{' { nq_onVersionElseStart(core->this, spec) }
                   WS (s:Stmt { nq_onStatement(core->this, s); })* WS
-                  - '}' { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
-                  )
+                  - CLOS_BRACK ~{ rewindWhiteSpace; nq_error(core->this, NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Malformed statement or closing bracket missing\n", G->pos + G->offset) }
+                  ) { $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
                   |
                   (
                   - s:Stmt { nq_onVersionElseStart(core->this, spec); nq_onStatement(core->this, s); $$=nq_onVersionEnd(core->this); nq_onStatement(core->this, old); old=$$ }
@@ -1145,7 +1158,7 @@ StmtCore = (
               e:EoledStatement
               (Terminator+ | (WS &'}') | (WS &')') | (WS &',') | (&CommentLine))
            )
-          | # ...but block don't
+          | # ...but blocks don't
           ( WS c:Conditional
           | WS b:Block
           | WS f:FlowControl (Terminator*)
@@ -1354,7 +1367,9 @@ Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$
                     - '[' - { tokenPos; nq_onArrayAccessStart(core->this, l); }
                              index:Expr - { nq_onStatement(core->this, index); }
                    (',' WS index:Expr - { nq_onStatement(core->this, index); })*
-                    - ']' - { $$=l=nq_onArrayAccessEnd(core->this); }
+                    - CLOS_SQUAR ~{ nq_error(core->this, NQE_EXP_CLOSING_SQUAR, "Malformed array access!\n", G->pos + G->offset); }
+                    - { $$=l=nq_onArrayAccessEnd(core->this); }
+
                  )
                 | - call:FunctionCall                   { nq_onFunctionCallExpr(core->this, call, l); $$=l=call; }
                 | - r:IDENT_CORE { tokenPos; $$=l=nq_onVarAccess(core->this, l, r); }
@@ -1603,6 +1618,7 @@ int nq_memparse(void *this, char *buffer, size_t len) {
 
     NagaQueenCore *core = YY_ALLOC(sizeof(NagaQueenCore), 0);
     core->yylineno = 0;
+    core->eof = 0;
     core->this = this;
     core->path = NULL;
     core->stream = buffer;
@@ -1636,6 +1652,7 @@ int nq_parse(void *this, char *path) {
 
     NagaQueenCore *core = YY_ALLOC(sizeof(NagaQueenCore), 0);
     core->yylineno = 0;
+    core->eof = 0;
     core->this = this;
     core->path = path;
 
