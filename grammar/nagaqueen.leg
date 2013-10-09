@@ -36,7 +36,7 @@ void GC_free(void *);
 
 #define rewindWhiteSpace { \
     /* only rewind if at end of file */ \
-    if (G->data->eof == 1) { \
+    if (core->eof == 1) { \
       int originalPos = G->pos; \
       char *c = G->buf + G->pos; \
       /* rewind until we reach something non-whitespace */ \
@@ -50,12 +50,12 @@ void GC_free(void *);
 
 // Throw error at current parsing pos. Used when nothing valid matches.
 #define throwError(val, message) \
-    nq_error(G->data->this, (val), (message), G->pos + G->offset)
+    nq_error(core->this, (val), (message), G->pos + G->offset)
 
 // Throw error at last matched token pos. Used with invalid tokens being
 // parsed for more helpful messages (e.g. misplaced suffixes).
 #define throwTokenError(val, message) \
-    nq_error(G->data->this, (val), (message), core->token[0])
+    nq_error(core->this, (val), (message), core->token[0])
 
 #define missingOp(c) { \
     rewindWhiteSpace; \
@@ -133,7 +133,7 @@ static int _nq_fread(void *ptr, size_t size, NagaQueenCore *core) {
 #define YY_XTYPE NagaQueenCore *
 #define YY_XVAR core
 
-#define YY_INPUT(buf, result, max_size) yyInput(buf, &result, max_size, (G->data))
+#define YY_INPUT(buf, result, max_size, core) yyInput(buf, &result, max_size, core)
 
 void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {
     (*result) = core->io.read(buf, max_size, core);
