@@ -1564,8 +1564,8 @@ B_AND        = !L_AND '&' !'='  -
 EQUALS       = '=='  -
 NOT_EQUALS   = '!='  -
 
-LESSTHAN     = '<'  !('=' | '<') -
-MORETHAN     = '>'  !('=' | '>') -
+LESSTHAN     = '<'  !'=' -
+MORETHAN     = '>'  !'=' -
 CMP          = '<=>' -
 LESSTHAN_EQ  = '<='  -
 MORETHAN_EQ  = '>='  -
@@ -1614,8 +1614,8 @@ DEC_LIT      = < "-"? [0-9] [0-9_]* >                   -
 IDENT        = i:IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident
                < [a-zA-Z_][0-9a-zA-Z_]* > { $$=yytext; }
-               ( '?' { $$=nq_trailingQuest($$); thunk->end++; }
-               | '!' { $$=nq_trailingBang($$); thunk->end++; })?
+               ( '?' { $$=nq_trailingQuest($$); }
+               | '!' { $$=nq_trailingBang($$); })?
                
 SINGLE_QUOTE = '\''
 DOUBLE_QUOTE = '"'
