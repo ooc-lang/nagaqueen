@@ -200,6 +200,7 @@ nq_onTupleEnd:     unmangled func (l: OocListener) -> Object { l onTupleEnd() }
 
 /* Various expressions/statements */
 
+nq_onRawStringLiteral: unmangled func(l: OocListener, object: Object) { l onRawStringLiteral(object) }
 nq_onStringLiteral: unmangled func (l: OocListener, text: CString) -> Object  { l onStringLiteral(text) }
 nq_onCharLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onCharLiteral(value) }
 

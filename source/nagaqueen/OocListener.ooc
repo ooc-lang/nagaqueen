@@ -458,6 +458,10 @@ OocListener: abstract class {
 
     /* Various expressions/statements */
 
+    onRawStringLiteral: func(object: Object) {
+        UnsupportedAstElement new(this, "raw string") enact()
+    }
+
     onStringLiteral: func (text: CString) -> Object  {
         UnsupportedAstElement new(this, "string") enact(); null
     }
