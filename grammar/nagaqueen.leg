@@ -310,7 +310,12 @@ void nq_onTupleStart(void *this);
 void *nq_onTupleEnd(void *this);
 
 void nq_onRawStringLiteral(void *this, void *object);
-void *nq_onStringLiteral(void *this, char *text);
+
+void nq_onStringLiteralStart(void *this);
+void nq_onStringInterpolation(void *this, void *expression);
+void nq_onStringTextChunck(void *this, char *chunck);
+void *nq_onStringLiteralEnd(void *this);
+
 void *nq_onCharLiteral(void *this, char *value);
 
 void nq_onStatement(void *this, void *statement);
@@ -1624,9 +1629,23 @@ DOUBLE_QUOTE = '"'
 
 RAW_STRING_LIT = 'c' s:STRING_LIT { nq_onRawStringLiteral(core->this, s); }
 
-STRING_LIT   = '"' < (!'"'   ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0\\]) | EOL | .))* >
-               DOUBLE_QUOTE ~{ throwError(NQE_MALFORMED_STRINGLIT , "Malformed string literal!\n"); }
-               -  { tokenPos; $$=nq_onStringLiteral(core->this, yytext); }
+# Strings are split into text chuncks and interpolated expressions
+StringChunk  = Interpolation | TextChunk 
+
+Interpolation= !'"' !"\\" "#{" - e: Expr - "}"
+                { nq_onStringInterpolation(core->this, e); }
+
+TextInside   = ("\\" ("#{" | ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])?) | [0-9][0-9]?[0-9]? | ["'abtnvfr0\\]) | EOL | .)
+
+# This is currently really bad, as it captures a few characters at a time (mostly a character at a time though)
+# I haven't found any way to do things differently, though :-/
+TextChunk    = < (!'"' TextInside ) >
+               { nq_onStringTextChunck(core->this, yytext); }
+
+STRING_LIT   = '"' { tokenPos; nq_onStringLiteralStart(core->this); }
+               (StringChunk)*
+               DOUBLE_QUOTE ~{ throwError(NQE_MALFORMED_STRINGLIT, "Malformed string literal!\n"); }
+               -  { $$=nq_onStringLiteralEnd(core->this); }
 
 CHAR_LIT     = '\'' < (!'\'' ("\\" ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])? | [0-9][0-9]?[0-9]? | ["'abtnvfr0\\]) | .)) >
                SINGLE_QUOTE  ~{ throwError(NQE_MALFORMED_CHARLIT , "Malformed char literal!\n"); }
