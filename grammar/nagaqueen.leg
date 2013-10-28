@@ -808,6 +808,7 @@ ExtendDecl  = (
                 # coverdecl content
                 (WS
                     ( fd:FunctionDecl
+                    | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     )
                 WS)*
 
