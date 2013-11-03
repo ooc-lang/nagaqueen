@@ -263,6 +263,7 @@ nq_onDoubleArrow: unmangled func (l: OocListener, left, right: Object) -> Object
 nq_onLogicalNot:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType not, inner) }
 nq_onBinaryNot:           unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType bNot, inner) }
 nq_onUnaryMinus:          unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType uMinus, inner) }
+nq_onUnaryPlus:           unmangled func (l: OocListener, inner: Object) -> Object { l onUnOp(UnOpType uPlus, inner) }
 
 nq_onEquals:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType equals, left, right) }
 nq_onNotEquals:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType notEquals, left, right) }

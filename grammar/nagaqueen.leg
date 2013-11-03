@@ -391,6 +391,7 @@ void *nq_onBinaryAnd(void *this, void *left, void *right);
 void *nq_onLogicalNot(void *this, void *inner);
 void *nq_onBinaryNot(void *this, void *inner);
 void *nq_onUnaryMinus(void *this, void *inner);
+void *nq_onUnaryPlus(void *this, void *inner);
 
 void *nq_onParenthesis(void *this, void *inner);
 
@@ -807,6 +808,7 @@ ExtendDecl  = (
                 # coverdecl content
                 (WS
                     ( fd:FunctionDecl
+                    | pd:PropertyDecl { tokenPos; nq_onStatement(core->this, pd); }
                     )
                 WS)*
 
@@ -1440,6 +1442,8 @@ VariableAccess = i:IDENT_CORE
 
 Value   = ('-' - '(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onUnaryMinus(core->this, nq_onParenthesis(core->this, inner)); } -)
         | ('-' - { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
+        | ('+' - '(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onUnaryPlus(core->this, nq_onParenthesis(core->this, inner)); } -)
+        | ('+' - { tokenPos; } value:ValueCore { $$=nq_onUnaryPlus(core->this, value); })
         | ('(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onParenthesis(core->this, inner); } ('&' ![&=] { $$=nq_onAddressOf(core->this, $$); })? -)
         | ValueCore
 
@@ -1615,8 +1619,8 @@ CommentMultiLineWithDocs = "/*" (!"*/" (EOL | CommentMultiLineWithDocs | .))* CL
 OCT_LIT      = < "0c" [0-8] [0-8_]* >
 BIN_LIT      = < "0b" [01] [01_]* >
 HEX_LIT      = < "0x" [0-9a-fA-F] [0-9a-fA-F_]* >
-FLOAT_LIT    = < "-"? [0-9] [0-9_]* DOT [0-9]? [0-9_]* >        -
-DEC_LIT      = < "-"? [0-9] [0-9_]* >                   -
+FLOAT_LIT    = < ("-" | "+")? [0-9] [0-9_]* DOT [0-9]? [0-9_]* > -
+DEC_LIT      = < ("-" | "+")? [0-9] [0-9_]* >                    -
 
 IDENT        = i:IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident
