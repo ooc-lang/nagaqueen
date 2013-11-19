@@ -391,6 +391,7 @@ void *nq_onBinaryAnd(void *this, void *left, void *right);
 void *nq_onLogicalNot(void *this, void *inner);
 void *nq_onBinaryNot(void *this, void *inner);
 void *nq_onUnaryMinus(void *this, void *inner);
+void *nq_onUnaryPlus(void *this, void *inner);
 
 void *nq_onParenthesis(void *this, void *inner);
 
@@ -1439,7 +1440,9 @@ ACS = (
 VariableAccess = i:IDENT_CORE
 
 Value   = ('-' - '(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onUnaryMinus(core->this, nq_onParenthesis(core->this, inner)); } -)
-        | ('-' - { tokenPos; } value:ValueCore { $$=nq_onUnaryMinus(core->this, value); })
+        | ('+' - '(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onUnaryPlus(core->this, nq_onParenthesis(core->this, inner)); } -)
+        | ('-' - { tokenPos; } access:Access { $$=nq_onUnaryMinus(core->this, access); })
+        | ('+' - { tokenPos; } access:Access { $$=nq_onUnaryPlus(core->this, access); })
         | ('(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onParenthesis(core->this, inner); } ('&' ![&=] { $$=nq_onAddressOf(core->this, $$); })? -)
         | ValueCore
 
