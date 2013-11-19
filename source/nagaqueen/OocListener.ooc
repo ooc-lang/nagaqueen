@@ -708,7 +708,7 @@ FuncArgType: enum {
  * Unary operators
  */
 UnOpType: enum {
-    not, bNot, uMinus
+    not, bNot, uMinus, uPlus
 }
 
 /**
