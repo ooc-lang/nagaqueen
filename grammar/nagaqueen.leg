@@ -1254,6 +1254,7 @@ Break    = BREAK_KW    { tokenPos; $$=nq_onBreak(core->this); }
 Continue = CONTINUE_KW { tokenPos; $$=nq_onContinue(core->this); }
 
 ImplicitDecl = (v:VariableDecl { $$=v })
+             | (t: Tuple { $$=t })
              | (i:IDENT        { $$=nq_onVarAccess(core->this, NULL, i); })
 
 Foreach = FOR_KW { tokenPos; }
