@@ -971,7 +971,10 @@ ConventionalVarDecl =
 VariableDecl = (v:VarDeclFromExpr     { $$=v })
              | (v:ConventionalVarDecl { $$=v })
 
-PropertyDecl =
+PropertyDecl = (p:PropertyDeclFromExpr     { $$=p })
+             | (p:ConventionalPropertyDecl { $$=p })
+
+ConventionalPropertyDecl =
            (
            doc: OocDoc
            propertyName:IDENT { tokenPos; nq_onPropertyDeclStart(core->this, propertyName, doc); }
@@ -989,6 +992,18 @@ PropertyDecl =
            WS
 
            ) { $$=nq_onPropertyDeclEnd(core->this); }
+
+PropertyDeclFromExpr = ( doc: OocDoc
+            propertyName:IDENT   { tokenPos; nq_onPropertyDeclStart(core->this, propertyName, doc); }
+            - PROPASS_DECL
+            (-
+            (
+                STATIC_KW { nq_onPropertyDeclStatic(core->this); }
+            ) &[^A-Za-z_0-9]
+            )*
+            - expr:Expr { nq_onPropertyDeclGetterStart(core->this, NULL); nq_onStatement(core->this, expr); nq_onPropertyDeclGetterEnd(core->this); }
+            - { $$=nq_onPropertyDeclEnd(core->this); }
+            )
 
 PropertyDeclCore =
            (
@@ -1541,7 +1556,7 @@ KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
              | TRY_KW | CATCH_KW
 
 DOT          = !DOUBLE_DOT '.'
-COLON        = !ASS_DECL ':'
+COLON        = !ASS_DECL !PROPASS_DECL ':'
 
 R_ARROW      = '->'
 DOUBLE_ARROW = '=>'
@@ -1549,6 +1564,7 @@ DOUBLE_ARROW = '=>'
 # Operators
 
 ASS_DECL     = ':='  -
+PROPASS_DECL = '::='  -
 ASS          = !DOUBLE_ARROW '=' -
 ASS_ADD      = '+='  -
 ASS_SUB      = '-='  -
