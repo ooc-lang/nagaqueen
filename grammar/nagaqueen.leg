@@ -171,7 +171,7 @@ void yyInput(char *buf, int *result, int max_size, NagaQueenCore *core) {
 
 ///////////////////// callbacks def start, you may want to skip this ////////////////////////
 
-void nq_setTokenPositionPointer(void *this, int *tokenPosPointer);
+void nq_setTokenPositionPointer(void *this, int *tokenPosPointer, int *lineNoPointer);
 
 char *nq_StringClone(char *string);
 char *nq_trailingQuest(char *string);
@@ -1680,7 +1680,7 @@ int nq_memparse(void *this, char *buffer, size_t len) {
         printf("Invalid input buffer length\n");
         return -1;
     }
-    nq_setTokenPositionPointer(this, core->token);
+    nq_setTokenPositionPointer(this, core->token, &(core->yylineno));
     core->io = (struct _NagaQueenIoInterface) {
       _nq_memread
     };
@@ -1718,7 +1718,7 @@ int nq_parse(void *this, char *path) {
         printf("Not found: %s\n", path);
         return -1;
     }
-    nq_setTokenPositionPointer(this, core->token);
+    nq_setTokenPositionPointer(this, core->token, &(core->yylineno));
     core->io = (struct _NagaQueenIoInterface) {
       _nq_fread
     };
