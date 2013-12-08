@@ -1633,11 +1633,13 @@ CommentLine = "//" !'/' (!EOL .)* EOL
 CommentMultiLine =    "/*" !'*' (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
 CommentMultiLineWithDocs = "/*" (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
 
-OCT_LIT      = < "0c" [0-8] [0-8_]* >
-BIN_LIT      = < "0b" [01] [01_]* >
-HEX_LIT      = < "0x" [0-9a-fA-F] [0-9a-fA-F_]* >
-FLOAT_LIT    = < "-"? [0-9] [0-9_]* DOT [0-9]? [0-9_]* >        -
-DEC_LIT      = < "-"? [0-9] [0-9_]* >                   -
+INT_LIT_SUFFIX = ([uU]? ('ll' | 'LL' | [lL])?)?
+FP_LIT_SUFFIX = ([fF] | [lL])?
+OCT_LIT      = < "0c" [0-8] [0-8_]* INT_LIT_SUFFIX >
+BIN_LIT      = < "0b" [01] [01_]* INT_LIT_SUFFIX >
+HEX_LIT      = < "0x" [0-9a-fA-F] [0-9a-fA-F_]* INT_LIT_SUFFIX >
+DEC_LIT      = < "-"? [0-9] [0-9_]* INT_LIT_SUFFIX >
+FLOAT_LIT    = < "-"? [0-9] [0-9_]* DOT [0-9]? [0-9_]* FP_LIT_SUFFIX >
 
 IDENT        = i:IDENT_CORE -
 IDENT_CORE   = !(KW ![A-Za-z0-9_])  # a keyword is not an ident
