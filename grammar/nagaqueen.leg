@@ -1633,7 +1633,7 @@ CommentLine = "//" !'/' (!EOL .)* EOL
 CommentMultiLine =    "/*" !'*' (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
 CommentMultiLineWithDocs = "/*" (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
 
-INT_LIT_SUFFIX = ([uU]? ('ll' | 'LL' | [lL])?)?
+INT_LIT_SUFFIX = [uUlL]*
 FP_LIT_SUFFIX = ([fF] | [lL])?
 OCT_LIT      = < "0c" [0-8] [0-8_]* INT_LIT_SUFFIX >
 BIN_LIT      = < "0b" [01] [01_]* INT_LIT_SUFFIX >
