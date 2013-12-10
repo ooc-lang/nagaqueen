@@ -313,7 +313,7 @@ void nq_onRawStringLiteral(void *this, void *object);
 
 void nq_onStringLiteralStart(void *this);
 void nq_onStringInterpolation(void *this, void *expression);
-void nq_onStringTextChunck(void *this, char *chunck);
+void nq_onStringTextChunk(void *this, char *chunck);
 void *nq_onStringLiteralEnd(void *this);
 
 void *nq_onCharLiteral(void *this, char *value);
@@ -1663,7 +1663,7 @@ TextInside   = ("\\" ("#{" | ('x'[0-9A-Za-z][0-9A-Za-z]([0-9A-Za-z][0-9A-Za-z])?
 # This is currently really bad, as it captures a few characters at a time (mostly a character at a time though)
 # I haven't found any way to do things differently, though :-/
 TextChunk    = < (!'"' TextInside ) >
-               { nq_onStringTextChunck(core->this, yytext); }
+               { nq_onStringTextChunk(core->this, yytext); }
 
 STRING_LIT   = '"' { tokenPos; nq_onStringLiteralStart(core->this); }
                (StringChunk)*

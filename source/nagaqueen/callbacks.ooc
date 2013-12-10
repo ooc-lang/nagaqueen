@@ -203,7 +203,7 @@ nq_onTupleEnd:     unmangled func (l: OocListener) -> Object { l onTupleEnd() }
 nq_onRawStringLiteral: unmangled func(l: OocListener, object: Object) { l onRawStringLiteral(object) }
 nq_onStringLiteralStart: unmangled func(l: OocListener) { l onStringLiteralStart() }
 nq_onStringInterpolation: unmangled func(l: OocListener, object: Object) { l onStringInterpolation(object) }
-nq_onStringTextChunck: unmangled func(l: OocListener, text: CString) { l onStringTextChunck(text) }
+nq_onStringTextChunk: unmangled func(l: OocListener, text: CString) { l onStringTextChunk(text) }
 nq_onStringLiteralEnd: unmangled func(l: OocListener) -> Object { l onStringLiteralEnd() }
 nq_onCharLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onCharLiteral(value) }
 

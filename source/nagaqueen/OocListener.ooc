@@ -463,19 +463,19 @@ OocListener: abstract class {
     }
 
     onStringLiteralStart: func {
-        UnsupportedAstElement new(this, "string") enact()
+        UnsupportedAstElement new(this, "string-start") enact()
     }
 
     onStringInterpolation: func(object: Object) {
-        UnsupportedAstElement new(this, "interpolated string") enact()
+        UnsupportedAstElement new(this, "string-interpolation") enact()
     }
 
-    onStringTextChunck: func(text: CString) {
-        UnsupportedAstElement new(this, "string") enact()
+    onStringTextChunk: func(text: CString) {
+        UnsupportedAstElement new(this, "string-chunk") enact()
     }
 
     onStringLiteralEnd: func -> Object {
-        UnsupportedAstElement new(this, "string") enact(); null
+        UnsupportedAstElement new(this, "string-end") enact(); null
     }
 
     onCharLiteral: func (value: CString) -> Object {
