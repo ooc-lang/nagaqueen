@@ -198,6 +198,7 @@ void nq_onExtendEnd(void *this);
 
 void nq_onCoverStart(void *this, char *name, char *doc);
 void nq_onCoverExtern(void *this, char *externName);
+void nq_onCoverProto(void *this);
 void nq_onCoverFromType(void *this, void *type);
 void nq_onCoverExtends(void *this, void *type);
 void nq_onCoverImplements(void *this, void *type);
@@ -827,6 +828,8 @@ CoverDecl   = (
 
             # modifiers
             (- externName:ExternName { nq_onCoverExtern(core->this, externName); })?
+
+            (- PROTO_KW { nq_onCoverProto(core->this); })?
 
             - COVER_KW
 

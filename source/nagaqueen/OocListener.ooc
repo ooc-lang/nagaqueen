@@ -108,6 +108,10 @@ OocListener: abstract class {
          UnsupportedAstElement new(this, "cover-extern") enact()
     }
 
+    onCoverProto: func {
+         UnsupportedAstElement new(this, "cover-proto") enact()
+    }
+
     onCoverFromType: func (type: Object) {
          UnsupportedAstElement new(this, "cover-fromtype") enact()
     }

@@ -46,6 +46,7 @@ nq_onTemplateEnd: unmangled func (l: OocListener) { l onTemplateEnd() }
 /* Covers */
 
 nq_onCoverStart:      unmangled func (l: OocListener, name, doc: CString) { l onCoverStart(name, doc) }
+nq_onCoverProto:      unmangled func (l: OocListener) { l onCoverProto(externName) }
 nq_onCoverExtern:     unmangled func (l: OocListener, externName: CString) { l onCoverExtern(externName) }
 nq_onCoverFromType:   unmangled func (l: OocListener, type: Object) { l onCoverFromType(type) }
 nq_onCoverExtends:    unmangled func (l: OocListener, type: Object) { l onCoverExtends(type) }
