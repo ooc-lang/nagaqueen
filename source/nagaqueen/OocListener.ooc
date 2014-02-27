@@ -418,11 +418,11 @@ OocListener: abstract class {
 
 
     onFunctionCallSuffix: func (suffix: CString) {
-        UnsupportedAstElement new(this, "function-call") enact()
+        UnsupportedAstElement new(this, "function-call-suffix") enact()
     }
 
     onFunctionCallArg: func (arg: Object) {
-        UnsupportedAstElement new(this, "function-call") enact()
+        UnsupportedAstElement new(this, "function-call-arg") enact()
     }
 
     onFunctionCallExpr: func (call, expr: Object) {
@@ -430,11 +430,11 @@ OocListener: abstract class {
     }
 
     onFunctionCallChain: func (expr, call: Object) -> Object {
-        UnsupportedAstElement new(this, "function-call") enact(); null
+        UnsupportedAstElement new(this, "function-call-chain") enact(); null
     }
 
-    onFunctionCallCombo: func (call, expr: Object) {
-        UnsupportedAstElement new(this, "function-call") enact()
+    onFunctionCallCombo: func (call, expr: Object) -> Object {
+        UnsupportedAstElement new(this, "function-call-combo") enact()
     }
 
 
