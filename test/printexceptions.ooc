@@ -1,3 +1,5 @@
+
+use nagaqueen
 import nagaqueen/OocListener
 
 MyListener: class extends OocListener {

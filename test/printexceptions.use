@@ -1,0 +1,6 @@
+Name: printexceptions
+Version: head
+Description: test for greg grammar for ooc
+SourcePath: .
+Additionals: ./nagaqueen.c
+Main: printexceptions.ooc
