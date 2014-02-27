@@ -1,3 +1,3 @@
 #!/bin/sh
 greg grammar/nagaqueen.leg > test/nagaqueen.c
-rock -v test/printexceptions.use
+OOC_LIBS=$OOC_LIBS:$PWD/test rock -v test/printexceptions.use
