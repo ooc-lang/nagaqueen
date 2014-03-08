@@ -10,7 +10,7 @@ MyListener: class extends OocListener {
         try {
             super(path)
         } catch (e: Exception) {
-            e print()
+            "Got exception: #{e message}" println()
         }
     }
 
