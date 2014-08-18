@@ -352,6 +352,10 @@ OocListener: abstract class {
         UnsupportedAstElement new(this, "op-body-start") enact()
     }
 
+    onOperatorAbstract: func {
+        UnsupportedAstElement new(this, "op-body-abstract") enact()
+    }
+
     onOperatorByref: func {
         UnsupportedAstElement new(this, "op-body-byref") enact()
     }
