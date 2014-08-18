@@ -269,6 +269,7 @@ void nq_onFuncTypeVarArg(void *this, void *funcType);
 void nq_onFuncTypeReturnType(void *this, void *funcType, void *returnType);
 
 void nq_onOperatorStart(void *this);
+void nq_onOperatorAbstract(void *this);
 void nq_onOperatorByref(void *this);
 void nq_onOperatorSymbol(void *this, char *symbol);
 void nq_onOperatorBodyStart(void *this);
@@ -601,7 +602,10 @@ TemplateDef = (
 )
 
 OperatorDecl =
-            OPERATOR_KW { tokenPos; nq_onOperatorStart(core->this) } -
+            (
+                (OPERATOR_KW { tokenPos; nq_onOperatorStart(core->this) })
+                | (ABSTRACT_KW - OPERATOR_KW { tokenPos; nq_onOperatorStart(core->this); nq_onOperatorAbstract(core->this) })
+            ) -
             ("@" { nq_onOperatorByref(core->this) })?
             - < ( "=>" | "<=>"| ">>="| "<<="| ">>" | "<<"
                 | ">=" | "<=" | "!=" | "==" | ">" | "<" | "!"
