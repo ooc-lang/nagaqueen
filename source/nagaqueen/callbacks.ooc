@@ -306,7 +306,8 @@ nq_onAdd:       unmangled func (l: OocListener, left, right: Object) -> Object {
 nq_onMod:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType mod, left, right) }
 nq_onRangeLiteral: unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType range, left, right) }
 
-nq_onTernary: unmangled func (l: OocListener, condition, ifTrue, ifFalse: Object) -> Object { l onTernary(condition, ifTrue, ifFalse) }
+nq_onTernary:        unmangled func (l: OocListener, condition, ifTrue, ifFalse: Object) -> Object { l onTernary(condition, ifTrue, ifFalse) }
+nq_onNullCoalescing: unmangled func(l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType nullCoal, left, right) }
 
 nq_onDecLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat dec, value) }
 nq_onBinLiteral:   unmangled func (l: OocListener, value: CString) -> Object { l onIntLiteral(IntFormat bin, value) }
