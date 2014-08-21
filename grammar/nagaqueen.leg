@@ -385,6 +385,7 @@ void *nq_onDiv(void *this, void *left, void *right);
 void *nq_onRangeLiteral(void *this, void *left, void *right);
 void *nq_onBinaryLeftShift(void *this, void *left, void *right);
 void *nq_onBinaryRightShift(void *this, void *left, void *right);
+void *nq_onNullCoalescing(void *this, void *left, void *right);
 void *nq_onLogicalOr(void *this, void *left, void *right);
 void *nq_onLogicalAnd(void *this, void *left, void *right);
 void *nq_onBinaryOr(void *this, void *left, void *right);
@@ -608,7 +609,7 @@ OperatorDecl =
             ) -
             ("@" { nq_onOperatorByref(core->this) })?
             - < ( "=>" | "<=>"| ">>="| "<<="| ">>" | "<<"
-                | ">=" | "<=" | "!=" | "==" | ">" | "<" | "!"
+                | ">=" | "<=" | "!=" | "==" | ">" | "<" | "!" | "??"
                 | "+=" | "-=" | "*=" | "**="| "/=" | "+" | "-" | "**" | "/" | "*" | "="
                 | "[]="| "[]" | "&&" | "||" | "%" | "as" | "implicit as"
                 | "&=" | "|=" | "^=" | "&"  | "|" | "^" | "~"
@@ -1349,14 +1350,18 @@ Assignment = l: Ternary
                 | ASS_B_AND      { tokenPos; }  WS   r: Ternary               ~{  missingOp("&=") }  { $$=l=nq_onAssignAnd(core->this, l, r); }
                 )*
 
-Ternary =   cond:LogicalOr
+Ternary =   cond:NullCoalescing
             (
           - QUEST { tokenPos; }
-          WS ifTrue:LogicalOr ~{ throwError(NQE_MALFORMED_TERNARY, "Expected expression between ? and : in ternary expression!\n") }
+          WS ifTrue:NullCoalescing ~{ throwError(NQE_MALFORMED_TERNARY, "Expected expression between ? and : in ternary expression!\n") }
           - COLON
-          WS ifFalse:LogicalOr
+          WS ifFalse:NullCoalescing
             { $$=nq_onTernary(core->this, cond, ifTrue, ifFalse); }
             )?
+
+NullCoalescing = l: LogicalOr
+                     ( DOUBLE_QUEST { tokenPos; } WS r: NullCoalescing     ~{  missingOp("??") } { $$=l=nq_onNullCoalescing(core->this, l, r); }
+                     )?
 
 LogicalOr = l:LogicalAnd
                 ( L_OR        { tokenPos; } WS  r: LogicalAnd         ~{  missingOp("||") } { $$=l=nq_onLogicalOr(core->this, l, r); }
@@ -1591,6 +1596,7 @@ ASS_B_OR     = '|='  -
 ASS_B_AND    = '&='  -
 
 QUEST        = '?'   -
+DOUBLE_QUEST = '??'  -
 
 L_OR         = '||'  -
 

@@ -728,6 +728,8 @@ BinOpType: enum {
     assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assExp, assSub, assAdd, ass
 
     and, or, bAnd, bOr, bXor, rshift, lshift, div, mul, exp, sub, add, range, mod
+
+    nullCoal
 }
 
 /**
