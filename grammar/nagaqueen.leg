@@ -300,6 +300,7 @@ void nq_onAssArg(void *this, char *name);
 
 void nq_onFunctionCallStart(void *this, char *yytext);
 void nq_onFunctionCallSuffix(void *this, char *yytext);
+void nq_onFunctionCallTypeArg(void *this, void *expr);
 void nq_onFunctionCallArg(void *this, void *expr);
 void *nq_onFunctionCallEnd(void *this);
 void nq_onFunctionCallExpr(void *this, void *call, void *expr);
@@ -1444,6 +1445,9 @@ FunctionCall = callName:IDENT { tokenPos; nq_onFunctionCallStart(core->this, cal
                FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
 
 FunctionCallCore = (B_NOT - callSuffix:IDENT { nq_onFunctionCallSuffix(core->this, callSuffix); })?
+            (- '<' - type: Type { nq_onFunctionCallTypeArg(core->this, type); }
+            (- ',' - type: Type { nq_onFunctionCallTypeArg(core->this, type); })*
+            - '>')?
                '(' WS
 	       (
                 ( e:Expr { tokenPos; nq_onFunctionCallArg(core->this, e); }
