@@ -1648,13 +1648,13 @@ Terminator = (CommentLine
              )
 WS         = ([ \t] | Comment | EOL)*
 
-OocDoc = "/**" < (!"*/" (EOL | .))* > "*/" { $$=nq_StringClone(yytext) } WS
-       | "///" < (!EOL .)*          > EOL  { $$=nq_StringClone(yytext) } WS
+OocDoc = "/**" !'*' < (!"*/" (EOL | .))* > "*/" { $$=nq_StringClone(yytext) } WS
+       | "///" !'/' < (!EOL .)*          > EOL  { $$=nq_StringClone(yytext) } WS
        | { $$="" }
 Comment = (CommentLine | CommentMultiLine)
-CommentLine = "//" !'/' (!EOL .)* EOL
-CommentMultiLine =    "/*" !'*' (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
-CommentMultiLineWithDocs = "/*" (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
+CommentLine = "//" ('/' '/'+)? (!EOL .)* EOL
+CommentMultiLine =    "/*" ('*' '*'+)? (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
+CommentMultiLineWithDocs = "/*" '*'? (!"*/" (EOL | CommentMultiLineWithDocs | .))* CLOS_COMMENT ~{ throwError(NQE_UNCLOSED_COMMENT, "Unclosed multi-line comment!\n"); }
 
 INT_LIT_SUFFIX = [uUlL]*
 FP_LIT_SUFFIX = ([fF] | [lL])?
