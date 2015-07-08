@@ -375,6 +375,10 @@ OocListener: abstract class {
         UnsupportedAstElement new(this, "function") enact()
     }
 
+    onFunctionACS: func {
+        UnsupportedAstElement new(this, "function acs") enact()
+    }
+
     onFunctionEnd: func -> Object {
         UnsupportedAstElement new(this, "function") enact()
     }

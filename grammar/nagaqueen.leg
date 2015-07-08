@@ -276,6 +276,7 @@ void nq_onOperatorBodyStart(void *this);
 void nq_onOperatorEnd(void *this);
 
 void nq_onFunctionStart(void *this, char *name, char *doc);
+void nq_onFunctionACS(void *this);
 void nq_onFunctionExtern(void *this, char *externName);
 void nq_onFunctionUnmangled(void *this, char *unmangledName);
 void nq_onFunctionAbstract(void *this);
@@ -1461,7 +1462,7 @@ FunctionCallNoname = { tokenPos; nq_onFunctionCallStart(core->this, ""); }
                FunctionCallCore { $$=nq_onFunctionCallEnd(core->this); }
 
 ACS = (
-        { tokenPos; nq_onFunctionStart(core->this, "", ""); nq_onFunctionArgsStart(core->this); }
+        { tokenPos; nq_onFunctionStart(core->this, "", ""); nq_onFunctionACS(core->this); nq_onFunctionArgsStart(core->this); }
         '|' WS?
         ( i:IDENT { tokenPos; nq_onVarDeclStart(core->this); nq_onVarDeclName(core->this, i, ""); nq_onStatement(core->this, nq_onVarDeclEnd(core->this));  }
           (WS ',' WS)?

@@ -156,6 +156,8 @@ nq_onFunctionStart: unmangled func (l: OocListener, name, doc: CString) { l onFu
 nq_onFunctionEnd:   unmangled func (l: OocListener) -> Object { l onFunctionEnd() }
 nq_onFunctionBody:  unmangled func (l: OocListener) { l onFunctionBody() }
 
+nq_onFunctionACS: unmangled func (l: OocListener) { l onFunctionACS() }
+
 nq_onFunctionArgsStart: unmangled func (l: OocListener) { l onFunctionArgsStart() }
 nq_onFunctionArgsEnd: unmangled func (l: OocListener) { l onFunctionArgsEnd() }
 
