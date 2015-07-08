@@ -1649,7 +1649,7 @@ Terminator = (CommentLine
 WS         = ([ \t] | Comment | EOL)*
 
 OocDocCore = "/**" !'*' < (!"*/" (EOL | .))* > "*/" { $$=nq_StringClone(yytext) } WS
-           | "///" !'/' < (!EOL .)*          > EOL  { $$=nq_StringClone(yytext); printf("Got one-line oocdoc: %s\n", yytext) } WS
+           | "///" !'/' < (!EOL .)*          > EOL  { $$=nq_StringClone(yytext) } WS
 OocDoc = OocDocCore | { $$="" }
 Comment = !OocDocCore (CommentLine | CommentMultiLine)
 CommentLine = "//" (!EOL .)* EOL
