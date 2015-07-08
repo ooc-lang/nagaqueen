@@ -729,7 +729,7 @@ UnOpType: enum {
 BinOpType: enum {
     doubleArrow, equals, notEquals, lessThan, moreThan, cmp, lessThanOrEqual, moreThanOrEqual
 
-    assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assExp, assSub, assAdd, ass
+    assAnd, assOr, assXor, assRShift, assLShift, assDiv, assMul, assExp, assSub, assAdd, assMod, ass
 
     and, or, bAnd, bOr, bXor, rshift, lshift, div, mul, exp, sub, add, range, mod
 

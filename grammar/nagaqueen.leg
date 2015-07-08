@@ -375,6 +375,7 @@ void *nq_onAssignMul(void *this, void *left, void *right);
 void *nq_onAssignExp(void *this, void *left, void *right);
 void *nq_onAssignSub(void *this, void *left, void *right);
 void *nq_onAssignAdd(void *this, void *left, void *right);
+void *nq_onAssignMod(void *this, void *left, void *right);
 void *nq_onAssign(void *this, void *left, void *right);
 
 void *nq_onAdd(void *this, void *left, void *right);
@@ -1339,7 +1340,8 @@ Assignment = l: Ternary
                 ( ASS            { tokenPos; }  WS   r: Ternary               { $$=l=nq_onAssign(core->this, l, r); }
                 # The following line is actually the only case where AnonymousFunctionDecl makes sense at this level of precedence.
                 | ASS            { tokenPos; }  WS   r: AnonymousFunctionDecl ~{  missingOp("=") }   { $$=l=nq_onAssign(core->this, l, r); }
-                | ASS_ADD        { tokenPos; }  WS   r: Ternary               ~{  missingOp("+=") }  { $$=l=nq_onAssignAdd(core->this, l, r); }
+                | ASS_ADD        { tokenPos; }  WS   r: Ternary               ~{  missingOp("+=") }  { $$=l=nq_onAssignMod(core->this, l, r); }
+                | ASS_MOD        { tokenPos; }  WS   r: Ternary               ~{  missingOp("%=") }  { $$=l=nq_onAssignAdd(core->this, l, r); }
                 | ASS_SUB        { tokenPos; }  WS   r: Ternary               ~{  missingOp("-=") }  { $$=l=nq_onAssignSub(core->this, l, r); }
                 | ASS_MUL        { tokenPos; }  WS   r: Ternary               ~{  missingOp("*=") }  { $$=l=nq_onAssignMul(core->this, l, r); }
                 | ASS_EXP        { tokenPos; }  WS   r: Ternary               ~{  missingOp("**=") }  { $$=l=nq_onAssignExp(core->this, l, r); }
@@ -1586,6 +1588,7 @@ ASS_DECL     = ':='  -
 PROPASS_DECL = '::='  -
 ASS          = !DOUBLE_ARROW '=' -
 ASS_ADD      = '+='  -
+ASS_MOD      = '%='  -
 ASS_SUB      = '-='  -
 ASS_EXP      = '**='  -
 ASS_MUL      = '*='  -
