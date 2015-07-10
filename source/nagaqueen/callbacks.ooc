@@ -230,6 +230,7 @@ nq_onBlockEnd:   unmangled func (l: OocListener) -> Object { l onBlockEnd() }
 
 nq_onIfStart:   unmangled func (l: OocListener, condition: Object) { l onIfStart(condition) }
 nq_onIfEnd:     unmangled func (l: OocListener) -> Object { l onIfEnd() }
+nq_onElseMatched: unmangled func (l: OocListener, _if, _else: Object) { l onElseMatched(_if, _else) }
 
 nq_onElseStart: unmangled func (l: OocListener) { l onElseStart() }
 nq_onElseEnd:   unmangled func (l: OocListener) { l onElseEnd() }

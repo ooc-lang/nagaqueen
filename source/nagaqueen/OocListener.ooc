@@ -543,7 +543,10 @@ OocListener: abstract class {
         UnsupportedAstElement new(this, "if") enact(); null
     }
 
-
+    onElseMatched: func (_if, _else: Object) {
+        UnsupportedAstElement new(this, "else-matched") enact()
+    }
+ 
     onElseStart: func {
         UnsupportedAstElement new(this, "else") enact()
     }
