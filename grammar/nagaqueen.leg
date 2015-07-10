@@ -509,6 +509,7 @@ ModuleCore = (WS 'version' { tokenPos }
           | WS Use WS
           | WS Decl WS
           | WS stmt:Stmt WS { nq_onStatement(core->this, stmt) }
+          | WS { tokenPos } OocDocCore { char *message = "Unexpected oocdoc comment"; throwTokenError(NQE_EXP_INC_IMP_STMT_OR_DECL, message) }
           )
 
 VersionSpec = ((- '(' - l:VersionSpec - ')') | (l:VersionCore))
@@ -693,7 +694,8 @@ FunctionDeclBody = (
                 { nq_onFunctionBody(core->this); }
                 WS '{' WS
                 (WS
-                (s:Stmt  { nq_onStatement(core->this, s) })
+                ( s:Stmt  { nq_onStatement(core->this, s) }
+                | { tokenPos } OocDocCore { char *message = "Unexpected oocdoc comment"; throwTokenError(NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, message) })
                 WS)*
                 WS CLOS_BRACK ~{ rewindWhiteSpace; throwError(NQE_EXP_STATEMENT_OR_CLOSING_BRACKET, "Malformed statement or closing bracket missing\n") }
             )?
