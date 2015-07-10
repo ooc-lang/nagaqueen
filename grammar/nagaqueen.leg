@@ -1227,7 +1227,8 @@ EoledStatement =  ( WS Return
                   | WS Expr
                   )
 
-Conditional = (If | Else)
+Conditional = (s:If
+               (WS e:Else { nq_onElseMatched(core->this, s, e); $$=s; } )? )
 
 Block   = (
            '{' { tokenPos; nq_onBlockStart(core->this); }
