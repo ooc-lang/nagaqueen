@@ -206,7 +206,6 @@ void nq_onCoverImplements(void *this, void *type);
 void nq_onCoverEnd(void *this);
 
 void nq_onEnumStart(void *this, char *name, char *doc);
-void nq_onEnumExtern(void *this, char *externName);
 void nq_onEnumFromType(void *this, void *fromType);
 void nq_onEnumIncrementExpr(void *this, char oper, void *step);
 void nq_onEnumElementStart(void *this, char *name, char *doc);
@@ -764,9 +763,6 @@ EnumDecl    = (
 
             enumName:IDENT { tokenPos; nq_onEnumStart(core->this, enumName, doc); }
             - COLON
-
-            # modifiers (extern)
-            (- externName:ExternName { nq_onEnumExtern(core->this, externName); })?
 
             - ENUM_KW
 

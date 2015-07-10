@@ -60,7 +60,6 @@ nq_onEnumEnd:           unmangled func (l: OocListener) -> Object { l onEnumEnd(
 
 nq_onEnumFromType:      unmangled func (l: OocListener, fromType: Object) { l onEnumFromType(fromType) }
 
-nq_onEnumExtern:        unmangled func (l: OocListener, externName: CString) { l onEnumExtern(externName) }
 nq_onEnumIncrementExpr: unmangled func (l: OocListener, oper: Char, step: Object) { l onEnumIncrementExpr(oper, step) }
 
 nq_onEnumElementStart:  unmangled func (l: OocListener, name, doc: CString) { l onEnumElementStart(name, doc) }

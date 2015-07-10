@@ -143,11 +143,6 @@ OocListener: abstract class {
         UnsupportedAstElement new(this, "enum-fromtype") enact()
     }
 
-
-    onEnumExtern: func (externName: CString) {
-         UnsupportedAstElement new(this, "enum-extern") enact()
-    }
-
     onEnumIncrementExpr: func (oper: Char, step: Object) {
          UnsupportedAstElement new(this, "enum-extern") enact()
     }
