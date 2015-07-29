@@ -287,6 +287,7 @@ nq_onAssignMul:       unmangled func (l: OocListener, left, right: Object) -> Ob
 nq_onAssignExp:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assExp, left, right) }
 nq_onAssignSub:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assSub, left, right) }
 nq_onAssignAdd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assAdd, left, right) }
+nq_onAssignMod:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType assMod, left, right) }
 nq_onAssign:          unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType ass, left, right) }
 
 nq_onLogicalAnd:       unmangled func (l: OocListener, left, right: Object) -> Object { l onBinOp(BinOpType and, left, right) }

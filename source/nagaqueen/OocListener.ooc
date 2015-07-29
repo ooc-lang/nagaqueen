@@ -507,7 +507,6 @@ OocListener: abstract class {
         UnsupportedAstElement new(this, "var-access") enact(); null
     }
 
-
     onArrayAccessStart: func (array: Object) {
         UnsupportedAstElement new(this, "array-access") enact()
     }
