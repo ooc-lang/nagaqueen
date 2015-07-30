@@ -1572,7 +1572,7 @@ NULL_KW      = "null"
 KW           = BREAK_KW | CONTINUE_KW | RETURN_KW | FUNC_KW
              | COVER_KW | ENUM_KW | FROM_KW | ABSTRACT_KW | FINAL_KW
              | STATIC_KW | INLINE_KW | EXTENDS_KW | EXTERN_KW | UNMANGLED_KW
-             | IMPORT_KW | INCLUDE_KW | IF_KW | ELSE_KW | FOR_KW
+             | IF_KW | ELSE_KW | FOR_KW
              | WHILE_KW | AS_KW | OPERATOR_KW | CONST_KW | NULL_KW | MATCH_KW | CASE_KW
              | TRY_KW | CATCH_KW
 
