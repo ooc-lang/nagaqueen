@@ -2,5 +2,4 @@ Name: nagaqueen
 Version: head
 Origin: git://github.com/nddrylliog/nagaqueen.git
 Description: greg grammar for ooc
-Requires: greg
 SourcePath: source
