@@ -5,7 +5,8 @@ import callbacks
  */
 OocListener: abstract class {
 
-    tokenPos: Int*
+    tokenPosPointer: Int*
+    lineNoPointer: Int*
 
     init: func {}
 
