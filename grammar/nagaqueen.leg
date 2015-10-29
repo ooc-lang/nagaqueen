@@ -1429,7 +1429,7 @@ ProductCore = l:SafeNavAccess
                     | SLASH       { tokenPos; }  WS r:SafeNavAccess       { $$=l=nq_onDiv(core->this, l, r); }
                     )*
 
-SafeNavAccess = l:Access { nq_onSafeNavigationStart(core->this, l); } - (SAFE_NAV - i:IDENT { nq_onSafeNavigationIdent(core->this, i); })+ { nq_onStringLiteralEnd(core->this); }
+SafeNavAccess = l:Access { nq_onSafeNavigationStart(core->this, l); } - (SAFE_NAV - i:IDENT { nq_onSafeNavigationIdent(core->this, i); })+ { nq_onSafeNavigationEnd(core->this); }
 
 Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value)
