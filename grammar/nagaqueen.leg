@@ -395,6 +395,7 @@ void *nq_onBinaryXor(void *this, void *left, void *right);
 void *nq_onBinaryAnd(void *this, void *left, void *right);
 
 void nq_onSafeNavigationStart(void *this, void *expr);
+void nq_onSafeNavigationSection(void *this);
 void nq_onSafeNavigationIdent(void *this, char *ident);
 void *nq_onSafeNavigationEnd(void *this);
 
@@ -1430,7 +1431,8 @@ ProductCore = l:SafeNavAccess
                     )*
 
 SafeNavAccess = expr:Access ( { tokenPos; nq_onSafeNavigationStart(core->this, expr); } 
-                              (SAFE_NAV - i:IDENT { nq_onSafeNavigationIdent(core->this, i); })+  { $$=nq_onSafeNavigationEnd(core->this); })?
+                              (  SAFE_NAV { nq_onSafeNavigationSection(core->this); } - (i:IDENT { nq_onSafeNavigationIdent(core->this, i); })+)+ 
+                              { $$=nq_onSafeNavigationEnd(core->this); })?
 
 Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value)
