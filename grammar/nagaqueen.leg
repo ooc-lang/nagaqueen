@@ -727,6 +727,8 @@ ClassDecl   = (
 
             GenericArguments?
 
+            TemplateDef?
+
             # subclassing
             (
             - EXTENDS_KW - t:Type { nq_onClassExtends(core->this, t) }
