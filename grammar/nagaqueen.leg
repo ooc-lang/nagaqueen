@@ -394,6 +394,11 @@ void *nq_onBinaryOr(void *this, void *left, void *right);
 void *nq_onBinaryXor(void *this, void *left, void *right);
 void *nq_onBinaryAnd(void *this, void *left, void *right);
 
+void nq_onSafeNavigationStart(void *this, void *expr);
+void nq_onSafeNavigationSection(void *this);
+void nq_onSafeNavigationIdent(void *this, char *ident);
+void *nq_onSafeNavigationEnd(void *this);
+
 void *nq_onLogicalNot(void *this, void *inner);
 void *nq_onBinaryNot(void *this, void *inner);
 void *nq_onUnaryMinus(void *this, void *inner);
@@ -1421,11 +1426,15 @@ Product = (ProductLogicalNot | ProductBinaryNot | ProductCore)
 ProductLogicalNot = L_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onLogicalNot(core->this, inner); }
 ProductBinaryNot  = B_NOT { tokenPos; } - (inner:Product) - { $$=inner=nq_onBinaryNot (core->this, inner); }
 
-ProductCore = l:Access
+ProductCore = l:SafeNavAccess
                     ( EXP         { tokenPos; }  WS r:Product             { $$=l=nq_onExp(core->this, l, r); }
-                    | STAR        { tokenPos; }  WS r:Access              { $$=l=nq_onMul(core->this, l, r); }
-                    | SLASH       { tokenPos; }  WS r:Access              { $$=l=nq_onDiv(core->this, l, r); }
+                    | STAR        { tokenPos; }  WS r:SafeNavAccess       { $$=l=nq_onMul(core->this, l, r); }
+                    | SLASH       { tokenPos; }  WS r:SafeNavAccess       { $$=l=nq_onDiv(core->this, l, r); }
                     )*
+
+SafeNavAccess = expr:Access ( { tokenPos; nq_onSafeNavigationStart(core->this, expr); } 
+                              (  SAFE_NAV { nq_onSafeNavigationSection(core->this); } - (i:IDENT { nq_onSafeNavigationIdent(core->this, i); })+)+ 
+                              { $$=nq_onSafeNavigationEnd(core->this); })?
 
 Access =  ((ident:IDENT_CORE { tokenPos; } '&' ![&=] - { core->token[1] += 1; $$=l=nq_onAddressOf(core->this, nq_onVarAccess(core->this, NULL, ident)); }) # special case: blah& is always a reference. blah & blih is a binary and.
           | l:Value)
@@ -1481,8 +1490,8 @@ VariableAccess = i:IDENT_CORE
 
 Value   = ('-' - '(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onUnaryMinus(core->this, nq_onParenthesis(core->this, inner)); } -)
         | ('+' - '(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onUnaryPlus(core->this, nq_onParenthesis(core->this, inner)); } -)
-        | ('-' - { tokenPos; } access:Access { $$=nq_onUnaryMinus(core->this, access); })
-        | ('+' - { tokenPos; } access:Access { $$=nq_onUnaryPlus(core->this, access); })
+        | ('-' - { tokenPos; } access:SafeNavAccess { $$=nq_onUnaryMinus(core->this, access); })
+        | ('+' - { tokenPos; } access:SafeNavAccess { $$=nq_onUnaryPlus(core->this, access); })
         | ('(' { tokenPos; } WS inner:Expr WS ')' { $$=nq_onParenthesis(core->this, inner); } ('&' ![&=] { $$=nq_onAddressOf(core->this, $$); })? -)
         | ValueCore
 
@@ -1637,6 +1646,8 @@ PERCENT      = '%' !'='  -
 EXP          = '**' ! '='  -
 STAR         = '*' !'='  -
 SLASH        = '/' !'=' ![/*]   -
+
+SAFE_NAV     = '$'
 
 CLOS_BRACK    = '}'
 CLOS_SQUAR    = ']'
